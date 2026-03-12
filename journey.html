@@ -523,6 +523,200 @@ const exportItineraryMD = (trip) => {
   }
   downloadFile(`journey-itinerary-${slugify(trip.title)}.md`, lines.join("\n"), "text/markdown");
 };
+const generateTripHTML = (trip, opts) => {
+  const isJournal = opts.tone === "journal";
+  const allActs = getAllActivities(trip);
+  const totalNights = trip.cities.reduce((s, c) => s + (c.nights - 1), 0);
+  const totalSpent = allActs.reduce((s, a) => s + parseFloat(a.cost && (a.cost.confirmed || a.cost.estimated) || 0), 0);
+  const cur = trip.currency || "USD";
+  const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const palette = ["#4e7fa6", "#6b5da6", "#4e9478", "#a66040", "#7a5a8a", "#4a7a6a", "#9a7040"];
+  const cityColor = (i) => palette[i % palette.length];
+  const actIcons = { flight: "\u2708\uFE0F", train: "\u{1F685}", hotel: "\u{1F3E8}", restaurant: "\u{1F37D}\uFE0F", attraction: "\u{1F3A8}", transit: "\u{1F687}", activity: "\u{1F97E}", other: "\u{1F4CC}" };
+  const fmtAmt = (n) => n > 0 ? cur + " " + Number(n).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "";
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const fmtD = (iso) => {
+    if (!iso) return "";
+    const d = /* @__PURE__ */ new Date(iso + "T12:00:00Z");
+    return months[d.getUTCMonth()] + " " + d.getUTCDate() + ", " + d.getUTCFullYear();
+  };
+  const dows = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const fmtDow2 = (iso) => {
+    if (!iso) return "";
+    return dows[(/* @__PURE__ */ new Date(iso + "T12:00:00Z")).getUTCDay()];
+  };
+  const bg = isJournal ? "#faf8f4" : "#ffffff";
+  const text = isJournal ? "#2a2620" : "#1a1a2e";
+  const mid = isJournal ? "#6b6357" : "#555577";
+  const dim = isJournal ? "#9a8f82" : "#888899";
+  const border = isJournal ? "#e8e0d4" : "#e0e0ee";
+  const accent = "#d4a853";
+  const headFont = isJournal ? "'Cormorant Garamond', Georgia, serif" : "'DM Sans', system-ui, sans-serif";
+  const bodyFont = isJournal ? "'DM Sans', system-ui, sans-serif" : "'DM Sans', system-ui, sans-serif";
+  const buildCitySection = (c, ci) => {
+    const col = cityColor(ci);
+    const cityActs = c.days.flatMap((d) => ["morning", "afternoon", "evening"].flatMap((bl) => (d.blocks[bl] || []).map((a) => __spreadProps(__spreadValues({}, a), { block: bl, dayLabel: d.label, dayDate: d.date }))));
+    const citySpent = cityActs.reduce((s, a) => s + parseFloat(a.cost && (a.cost.confirmed || a.cost.estimated) || 0), 0);
+    if (opts.level === "highlights") {
+      let html2 = "<div style='display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid " + esc(border) + "'>";
+      html2 += "<div style='width:4px;height:32px;border-radius:2px;background:" + esc(col) + ";flex-shrink:0'></div>";
+      html2 += "<div><div style='font-size:18px;font-weight:600;font-family:" + esc(headFont) + ";color:" + esc(text) + "'>" + esc(c.name) + "</div>";
+      html2 += "<div style='font-size:13px;color:" + esc(mid) + ";margin-top:2px'>" + (c.nights - 1) + " nights";
+      if (c.days && c.days.length > 0) html2 += " \xB7 " + esc(fmtD(c.days[0].date));
+      html2 += "</div></div>";
+      if (opts.includeBudget && citySpent > 0) html2 += "<div style='margin-left:auto;font-size:13px;font-weight:600;color:" + esc(accent) + "'>" + esc(fmtAmt(citySpent)) + "</div>";
+      html2 += "</div>";
+      return html2;
+    }
+    let html = "<div style='margin-bottom:40px'>";
+    html += "<div style='display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid " + esc(col) + "55'>";
+    html += "<div style='width:4px;height:38px;border-radius:2px;background:" + esc(col) + ";flex-shrink:0'></div>";
+    html += "<div style='flex:1'>";
+    html += "<h2 style='font-family:" + esc(headFont) + ";font-size:" + (isJournal ? "28px" : "22px") + ";font-weight:" + (isJournal ? "300" : "700") + ";color:" + esc(text) + ";margin:0'>" + esc(c.name) + "</h2>";
+    html += "<div style='font-size:13px;color:" + esc(dim) + ";margin-top:4px'>" + (c.nights - 1) + " nights";
+    if (c.days && c.days.length > 0) html += " \xB7 " + esc(fmtD(c.days[0].date)) + " \u2013 " + esc(fmtD(c.days[c.days.length - 1].date));
+    if (opts.includeBudget && citySpent > 0) html += " \xB7 <strong style='color:" + esc(accent) + "'>" + esc(fmtAmt(citySpent)) + "</strong>";
+    html += "</div></div></div>";
+    if (c.notes) html += "<p style='font-size:13px;color:" + esc(mid) + ";font-style:italic;margin:0 0 16px 16px;padding-left:12px;border-left:3px solid " + esc(col) + "55'>" + esc(c.notes) + "</p>";
+    c.days.forEach((d) => {
+      const dayActs = ["morning", "afternoon", "evening"].flatMap((bl) => (d.blocks[bl] || []).map((a) => __spreadProps(__spreadValues({}, a), { block: bl })));
+      const hasReflection = d.reflection && opts.includeReflections;
+      if (!dayActs.length && !hasReflection) return;
+      html += "<div style='margin-bottom:24px;padding-left:20px;border-left:2px solid " + esc(col) + "33;position:relative'>";
+      html += "<div style='position:absolute;left:-5px;top:5px;width:8px;height:8px;border-radius:50%;background:" + esc(col) + ";border:2px solid " + esc(bg) + "'></div>";
+      html += "<div style='margin-bottom:10px'>";
+      html += "<span style='font-size:" + (isJournal ? "15px" : "14px") + ";font-weight:600;font-family:" + esc(headFont) + ";color:" + esc(text) + "'>" + esc(d.label) + "</span>";
+      html += "<span style='font-size:11px;color:" + esc(dim) + ";margin-left:8px'>" + esc(fmtDow2(d.date)) + " \xB7 " + esc(fmtD(d.date)) + "</span>";
+      html += "</div>";
+      if (hasReflection) {
+        html += "<div style='background:" + esc(col) + "11;border-left:3px solid " + esc(col) + "66;border-radius:4px;padding:10px 14px;margin-bottom:12px'>";
+        html += "<p style='font-size:13px;color:" + esc(text) + ";line-height:1.7;margin:0;font-style:italic'>" + esc(d.reflection) + "</p>";
+        html += "</div>";
+      }
+      if (dayActs.length > 0) {
+        if (isJournal) {
+          ["morning", "afternoon", "evening"].forEach((bl) => {
+            const blActs = d.blocks[bl] || [];
+            if (!blActs.length) return;
+            const blLabel = bl.charAt(0).toUpperCase() + bl.slice(1);
+            html += "<div style='margin-bottom:10px'>";
+            html += "<div style='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:" + esc(dim) + ";margin-bottom:6px'>" + esc(blLabel) + "</div>";
+            blActs.forEach((a) => {
+              const icon = actIcons[a.type] || "\u{1F4CC}";
+              const cost = opts.includeBudget ? parseFloat(a.cost && (a.cost.confirmed || a.cost.estimated) || 0) : 0;
+              html += "<div style='display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid " + esc(border) + "'>";
+              html += "<span style='font-size:16px;flex-shrink:0'>" + icon + "</span>";
+              html += "<div style='flex:1;min-width:0'>";
+              html += "<div style='font-size:13px;font-weight:500;color:" + esc(text) + "'>" + esc(a.title || "Untitled") + "</div>";
+              if (a.location) html += "<div style='font-size:11px;color:" + esc(dim) + ";margin-top:2px'>\u{1F4CD} " + esc(a.location) + "</div>";
+              if (a.confirmation) html += "<div style='font-size:11px;color:" + esc(dim) + ";margin-top:2px'>\u2713 " + esc(a.confirmation) + "</div>";
+              if (a.notes && opts.level === "journal") html += "<div style='font-size:11px;color:" + esc(dim) + ";margin-top:2px;font-style:italic'>" + esc(a.notes) + "</div>";
+              html += "</div>";
+              if (a.time) html += "<div style='font-size:11px;color:" + esc(dim) + ";flex-shrink:0'>" + esc(a.time) + "</div>";
+              if (opts.includeBudget && cost > 0) html += "<div style='font-size:11px;color:" + esc(accent) + ";flex-shrink:0;font-weight:600'>" + esc(fmtAmt(cost)) + "</div>";
+              html += "</div>";
+            });
+            html += "</div>";
+          });
+        } else {
+          html += "<table style='width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px'>";
+          html += "<thead><tr style='background:#f5f5fa'><th style='text-align:left;padding:5px 8px;color:" + esc(mid) + ";font-weight:600'>Activity</th><th style='text-align:left;padding:5px 8px;color:" + esc(mid) + ";font-weight:600'>Time</th><th style='text-align:left;padding:5px 8px;color:" + esc(mid) + ";font-weight:600'>Location</th><th style='text-align:left;padding:5px 8px;color:" + esc(mid) + ";font-weight:600'>Ref #</th>" + (opts.includeBudget ? "<th style='text-align:right;padding:5px 8px;color:" + esc(mid) + ";font-weight:600'>Cost</th>" : "") + "</tr></thead><tbody>";
+          dayActs.forEach((a, ai) => {
+            const icon = actIcons[a.type] || "\u{1F4CC}";
+            const cost = opts.includeBudget ? parseFloat(a.cost && (a.cost.confirmed || a.cost.estimated) || 0) : 0;
+            const rowBg = ai % 2 === 0 ? "transparent" : "#fafafa";
+            html += "<tr style='border-bottom:1px solid " + esc(border) + ";background:" + rowBg + "'>";
+            html += "<td style='padding:5px 8px'>" + icon + " <strong>" + esc(a.title || "Untitled") + "</strong></td>";
+            html += "<td style='padding:5px 8px;color:" + esc(dim) + "'>" + esc(a.time || "\u2014") + "</td>";
+            html += "<td style='padding:5px 8px;color:" + esc(dim) + "'>" + esc(a.location || "\u2014") + "</td>";
+            html += "<td style='padding:5px 8px;color:" + esc(dim) + "'>" + esc(a.confirmation || "\u2014") + "</td>";
+            if (opts.includeBudget) html += "<td style='padding:5px 8px;text-align:right;color:" + esc(accent) + "'>" + (cost > 0 ? esc(fmtAmt(cost)) : "\u2014") + "</td>";
+            html += "</tr>";
+          });
+          html += "</tbody></table>";
+        }
+      }
+      html += "</div>";
+    });
+    html += "</div>";
+    return html;
+  };
+  const buildBudgetSection = () => {
+    if (!opts.includeBudget || totalSpent === 0) return "";
+    const byCity = {};
+    const byCat = {};
+    allActs.forEach((a) => {
+      const cost = parseFloat(a.cost && (a.cost.confirmed || a.cost.estimated) || 0);
+      if (!cost) return;
+      byCity[a.cityName] = (byCity[a.cityName] || 0) + cost;
+      const cat = a.cost && a.cost.category || "Other";
+      byCat[cat] = (byCat[cat] || 0) + cost;
+    });
+    let html = "<div style='margin-top:40px;page-break-inside:avoid'>";
+    html += "<h2 style='font-family:" + esc(headFont) + ";font-size:22px;color:" + esc(text) + ";margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid " + esc(accent) + "55'>\u{1F4B0} Budget Summary</h2>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:24px'>";
+    html += "<div><h3 style='font-size:13px;font-weight:600;color:" + esc(mid) + ";text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px'>By City</h3>";
+    Object.entries(byCity).sort((a, b) => b[1] - a[1]).forEach(([city, amt]) => {
+      const pct = Math.round(amt / totalSpent * 100);
+      html += "<div style='margin-bottom:10px'><div style='display:flex;justify-content:space-between;margin-bottom:3px'><span style='font-size:13px;color:" + esc(text) + "'>" + esc(city) + "</span><span style='font-size:13px;font-weight:600;color:" + esc(accent) + "'>" + esc(fmtAmt(amt)) + "</span></div><div style='height:4px;background:#eee;border-radius:2px'><div style='height:100%;width:" + pct + "%;background:" + esc(accent) + ";border-radius:2px'></div></div></div>";
+    });
+    html += "</div>";
+    html += "<div><h3 style='font-size:13px;font-weight:600;color:" + esc(mid) + ";text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px'>By Category</h3>";
+    Object.entries(byCat).sort((a, b) => b[1] - a[1]).forEach(([cat, amt]) => {
+      const pct = Math.round(amt / totalSpent * 100);
+      html += "<div style='margin-bottom:10px'><div style='display:flex;justify-content:space-between;margin-bottom:3px'><span style='font-size:13px;color:" + esc(text) + "'>" + esc(cat) + "</span><span style='font-size:13px;font-weight:600;color:" + esc(accent) + "'>" + esc(fmtAmt(amt)) + "</span></div><div style='height:4px;background:#eee;border-radius:2px'><div style='height:100%;width:" + pct + "%;background:" + esc(accent) + ";border-radius:2px'></div></div></div>";
+    });
+    html += "</div></div>";
+    html += "<div style='margin-top:16px;text-align:right;font-size:16px;font-weight:700;color:" + esc(text) + "'>Total: <span style='color:" + esc(accent) + "'>" + esc(fmtAmt(totalSpent)) + "</span></div>";
+    html += "</div>";
+    return html;
+  };
+  const levelLabel = { highlights: "Trip Highlights", itinerary: "Full Itinerary", journal: "Trip Journal" };
+  const toneLabel = isJournal ? "Journal" : "Practical";
+  let body = "";
+  body += "<div style='margin-bottom:36px'>";
+  body += "<h1 style='font-family:" + esc(headFont) + ";font-size:" + (isJournal ? "44px" : "32px") + ";font-weight:" + (isJournal ? "300" : "700") + ";color:" + esc(text) + ";margin:0 0 8px 0;line-height:1.1'>" + esc(trip.title) + "</h1>";
+  body += "<div style='font-size:14px;color:" + esc(mid) + ";margin-bottom:16px'>" + esc(fmtD(trip.startDate)) + " \u2013 " + esc(fmtD(trip.endDate));
+  if (trip.travelers && trip.travelers.length > 0) body += " \xB7 " + esc(trip.travelers.join(", "));
+  body += "</div>";
+  body += "<div style='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:" + (opts.level === "highlights" ? "28px" : "12px") + "'>";
+  const chips = [
+    trip.cities.length + " " + (trip.cities.length === 1 ? "city" : "cities"),
+    totalNights + " nights"
+  ];
+  if (trip.ptoDays) chips.push(trip.ptoDays + " PTO days");
+  if (opts.includeBudget && totalSpent > 0) chips.push(fmtAmt(totalSpent) + " total");
+  chips.forEach((chip) => {
+    body += "<span style='font-size:12px;padding:4px 12px;border-radius:20px;background:" + esc(accent) + "22;color:" + esc(accent) + ";font-weight:600;border:1px solid " + esc(accent) + "44'>" + esc(chip) + "</span>";
+  });
+  body += "</div>";
+  body += "</div>";
+  if (trip.tripNotes && opts.includeReflections) {
+    body += "<div style='background:" + esc(accent) + "0f;border-left:4px solid " + esc(accent) + ";border-radius:6px;padding:16px 20px;margin-bottom:36px'>";
+    body += "<p style='font-size:14px;line-height:1.8;color:" + esc(text) + ";margin:0;font-style:italic'>" + esc(trip.tripNotes) + "</p>";
+    body += "</div>";
+  }
+  if (opts.level === "highlights") {
+    body += "<div style='margin-bottom:28px'>";
+    body += "<h2 style='font-family:" + esc(headFont) + ";font-size:18px;font-weight:600;color:" + esc(text) + ";margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em'>Stops</h2>";
+    trip.cities.forEach((c, ci) => {
+      body += buildCitySection(c, ci);
+    });
+    body += "</div>";
+  } else {
+    trip.cities.forEach((c, ci) => {
+      body += buildCitySection(c, ci);
+    });
+  }
+  if (opts.includeBudget) body += buildBudgetSection();
+  const doc = "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + esc(trip.title) + " \u2014 " + esc(levelLabel[opts.level]) + "</title><link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@400;500;600&display=swap' rel='stylesheet'><style>*{box-sizing:border-box;margin:0;padding:0}body{background:" + esc(bg) + ";color:" + esc(text) + ";font-family:" + esc(bodyFont) + ";line-height:1.5;-webkit-font-smoothing:antialiased}@media print{.no-print{display:none!important}body{background:#fff}@page{margin:20mm}}input[type=date]{appearance:none}</style></head><body><div class='no-print' style='position:sticky;top:0;z-index:99;background:" + esc(bg) + ";border-bottom:1px solid " + esc(border) + ";padding:10px 24px;display:flex;align-items:center;justify-content:space-between'><span style='font-size:13px;color:" + esc(dim) + "'>" + esc(trip.title) + " \xB7 " + esc(levelLabel[opts.level]) + " \xB7 " + esc(toneLabel) + "</span><button onclick='window.print()' style='background:" + esc(accent) + ";color:#1a1200;border:none;border-radius:8px;padding:7px 18px;font-size:13px;font-weight:600;cursor:pointer'>\u{1F5A8} Print / Save as PDF</button></div><div style='max-width:800px;margin:0 auto;padding:40px 24px'>" + body + "<div style='margin-top:60px;padding-top:24px;border-top:1px solid " + esc(border) + ";text-align:center;font-size:11px;color:" + esc(dim) + "'>Generated by Journey \xB7 " + (/* @__PURE__ */ new Date()).toLocaleDateString() + "</div></div></body></html>";
+  return doc;
+};
+const exportTripSummaryHTML = (trip, opts) => {
+  const level = opts.level || "itinerary";
+  const suffix = level === "highlights" ? "highlights" : level === "journal" ? "journal" : "itinerary";
+  downloadFile("journey-" + slugify(trip.title) + "-" + suffix + ".html", generateTripHTML(trip, opts), "text/html");
+};
 const readJSONFile = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -1399,7 +1593,7 @@ function DuplicateTripModal({ trip, onConfirm, onClose }) {
   });
   const upd = (k, v) => setForm((f) => __spreadProps(__spreadValues({}, f), { [k]: v }));
   const auto = getPTODays(form.startDate, form.endDate);
-  return /* @__PURE__ */ React.createElement("div", { style: { padding: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: C.text } }, "Duplicate Trip"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 4 } }, "Review the details before creating the copy.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "\xD7")), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, paddingTop: 22, display: "grid", gap: 16 } }, /* @__PURE__ */ React.createElement(Input, { label: "Trip title", value: form.title, onChange: (v) => upd("title", v) }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: "Start date", type: "date", value: form.startDate, onChange: (v) => upd("startDate", v) }), /* @__PURE__ */ React.createElement(Input, { label: "End date", type: "date", value: form.endDate, onChange: (v) => upd("endDate", v) })), auto > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: -8 } }, auto, " weekday", auto !== 1 ? "s" : "", " in date range"), /* @__PURE__ */ React.createElement(Field, { label: "Initial status" }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, [
+  return /* @__PURE__ */ React.createElement("div", { style: { padding: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: C.text } }, "Copy Trip"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 4 } }, "Review the details before creating the copy.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "\xD7")), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, paddingTop: 22, display: "grid", gap: 16 } }, /* @__PURE__ */ React.createElement(Input, { label: "Trip title", value: form.title, onChange: (v) => upd("title", v) }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: "Start date", type: "date", value: form.startDate, onChange: (v) => upd("startDate", v) }), /* @__PURE__ */ React.createElement(Input, { label: "End date", type: "date", value: form.endDate, onChange: (v) => upd("endDate", v) })), auto > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: -8 } }, auto, " weekday", auto !== 1 ? "s" : "", " in date range"), /* @__PURE__ */ React.createElement(Field, { label: "Initial status" }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, [
     { id: "planning", label: "\u{1F5D3} Planning" },
     { id: "active", label: "\u2708\uFE0F Active" },
     { id: "complete", label: "\u2705 Complete" }
@@ -2093,20 +2287,13 @@ function QuickAddSheet({ trip, onAdd, onClose }) {
 }
 function LookBackView({ trip, mutateTrip }) {
   const mobile = useMobile();
-  const [copied, setCopied] = useState(false);
   const allActs = getAllActivities(trip);
   const actTotal = allActs.length;
   const onTrip = allActs.filter((a) => a.addedOnTrip).length;
   const confTotal = allActs.filter((a) => a.confirmation).length;
-  const allCosts = allActs.reduce((s, a) => s + parseFloat(a.cost.confirmed || a.cost.estimated || 0), 0);
-  const [shareModal, setShareModal] = useState(false);
-  const copyLink = (level) => {
-    navigator.clipboard.writeText(window.location.href + "?share=" + trip.id + "&level=" + (level || "full")).catch(() => {
-    });
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
-  return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 820, margin: "0 auto", padding: mobile ? "24px 16px" : "36px 28px" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: mobile ? 20 : 32, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 28 : 40, fontWeight: 300, color: C.text, lineHeight: 1.1 } }, "\u{1F4D6} ", trip.title), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: mobile ? 13 : 15, marginTop: 6 } }, fmtDateRange(trip.startDate, trip.endDate)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, trip.ptoDays || "?", " PTO"), /* @__PURE__ */ React.createElement(Tag, null, trip.cities.reduce((s, c) => s + (c.nights - 1), 0), " nights"), /* @__PURE__ */ React.createElement(Tag, { color: C.purple }, onTrip, " spontaneous"), /* @__PURE__ */ React.createElement(Tag, { color: C.teal }, confTotal, " reservations"))), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setShareModal(true) }, copied ? "\u2713 Copied!" : "\u{1F517} Share")), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "20px 24px", marginBottom: 28 } }, /* @__PURE__ */ React.createElement(
+  const allCosts = allActs.reduce((s, a) => s + parseFloat(a.cost && (a.cost.confirmed || a.cost.estimated) || 0), 0);
+  const [exportModal, setExportModal] = useState(false);
+  return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 820, margin: "0 auto", padding: mobile ? "24px 16px" : "36px 28px" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: mobile ? 20 : 32, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 28 : 40, fontWeight: 300, color: C.text, lineHeight: 1.1 } }, "\u{1F4D6} ", trip.title), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: mobile ? 13 : 15, marginTop: 6 } }, fmtDateRange(trip.startDate, trip.endDate)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, trip.ptoDays || "?", " PTO"), /* @__PURE__ */ React.createElement(Tag, null, trip.cities.reduce((s, c) => s + (c.nights - 1), 0), " nights"), /* @__PURE__ */ React.createElement(Tag, { color: C.purple }, onTrip, " spontaneous"), /* @__PURE__ */ React.createElement(Tag, { color: C.teal }, confTotal, " reservations"))), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setExportModal(true) }, "\u{1F4E4} Export")), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "20px 24px", marginBottom: 28 } }, /* @__PURE__ */ React.createElement(
     Textarea,
     {
       label: "\u270D\uFE0F Trip reflection \u2014 overall thoughts, memories, what to remember next time",
@@ -2163,39 +2350,83 @@ function LookBackView({ trip, mutateTrip }) {
         }
       ));
     }).filter(Boolean));
-  }), shareModal && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setShareModal(false), maxWidth: 480 }, /* @__PURE__ */ React.createElement("div", { style: { padding: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, color: C.text } }, "Share This Trip"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 4 } }, "Choose what to include in the shared link.")), /* @__PURE__ */ React.createElement("button", { onClick: () => setShareModal(false), style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "x")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, [
-    { level: "full", icon: "\u{1F4D6}", label: "Everything", desc: "Full itinerary, reflections, costs, confirmations, and notes." },
-    { level: "nobudget", icon: "\u{1F5FA}\uFE0F", label: "No budget or sensitive info", desc: "Itinerary and reflections \u2014 excludes costs, confirmations, and Vault data." },
-    { level: "highlevel", icon: "\u2708\uFE0F", label: "High-level itinerary", desc: "Cities, nights, and day labels only \u2014 no activity details or reflections." }
-  ].map((opt) => /* @__PURE__ */ React.createElement(
-    "button",
+  }), exportModal && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setExportModal(false), maxWidth: 560 }, /* @__PURE__ */ React.createElement(TripExportModal, { trip, onClose: () => setExportModal(false) })));
+}
+function TripExportModal({ trip, onClose }) {
+  const mobile = useMobile();
+  const [level, setLevel] = useState("itinerary");
+  const [tone, setTone] = useState("journal");
+  const [includeBudget, setIncludeBudget] = useState(false);
+  const [includeReflections, setIncludeReflections] = useState(true);
+  const levels = [
+    { id: "highlights", icon: "\u2708\uFE0F", label: "Trip Highlights", desc: "Cities, nights, stats, and your overall reflection. Great for sharing the big picture." },
+    { id: "itinerary", icon: "\u{1F5FA}\uFE0F", label: "Full Itinerary", desc: "Day-by-day activities with times, locations, and confirmation numbers." },
+    { id: "journal", icon: "\u{1F4D6}", label: "Complete Journal", desc: "Everything \u2014 daily reflections, activity notes, checklist summary, and budget." }
+  ];
+  const handleExport = () => {
+    exportTripSummaryHTML(trip, { level, tone, includeBudget, includeReflections });
+  };
+  const Toggle = ({ value, onChange, label, desc }) => /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: C.surface2, borderRadius: 10, gap: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 500, color: C.text } }, label), desc && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 2 } }, desc)), /* @__PURE__ */ React.createElement("button", { onClick: () => onChange(!value), style: {
+    width: 42,
+    height: 24,
+    borderRadius: 12,
+    border: "none",
+    cursor: "pointer",
+    background: value ? C.accent : C.surface3,
+    position: "relative",
+    flexShrink: 0,
+    transition: "background 0.2s"
+  } }, /* @__PURE__ */ React.createElement("div", { style: {
+    position: "absolute",
+    top: 3,
+    left: value ? 21 : 3,
+    width: 18,
+    height: 18,
+    borderRadius: "50%",
+    background: "#fff",
+    transition: "left 0.2s",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+  } })));
+  return /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? 18 : 28, maxHeight: "88vh", overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: C.text } }, "Export Trip Summary"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 4 } }, "Downloads a styled HTML file. Open it in any browser to print or save as PDF.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", flexShrink: 0 } }, "\xD7")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 22 } }, /* @__PURE__ */ React.createElement("h3", { style: { fontSize: 13, fontWeight: 600, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 } }, "What to Include"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, levels.map((l) => /* @__PURE__ */ React.createElement("button", { key: l.id, onClick: () => setLevel(l.id), style: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 14,
+    textAlign: "left",
+    background: level === l.id ? C.accentBg : C.surface2,
+    border: "1px solid " + (level === l.id ? C.accentBdr : C.border),
+    borderRadius: 12,
+    padding: "12px 16px",
+    cursor: "pointer",
+    transition: "all 0.15s"
+  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, flexShrink: 0, marginTop: 1 } }, l.icon), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: level === l.id ? C.accent : C.text, marginBottom: 3 } }, l.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid, lineHeight: 1.5 } }, l.desc)), level === l.id && /* @__PURE__ */ React.createElement("span", { style: { marginLeft: "auto", color: C.accent, fontSize: 16, flexShrink: 0 } }, "\u2713"))))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 22 } }, /* @__PURE__ */ React.createElement("h3", { style: { fontSize: 13, fontWeight: 600, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 } }, "Document Style"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, background: C.surface2, borderRadius: 10, padding: 3 } }, [{ id: "journal", label: "\u{1F4D6} Journal", desc: "Serif, warm, narrative" }, { id: "practical", label: "\u{1F4CB} Practical", desc: "Clean, tabular, dense" }].map((t) => /* @__PURE__ */ React.createElement("button", { key: t.id, onClick: () => setTone(t.id), style: {
+    flex: 1,
+    padding: "10px 0",
+    background: tone === t.id ? C.surface : "none",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+    transition: "all 0.15s"
+  } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: tone === t.id ? 600 : 400, color: tone === t.id ? C.text : C.mid } }, t.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, t.desc))))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("h3", { style: { fontSize: 13, fontWeight: 600, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 } }, "Options"), /* @__PURE__ */ React.createElement(
+    Toggle,
     {
-      key: opt.level,
-      onClick: () => {
-        copyLink(opt.level);
-        setShareModal(false);
-      },
-      style: {
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 14,
-        background: C.surface2,
-        border: "1px solid " + C.border,
-        borderRadius: 12,
-        padding: "14px 16px",
-        cursor: "pointer",
-        textAlign: "left",
-        transition: "border-color 0.15s"
-      },
-      onMouseEnter: (e) => e.currentTarget.style.borderColor = C.accentBdr,
-      onMouseLeave: (e) => e.currentTarget.style.borderColor = C.border
-    },
-    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 24, flexShrink: 0, marginTop: 2 } }, opt.icon),
-    /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 4 } }, opt.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid, lineHeight: 1.5 } }, opt.desc))
-  ))), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: C.dim, marginTop: 16, lineHeight: 1.6 } }, "Link is copied to your clipboard when you tap an option. Full read-only sharing coming in a future update."))));
+      value: includeReflections,
+      onChange: setIncludeReflections,
+      label: "Include reflections",
+      desc: "Daily notes and your overall trip thoughts"
+    }
+  ), /* @__PURE__ */ React.createElement(
+    Toggle,
+    {
+      value: includeBudget,
+      onChange: setIncludeBudget,
+      label: "Include budget",
+      desc: "Costs, totals, and spending breakdown"
+    }
+  )), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: 12, color: C.dim, lineHeight: 1.6 } }, "\u{1F4A1} The downloaded HTML file opens in any browser. Use ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "File \u2192 Print \u2192 Save as PDF"), " to get a PDF \u2014 this gives you the best formatting control."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: handleExport }, "\u2B07 Download HTML")));
 }
 function DataMgmtSection({ trip, mobile, onDeleteTrip, deleteConfirm, setDeleteConfirm, chevron }) {
   const [open, setOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   return /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: 0, marginTop: 28, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setOpen((o) => !o), style: {
     width: "100%",
     display: "flex",
@@ -2206,7 +2437,7 @@ function DataMgmtSection({ trip, mobile, onDeleteTrip, deleteConfirm, setDeleteC
     border: "none",
     cursor: "pointer",
     textAlign: "left"
-  } }, /* @__PURE__ */ React.createElement("h3", { style: { fontSize: 15, fontWeight: 600, color: C.text, margin: 0 } }, "Trip Data Management"), chevron(open)), open && /* @__PURE__ */ React.createElement("div", { style: { padding: "4px 22px 22px", borderTop: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { paddingTop: 18, marginBottom: 24 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 12 } }, "Export This Trip"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => exportTripJSON(trip) }, "\u{1F4BE} JSON Backup"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => exportBudgetCSV(trip) }, "\u{1F4CA} Budget CSV"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => exportItineraryMD(trip) }, "\u{1F4C4} Itinerary Markdown")), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginTop: 10 } }, "JSON backups can be re-imported. CSV and Markdown are export-only.")), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.warnBdr, paddingTop: 18 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.warn, marginBottom: 12 } }, "Delete Trip"), deleteConfirm !== "confirm" ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: mobile ? "flex-start" : "center", flexDirection: mobile ? "column" : "row", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, fontSize: 13, color: C.mid } }, "Permanently removes all cities, days, activities, and checklist items. This cannot be undone."), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: () => setDeleteConfirm("confirm"), style: { flexShrink: 0 } }, "\u{1F5D1} Delete Trip")) : /* @__PURE__ */ React.createElement("div", { style: { background: C.warnBg, border: "1px solid " + C.warnBdr, borderRadius: 10, padding: "16px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: C.warn, marginBottom: 8 } }, "Are you absolutely sure?"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid, marginBottom: 16, lineHeight: 1.6 } }, "Permanently deletes ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.text } }, '"', trip.title, '"'), " \u2014 all ", trip.cities.length, " ", trip.cities.length === 1 ? "city" : "cities", ", activities, and checklist items. ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.warn } }, "This cannot be undone.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setDeleteConfirm(null), style: { flex: 1 } }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: onDeleteTrip, style: { flex: 1 } }, "Yes, Delete Forever"))))));
+  } }, /* @__PURE__ */ React.createElement("h3", { style: { fontSize: 15, fontWeight: 600, color: C.text, margin: 0 } }, "Trip Data Management"), chevron(open)), open && /* @__PURE__ */ React.createElement("div", { style: { padding: "4px 22px 22px", borderTop: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { paddingTop: 18, marginBottom: 24 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 12 } }, "Export This Trip"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => setExportOpen(true) }, "\u{1F4E4} Export Trip Summary")), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginBottom: 12 } }, "Styled HTML document \u2014 choose detail level, tone, and what to include. Open in browser to print or save as PDF."), /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border, marginBottom: 12 } }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 8, fontWeight: 600 } }, "Raw data exports"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => exportTripJSON(trip) }, "\u{1F4BE} JSON Backup"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => exportBudgetCSV(trip) }, "\u{1F4CA} Budget CSV"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => exportItineraryMD(trip) }, "\u{1F4C4} Itinerary MD")), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginTop: 10 } }, "JSON backups can be re-imported. CSV and Markdown are export-only.")), exportOpen && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setExportOpen(false), maxWidth: 560 }, /* @__PURE__ */ React.createElement(TripExportModal, { trip, onClose: () => setExportOpen(false) })), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.warnBdr, paddingTop: 18 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.warn, marginBottom: 12 } }, "Delete Trip"), deleteConfirm !== "confirm" ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: mobile ? "flex-start" : "center", flexDirection: mobile ? "column" : "row", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, fontSize: 13, color: C.mid } }, "Permanently removes all cities, days, activities, and checklist items. This cannot be undone."), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: () => setDeleteConfirm("confirm"), style: { flexShrink: 0 } }, "\u{1F5D1} Delete Trip")) : /* @__PURE__ */ React.createElement("div", { style: { background: C.warnBg, border: "1px solid " + C.warnBdr, borderRadius: 10, padding: "16px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: C.warn, marginBottom: 8 } }, "Are you absolutely sure?"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid, marginBottom: 16, lineHeight: 1.6 } }, "Permanently deletes ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.text } }, '"', trip.title, '"'), " \u2014 all ", trip.cities.length, " ", trip.cities.length === 1 ? "city" : "cities", ", activities, and checklist items. ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.warn } }, "This cannot be undone.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setDeleteConfirm(null), style: { flex: 1 } }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: onDeleteTrip, style: { flex: 1 } }, "Yes, Delete Forever"))))));
 }
 function SettingsView({ trip, mutateTrip, onDeleteTrip, isDark, onToggleTheme, setModal }) {
   const mobile = useMobile();
