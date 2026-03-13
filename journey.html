@@ -48,6 +48,28 @@ const BLOCK_META = {
   evening: { label: "Evening", icon: "\u{1F319}", accent: "#8e7dcf", dim: "rgba(142,125,207,0.12)" }
 };
 const CITY_PALETTE = ["#4e7fa6", "#6b5da6", "#4e9478", "#a66040", "#7a5a8a", "#4a7a6a", "#9a7040"];
+const RESEARCH_PRESET_THEMES = [
+  { name: "Hikes & Trails", icon: "\u{1F97E}" },
+  { name: "Beaches", icon: "\u{1F3D6}" },
+  { name: "Restaurants & Food", icon: "\u{1F37D}" },
+  { name: "Hotels & Stays", icon: "\u{1F3E8}" },
+  { name: "Tours & Activities", icon: "\u{1F3AF}" },
+  { name: "Day Trip Ideas", icon: "\u{1F5FA}" },
+  { name: "Gardens & Culture", icon: "\u{1F33F}" },
+  { name: "Shopping", icon: "\u{1F6CD}" },
+  { name: "Ideas", icon: "\u{1F4A1}" }
+];
+const RESEARCH_EMOJI_MAP = {
+  "\u{1F97E}": "Hikes & Trails",
+  "\u{1F3D6}": "Beaches",
+  "\u{1F37D}": "Restaurants & Food",
+  "\u{1F3E8}": "Hotels & Stays",
+  "\u{1F3AF}": "Tours & Activities",
+  "\u{1F5FA}": "Day Trip Ideas",
+  "\u{1F33F}": "Gardens & Culture",
+  "\u{1F6CD}": "Shopping",
+  "\u{1F4A1}": "Ideas"
+};
 const COLOR_SWATCHES = ["#4e7fa6", "#6b5da6", "#4e9478", "#a66040", "#7a5a8a", "#4a7a6a", "#9a7040", "#c05a5a", "#4a8a9a", "#8a7a40", "#5a9a5a", "#9a5a7a", "#5a6a9a", "#7a8a4a"];
 const getCityColor = (trip, cityIdx, cityId) => {
   if (trip && trip.cityColors && trip.cityColors[cityId]) return trip.cityColors[cityId];
@@ -387,7 +409,39 @@ const newActivity = (o = {}) => __spreadValues({
   cost: { estimated: "", confirmed: "", paidBy: "split", category: "Other", notes: "" },
   notes: ""
 }, o);
-const newTodo = (o = {}) => __spreadValues({ id: uid(), title: "", url: "", urlLabel: "", notes: "", status: "idea" }, o);
+const newTodo = (o = {}) => __spreadValues({ id: uid(), title: "", url: "", urlLabel: "", notes: "", location: "", status: "idea" }, o);
+const migrateLegacyTodos = (items) => {
+  var themeMap = {};
+  var order = [];
+  (items || []).forEach(function(item) {
+    var chars = Array.from(item.title || "");
+    var firstChar = chars[0] || "";
+    var presetName = RESEARCH_EMOJI_MAP[firstChar];
+    var preset = presetName ? RESEARCH_PRESET_THEMES.find(function(p) {
+      return p.name === presetName;
+    }) : null;
+    var key = preset ? preset.icon : "__uncategorized";
+    if (!themeMap[key]) {
+      var th = preset ? { id: uid(), name: preset.name, icon: preset.icon, items: [] } : { id: uid(), name: "Uncategorized", icon: "\u{1F4CC}", items: [] };
+      themeMap[key] = th;
+      order.push(th);
+    }
+    var cleanTitle = preset ? (item.title || "").replace(/^.\ /, "").trim() : item.title;
+    themeMap[key].items.push(Object.assign({}, item, { title: cleanTitle || item.title }));
+  });
+  return order;
+};
+const getCityThemes = (city) => {
+  if (city.researchThemes && city.researchThemes.length > 0) return city.researchThemes;
+  var legacy = city.thingsToDo || [];
+  if (legacy.length === 0) return [];
+  return migrateLegacyTodos(legacy);
+};
+const getAllThemeItems = (city) => {
+  return getCityThemes(city).reduce(function(acc, th) {
+    return acc.concat(th.items || []);
+  }, []);
+};
 const makeDay = (date, label) => ({ id: uid(), date, label, reflection: "", blocks: { morning: [], afternoon: [], evening: [] } });
 const makeCityDays = (nights, startStr) => Array.from({ length: nights }, (_, i) => {
   const d = /* @__PURE__ */ new Date(startStr + "T12:00:00Z");
@@ -400,6 +454,7 @@ const newCity = (name, nights, startStr) => ({
   nights,
   notes: "",
   thingsToDo: [],
+  researchThemes: [],
   days: makeCityDays(nights, startStr)
 });
 const newTrip = ({ title, startDate, endDate, currency = "USD", ptoDays = "" }) => ({
@@ -587,11 +642,15 @@ const exportItineraryMD = (trip) => {
       if (day.reflection) lines.push(`*Reflection: ${day.reflection}*
 `);
     });
-    if (city.thingsToDo.length) {
-      lines.push(`### Research Board \u2014 ${city.name}`);
-      city.thingsToDo.forEach((t) => {
-        lines.push("- [" + t.status.toUpperCase() + "] **" + t.title + "**" + (t.url ? " \u2014 [link](" + t.url + ")" : ""));
-        if (t.notes) lines.push(`  ${t.notes}`);
+    const cityThemes = getCityThemes(city);
+    if (cityThemes.length) {
+      lines.push("### Research Board \u2014 " + city.name);
+      cityThemes.forEach(function(th) {
+        lines.push("#### " + th.icon + " " + th.name);
+        (th.items || []).forEach(function(t) {
+          lines.push("- [" + t.status.toUpperCase() + "] **" + t.title + "**" + (t.url ? " \u2014 [link](" + t.url + ")" : ""));
+          if (t.notes) lines.push("  " + t.notes);
+        });
       });
       lines.push("");
     }
@@ -838,6 +897,10 @@ const restampIds = (trip) => {
   const newCities = (trip.cities || []).map((c) => __spreadProps(__spreadValues({}, c), {
     id: fresh(c.id),
     thingsToDo: (c.thingsToDo || []).map((t) => __spreadProps(__spreadValues({}, t), { id: fresh(t.id) })),
+    researchThemes: (c.researchThemes || []).map((th) => __spreadProps(__spreadValues({}, th), {
+      id: fresh(th.id),
+      items: (th.items || []).map((t) => __spreadProps(__spreadValues({}, t), { id: fresh(t.id) }))
+    })),
     days: (c.days || []).map((d) => __spreadProps(__spreadValues({}, d), {
       id: fresh(d.id),
       blocks: Object.fromEntries(
@@ -2007,7 +2070,7 @@ function TripView({ trip, city, cityTab, setCityTab, tripTab, setTripTab, onBack
     borderBottom: `2px solid ${tripTab === t.id ? t.id === "travel" ? C.ok : C.accent : "transparent"}`,
     transition: "all 0.15s",
     whiteSpace: "nowrap"
-  } }, t.label))))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflow: "auto", overflowX: "hidden" } }, tripTab === "itinerary" && /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1280, margin: "0 auto", padding: mobile ? "18px 14px" : "28px", overflowX: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement(CityRibbon, { trip, city, onSelectCity, setModal })), trip.cities.length > 0 && /* @__PURE__ */ React.createElement("button", { onClick: () => setModal({ type: "cityMgmt", tripId: trip.id }), style: { flexShrink: 0, marginBottom: 16, background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: C.mid } }, "\u2699")), city && /* @__PURE__ */ React.createElement(React.Fragment, null, city.days.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14, marginTop: -10 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 3, height: 14, borderRadius: 2, background: cityColor, flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid, fontWeight: 500 } }, fmtDow(city.days[0].date) ? fmtDow(city.days[0].date) + ", " : "", fmtDate(city.days[0].date), " \u2013 ", fmtDow(city.days[city.days.length - 1].date) ? fmtDow(city.days[city.days.length - 1].date) + ", " : "", fmtDate(city.days[city.days.length - 1].date))), /* @__PURE__ */ React.createElement("div", { className: "h-scroll", style: { marginBottom: 18 } }, /* @__PURE__ */ React.createElement(Btn, { variant: cityTab === "days" ? "accent" : "ghost", size: "sm", onClick: () => setCityTab("days") }, "\u{1F4C5} Days"), /* @__PURE__ */ React.createElement(Btn, { variant: cityTab === "research" ? "accent" : "ghost", size: "sm", onClick: () => setCityTab("research") }, "\u{1F50D} Research", city.thingsToDo.length > 0 && /* @__PURE__ */ React.createElement("span", { style: { background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "0 6px", fontSize: 11, marginLeft: 4 } }, city.thingsToDo.length))), cityTab === "days" && /* @__PURE__ */ React.createElement(DaysOverview, { trip, city, cityColor, onOpenDay, onEditCityNotes: (notes) => mutateCity(city.id, (c) => __spreadProps(__spreadValues({}, c), { notes })), onRenameDay: (dayId, label) => mutateCity(city.id, (c) => __spreadProps(__spreadValues({}, c), { days: c.days.map((d) => d.id === dayId ? __spreadProps(__spreadValues({}, d), { label }) : d) })) }), cityTab === "research" && /* @__PURE__ */ React.createElement(ResearchBoard, { city, trip, mutateCity: (fn) => mutateCity(city.id, fn), mutateAllCities: (cityId, fn) => mutateCity(cityId, fn) }))), tripTab === "vault" && /* @__PURE__ */ React.createElement(VaultView, { activities: allActs.filter((a) => a.confirmation), currency: trip.currency }), tripTab === "prep" && /* @__PURE__ */ React.createElement(PrepChecklist, { trip, mutateTrip, templates, setModal }), tripTab === "budget" && /* @__PURE__ */ React.createElement(BudgetView, { activities: allActs, currency: trip.currency, travelers: trip.travelers, trip, mutateTrip: (fn) => mutateTrip(fn) }), tripTab === "travel" && /* @__PURE__ */ React.createElement(TravelMode, { trip, mutateTrip, setModal }), tripTab === "lookback" && /* @__PURE__ */ React.createElement(LookBackView, { trip, mutateTrip }), tripTab === "settings" && /* @__PURE__ */ React.createElement(SettingsView, { trip, mutateTrip, onDeleteTrip, isDark, onToggleTheme, setModal })));
+  } }, t.label))))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflow: "auto", overflowX: "hidden" } }, tripTab === "itinerary" && /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1280, margin: "0 auto", padding: mobile ? "18px 14px" : "28px", overflowX: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement(CityRibbon, { trip, city, onSelectCity, setModal })), trip.cities.length > 0 && /* @__PURE__ */ React.createElement("button", { onClick: () => setModal({ type: "cityMgmt", tripId: trip.id }), style: { flexShrink: 0, marginBottom: 16, background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: C.mid } }, "\u2699")), city && /* @__PURE__ */ React.createElement(React.Fragment, null, city.days.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14, marginTop: -10 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 3, height: 14, borderRadius: 2, background: cityColor, flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid, fontWeight: 500 } }, fmtDow(city.days[0].date) ? fmtDow(city.days[0].date) + ", " : "", fmtDate(city.days[0].date), " \u2013 ", fmtDow(city.days[city.days.length - 1].date) ? fmtDow(city.days[city.days.length - 1].date) + ", " : "", fmtDate(city.days[city.days.length - 1].date))), /* @__PURE__ */ React.createElement("div", { className: "h-scroll", style: { marginBottom: 18 } }, /* @__PURE__ */ React.createElement(Btn, { variant: cityTab === "days" ? "accent" : "ghost", size: "sm", onClick: () => setCityTab("days") }, "\u{1F4C5} Days"), /* @__PURE__ */ React.createElement(Btn, { variant: cityTab === "research" ? "accent" : "ghost", size: "sm", onClick: () => setCityTab("research") }, "\u{1F50D} Research", getAllThemeItems(city).length > 0 && /* @__PURE__ */ React.createElement("span", { style: { background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "0 6px", fontSize: 11, marginLeft: 4 } }, getAllThemeItems(city).length))), cityTab === "days" && /* @__PURE__ */ React.createElement(DaysOverview, { trip, city, cityColor, onOpenDay, onEditCityNotes: (notes) => mutateCity(city.id, (c) => __spreadProps(__spreadValues({}, c), { notes })), onRenameDay: (dayId, label) => mutateCity(city.id, (c) => __spreadProps(__spreadValues({}, c), { days: c.days.map((d) => d.id === dayId ? __spreadProps(__spreadValues({}, d), { label }) : d) })) }), cityTab === "research" && /* @__PURE__ */ React.createElement(ResearchBoard, { city, trip, mutateCity: (fn) => mutateCity(city.id, fn), mutateAllCities: (cityId, fn) => mutateCity(cityId, fn), mutateTrip }))), tripTab === "vault" && /* @__PURE__ */ React.createElement(VaultView, { activities: allActs.filter((a) => a.confirmation), currency: trip.currency }), tripTab === "prep" && /* @__PURE__ */ React.createElement(PrepChecklist, { trip, mutateTrip, templates, setModal }), tripTab === "budget" && /* @__PURE__ */ React.createElement(BudgetView, { activities: allActs, currency: trip.currency, travelers: trip.travelers, trip, mutateTrip: (fn) => mutateTrip(fn) }), tripTab === "travel" && /* @__PURE__ */ React.createElement(TravelMode, { trip, mutateTrip, setModal }), tripTab === "lookback" && /* @__PURE__ */ React.createElement(LookBackView, { trip, mutateTrip }), tripTab === "settings" && /* @__PURE__ */ React.createElement(SettingsView, { trip, mutateTrip, onDeleteTrip, isDark, onToggleTheme, setModal })));
 }
 function CityRibbon({ trip, city, onSelectCity, setModal }) {
   if (trip.cities.length === 0) return /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "48px 20px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, marginBottom: 14 } }, "\u{1F5FA}\uFE0F"), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: C.text, marginBottom: 8 } }, "Where are you going?"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.mid, marginBottom: 20, maxWidth: 280, margin: "0 auto 20px" } }, "Plan all your stops at once, or add cities one by one."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: () => setModal({ type: "multiCityBuilder", tripId: trip.id }) }, "\u{1F5FA} Let's Go!")));
@@ -2164,7 +2227,7 @@ function WeatherChip({ wx, loading, err }) {
 }
 function CityBriefingCard({ city }) {
   const [open, setOpen] = useState(false);
-  const todos = (city.thingsToDo || []).filter((x) => x.status !== "done");
+  const todos = getAllThemeItems(city).filter((x) => x.status !== "done");
   const hasTodos = todos.length > 0;
   return /* @__PURE__ */ React.createElement("div", { style: {
     background: "rgba(78,127,166,0.08)",
@@ -2292,7 +2355,7 @@ function TravelMode({ trip, mutateTrip, setModal }) {
     transition: "all 0.15s",
     whiteSpace: "nowrap",
     marginLeft: 4
-  } }, "\u26A1 Add")), travelTab === "today" && /* @__PURE__ */ React.createElement("div", null, todayCity && todayDay ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16, display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: C.text } }, todayCity.name, " \xB7 ", todayDay.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid } }, fmtDow(t)), /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, fmtDate(t)), /* @__PURE__ */ React.createElement(WeatherChip, { wx: todayWx.data[t], loading: todayWx.loading, err: todayWx.err })), (todayCity.notes || (todayCity.thingsToDo || []).filter((x) => x.status !== "done").length > 0) && /* @__PURE__ */ React.createElement(CityBriefingCard, { city: todayCity }), BLOCKS.map((bl) => {
+  } }, "\u26A1 Add")), travelTab === "today" && /* @__PURE__ */ React.createElement("div", null, todayCity && todayDay ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16, display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: C.text } }, todayCity.name, " \xB7 ", todayDay.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid } }, fmtDow(t)), /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, fmtDate(t)), /* @__PURE__ */ React.createElement(WeatherChip, { wx: todayWx.data[t], loading: todayWx.loading, err: todayWx.err })), (todayCity.notes || getAllThemeItems(todayCity).filter((x) => x.status !== "done").length > 0) && /* @__PURE__ */ React.createElement(CityBriefingCard, { city: todayCity }), BLOCKS.map((bl) => {
     const acts = todayDay.blocks[bl];
     if (acts.length === 0) return null;
     const m = BLOCK_META[bl];
@@ -2982,54 +3045,108 @@ function DaysOverview({ trip, city, cityColor, onOpenDay, onEditCityNotes, onRen
     ))));
   })));
 }
-function ResearchBoard({ city, trip, mutateCity, mutateAllCities }) {
+function ResearchConvertModal({ item, trip, onConvert, onClose }) {
   const mobile = useMobile();
-  const [adding, setAdding] = useState(false);
-  const [viewAll, setViewAll] = useState(false);
-  const [draft, setDraft] = useState({ title: "", url: "", urlLabel: "", notes: "", status: "idea" });
-  const upd = (k, v) => setDraft((d) => __spreadProps(__spreadValues({}, d), { [k]: v }));
-  const activeCity = city;
-  const save = () => {
-    if (!draft.title.trim()) return;
-    mutateCity((c) => __spreadProps(__spreadValues({}, c), { thingsToDo: [...c.thingsToDo, newTodo(draft)] }));
-    setDraft({ title: "", url: "", urlLabel: "", notes: "", status: "idea" });
-    setAdding(false);
+  const firstCity = trip.cities[0];
+  const [cityId, setCityId] = useState(firstCity ? firstCity.id : "");
+  const [dayId, setDayId] = useState("");
+  const [block, setBlock] = useState("morning");
+  const [actType, setActType] = useState("activity");
+  const [actTitle, setActTitle] = useState(item.title || "");
+  const [actLoc, setActLoc] = useState(item.location || "");
+  const [actNotes, setActNotes] = useState(item.notes || "");
+  const [actTime, setActTime] = useState("");
+  const [removeItem, setRemoveItem] = useState(true);
+  const selCity = trip.cities.find((c) => c.id === cityId);
+  const days = selCity ? selCity.days : [];
+  const handleCityChange = (cid) => {
+    setCityId(cid);
+    setDayId("");
   };
-  const updateTodo = (cityId, id, upds) => {
-    if (mutateAllCities) mutateAllCities(cityId, (c) => __spreadProps(__spreadValues({}, c), { thingsToDo: c.thingsToDo.map((t) => t.id === id ? __spreadValues(__spreadValues({}, t), upds) : t) }));
-    else mutateCity((c) => __spreadProps(__spreadValues({}, c), { thingsToDo: c.thingsToDo.map((t) => t.id === id ? __spreadValues(__spreadValues({}, t), upds) : t) }));
+  const ACT_TYPE_OPTS = [
+    { value: "activity", label: "\u{1F97E} Activity" },
+    { value: "restaurant", label: "\u{1F37D} Restaurant" },
+    { value: "attraction", label: "\u{1F3A8} Attraction" },
+    { value: "hotel", label: "\u{1F3E8} Hotel" },
+    { value: "transit", label: "\u{1F687} Transit" },
+    { value: "flight", label: "\u2708\uFE0F Flight" },
+    { value: "train", label: "\u{1F685} Train" },
+    { value: "other", label: "\u{1F4CC} Other" }
+  ];
+  const canSave = cityId && dayId && actTitle.trim();
+  const handleConvert = () => {
+    if (!canSave) return;
+    const activity = newActivity({
+      type: actType,
+      title: actTitle.trim(),
+      location: actLoc.trim(),
+      notes: actNotes.trim(),
+      time: actTime,
+      references: item.url ? [{ id: uid(), label: item.urlLabel || "Link", url: item.url }] : []
+    });
+    onConvert({ cityId, dayId, block, activity, removeItem });
   };
-  const deleteTodo = (cityId, id) => {
-    if (mutateAllCities) mutateAllCities(cityId, (c) => __spreadProps(__spreadValues({}, c), { thingsToDo: c.thingsToDo.filter((t) => t.id !== id) }));
-    else mutateCity((c) => __spreadProps(__spreadValues({}, c), { thingsToDo: c.thingsToDo.filter((t) => t.id !== id) }));
-  };
-  const cols = {
-    idea: { label: "\u{1F4A1} Ideas", color: C.accent },
-    planned: { label: "\u{1F4C5} Planned", color: C.ok },
-    done: { label: "\u2705 Done", color: C.mid }
-  };
-  const allCitiesItems = trip ? trip.cities.flatMap((c) => c.thingsToDo.map((t) => __spreadProps(__spreadValues({}, t), { cityId: c.id, cityName: c.name }))) : activeCity.thingsToDo.map((t) => __spreadProps(__spreadValues({}, t), { cityId: activeCity.id, cityName: activeCity.name }));
-  const displayItems = viewAll ? allCitiesItems : activeCity ? activeCity.thingsToDo.map((t) => __spreadProps(__spreadValues({}, t), { cityId: activeCity.id, cityName: activeCity.name })) : [];
-  const totalAll = trip ? trip.cities.reduce((n, c) => n + c.thingsToDo.length, 0) : 0;
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, color: C.text } }, "Research Board"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 3 } }, viewAll ? "All cities combined" : `Ideas, links, and notes for ${activeCity ? activeCity.name : ""}`)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } }, trip && trip.cities.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, background: C.surface2, borderRadius: 8, padding: 3, border: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(false), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: !viewAll ? C.accent : "none", color: !viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, activeCity ? activeCity.name : "City"), /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(true), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: viewAll ? C.accent : "none", color: viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, "All ", totalAll > 0 && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.8 } }, "(", totalAll, ")"))), !viewAll && /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => setAdding(true), style: { fontSize: 18, lineHeight: 1, padding: "4px 12px" } }, "+"))), adding && !viewAll && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: 20, marginBottom: 24, border: `1px solid ${C.accentBdr}` } }, /* @__PURE__ */ React.createElement("h4", { style: { color: C.text, fontSize: 15, marginBottom: 14 } }, "New Research Item"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: "Title / What is it?", value: draft.title, onChange: (v) => upd("title", v), placeholder: "e.g., Fushimi Inari at sunrise" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: "URL", value: draft.url, onChange: (v) => upd("url", v), placeholder: "https://..." }), /* @__PURE__ */ React.createElement(Input, { label: "Link label", value: draft.urlLabel, onChange: (v) => upd("urlLabel", v), placeholder: 'e.g., "Book tickets"' })), /* @__PURE__ */ React.createElement(Textarea, { label: "Notes", value: draft.notes, onChange: (v) => upd("notes", v), placeholder: "Research notes, tips, warnings...", rows: 2 }), /* @__PURE__ */ React.createElement(Sel, { label: "Status", value: draft.status, onChange: (v) => upd("status", v), options: [{ value: "idea", label: "\u{1F4A1} Idea" }, { value: "planned", label: "\u{1F4C5} Planned" }, { value: "done", label: "\u2705 Done" }] }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: save }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => setAdding(false) }, "Cancel")))), viewAll ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 28 } }, (trip ? trip.cities : [activeCity]).map((c, ci) => {
-    const cColor = CITY_PALETTE[ci % CITY_PALETTE.length];
-    if (c.thingsToDo.length === 0) return null;
-    return /* @__PURE__ */ React.createElement("div", { key: c.id }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: cColor } }), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.text, fontWeight: 400 } }, c.name), /* @__PURE__ */ React.createElement("span", { style: { background: C.surface3, borderRadius: 8, padding: "1px 8px", fontSize: 11, color: C.mid } }, c.thingsToDo.length)), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3, 1fr)", gap: mobile ? 16 : 14 } }, Object.entries(cols).map(([status, meta]) => {
-      const items = c.thingsToDo.filter((t) => t.status === status);
-      if (items.length === 0) return null;
-      return /* @__PURE__ */ React.createElement("div", { key: status }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 600, color: meta.color, marginBottom: 8 } }, meta.label, " ", /* @__PURE__ */ React.createElement("span", { style: { color: C.dim } }, "(", items.length, ")")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, items.map((todo) => /* @__PURE__ */ React.createElement(TodoCard, { key: todo.id, todo, onUpdate: (u) => updateTodo(c.id, todo.id, u), onDelete: () => deleteTodo(c.id, todo.id) }))));
-    })));
-  }).filter(Boolean), totalAll === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.dim, fontSize: 14 } }, "No research items across any city yet.")) : /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3, 1fr)", gap: mobile ? 24 : 20 } }, Object.entries(cols).map(([status, meta]) => {
-    const items = displayItems.filter((t) => t.status === status);
-    return /* @__PURE__ */ React.createElement("div", { key: status }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: meta.color } }, meta.label), /* @__PURE__ */ React.createElement("span", { style: { background: C.surface3, borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: C.mid } }, items.length)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, items.map((todo) => /* @__PURE__ */ React.createElement(TodoCard, { key: todo.id, todo, onUpdate: (u) => updateTodo(activeCity.id, todo.id, u), onDelete: () => deleteTodo(activeCity.id, todo.id) })), items.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { color: C.dim, fontSize: 13, fontStyle: "italic", padding: "6px 0" } }, "None yet")));
-  })));
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1e3, display: "flex", alignItems: "flex-end", justifyContent: "center" },
+      onClick: (e) => {
+        if (e.target === e.currentTarget) onClose();
+      }
+    },
+    /* @__PURE__ */ React.createElement("div", { style: { background: C.bg, borderRadius: mobile ? "20px 20px 0 0" : 16, padding: mobile ? "24px 20px 36px" : "28px 28px", width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: C.text } }, "Add to Itinerary"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.mid, marginTop: 2 } }, 'Convert "', item.title, '" into a scheduled activity')), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 20, padding: "4px 8px" } }, "\u2715")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "City"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: cityId,
+        onChange: (e) => handleCityChange(e.target.value),
+        style: { width: "100%", background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 }
+      },
+      trip.cities.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, c.name))
+    )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Day"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: dayId,
+        onChange: (e) => setDayId(e.target.value),
+        style: { width: "100%", background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "" }, "Select day\u2026"),
+      days.map((d, i) => /* @__PURE__ */ React.createElement("option", { key: d.id, value: d.id }, d.date ? d.date.slice(5).replace("-", "/") : "Day " + (i + 1), " \u2014 ", d.label))
+    ))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Time of Day"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: block,
+        onChange: (e) => setBlock(e.target.value),
+        style: { width: "100%", background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "morning" }, "\u{1F305} Morning"),
+      /* @__PURE__ */ React.createElement("option", { value: "afternoon" }, "\u2600\uFE0F Afternoon"),
+      /* @__PURE__ */ React.createElement("option", { value: "evening" }, "\u{1F319} Evening")
+    )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Activity Type"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: actType,
+        onChange: (e) => setActType(e.target.value),
+        style: { width: "100%", background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 }
+      },
+      ACT_TYPE_OPTS.map((o) => /* @__PURE__ */ React.createElement("option", { key: o.value, value: o.value }, o.label))
+    ))), /* @__PURE__ */ React.createElement(Input, { label: "Activity title", value: actTitle, onChange: (v) => setActTitle(v) }), /* @__PURE__ */ React.createElement(Input, { label: "Location (optional)", value: actLoc, onChange: (v) => setActLoc(v), placeholder: "Address or place name" }), /* @__PURE__ */ React.createElement(Input, { label: "Time (optional)", type: "time", value: actTime, onChange: (v) => setActTime(v) }), /* @__PURE__ */ React.createElement(Textarea, { label: "Notes (optional)", value: actNotes, onChange: (v) => setActNotes(v), rows: 2 }), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "10px 14px", background: C.surface2, borderRadius: 10, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "checkbox",
+        checked: removeItem,
+        onChange: (e) => setRemoveItem(e.target.checked),
+        style: { width: 16, height: 16, accentColor: C.accent, cursor: "pointer", flexShrink: 0 }
+      }
+    ), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text, fontWeight: 500 } }, "Remove from Research Board"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 1 } }, "The item will be deleted from this theme after converting"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, paddingTop: 4 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: handleConvert, style: { flex: 1, opacity: canSave ? 1 : 0.45, cursor: canSave ? "pointer" : "default" } }, "Add to Itinerary"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "lg", onClick: onClose }, "Cancel"))))
+  );
 }
-function TodoCard({ todo, onUpdate, onDelete }) {
+function ThemeTodoCard({ todo, onUpdate, onDelete, allThemes, themeId, onMove, trip, onConvertToActivity }) {
   const [editing, setEditing] = useState(false);
+  const [converting, setConverting] = useState(false);
   const [draft, setDraft] = useState(null);
   const mobile = useMobile();
   const startEdit = () => {
-    setDraft({ title: todo.title, url: todo.url || "", urlLabel: todo.urlLabel || "", notes: todo.notes || "", status: todo.status });
+    setDraft({ title: todo.title, url: todo.url || "", urlLabel: todo.urlLabel || "", location: todo.location || "", notes: todo.notes || "", status: todo.status });
     setEditing(true);
   };
   const saveEdit = () => {
@@ -3043,50 +3160,423 @@ function TodoCard({ todo, onUpdate, onDelete }) {
     setDraft(null);
   };
   const updDraft = (k, v) => setDraft((d) => __spreadProps(__spreadValues({}, d), { [k]: v }));
+  const isDone = todo.status === "done";
   if (editing) {
-    return /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "14px", border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 } }, "Edit Item"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Title", value: draft.title, onChange: (v) => updDraft("title", v), placeholder: "e.g., Fushimi Inari at sunrise" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "URL", value: draft.url, onChange: (v) => updDraft("url", v), placeholder: "https://..." }), /* @__PURE__ */ React.createElement(Input, { label: "Link label", value: draft.urlLabel, onChange: (v) => updDraft("urlLabel", v), placeholder: "e.g., Book tickets" })), /* @__PURE__ */ React.createElement(Textarea, { label: "Notes", value: draft.notes, onChange: (v) => updDraft("notes", v), rows: 2 }), /* @__PURE__ */ React.createElement(Sel, { label: "Status", value: draft.status, onChange: (v) => updDraft("status", v), options: [{ value: "idea", label: "\u{1F4A1} Idea" }, { value: "planned", label: "\u{1F4C5} Planned" }, { value: "done", label: "\u2705 Done" }] }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: saveEdit }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: cancelEdit }, "Cancel"))));
+    return /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: 14, border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 } }, "Edit Item"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Title", value: draft.title, onChange: (v) => updDraft("title", v) }), /* @__PURE__ */ React.createElement(Input, { label: "Location", value: draft.location, onChange: (v) => updDraft("location", v), placeholder: "Address or place name" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "URL", value: draft.url, onChange: (v) => updDraft("url", v), placeholder: "https://..." }), /* @__PURE__ */ React.createElement(Input, { label: "Link label", value: draft.urlLabel, onChange: (v) => updDraft("urlLabel", v) })), /* @__PURE__ */ React.createElement(Textarea, { label: "Notes", value: draft.notes, onChange: (v) => updDraft("notes", v), rows: 3 }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: allThemes && allThemes.length > 1 ? "1fr 1fr" : "1fr", gap: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Status"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, [{ v: "idea", l: "\u{1F4A1} Idea" }, { v: "done", l: "\u2705 Done" }].map((o) => /* @__PURE__ */ React.createElement("button", { key: o.v, onClick: () => updDraft("status", o.v), style: {
+      flex: 1,
+      padding: "7px 8px",
+      borderRadius: 8,
+      border: "1px solid " + (draft.status === o.v ? C.accent : C.border),
+      background: draft.status === o.v ? C.accentBg : C.surface3,
+      color: draft.status === o.v ? C.accent : C.mid,
+      cursor: "pointer",
+      fontSize: 12,
+      fontWeight: 600,
+      transition: "all 0.15s"
+    } }, o.l)))), allThemes && allThemes.length > 1 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Move to theme"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: themeId,
+        onChange: (e) => {
+          if (e.target.value !== themeId) {
+            onMove(e.target.value);
+            cancelEdit();
+          }
+        },
+        style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 }
+      },
+      allThemes.map((th) => /* @__PURE__ */ React.createElement("option", { key: th.id, value: th.id }, th.icon, " ", th.name))
+    ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: saveEdit }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: cancelEdit }, "Cancel"))));
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "12px 14px", border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, color: C.text, fontWeight: 500, marginBottom: 3 } }, todo.title), todo.notes && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid, lineHeight: 1.5, marginTop: 2 } }, todo.notes), todo.url && /* @__PURE__ */ React.createElement("a", { href: todo.url, target: "_blank", rel: "noreferrer", onClick: (e) => e.stopPropagation(), style: { fontSize: 12, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, "\u{1F517} ", todo.urlLabel || todo.url)), !mobile && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("button", { onClick: startEdit, style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 13, padding: "2px 6px" }, title: "Edit" }, "\u270F\uFE0F"), /* @__PURE__ */ React.createElement("button", { onClick: onDelete, style: { background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 13, padding: "2px 6px" }, title: "Delete" }, "\u2715"))), mobile && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, paddingTop: 8, borderTop: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement(
-    "select",
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, converting && trip && /* @__PURE__ */ React.createElement(
+    ResearchConvertModal,
     {
-      value: todo.status,
-      onChange: (e) => onUpdate({ status: e.target.value }),
+      item: todo,
+      trip,
+      onConvert: ({ cityId, dayId, block, activity, removeItem }) => {
+        onConvertToActivity({ cityId, dayId, block, activity });
+        if (removeItem) onDelete();
+        setConverting(false);
+      },
+      onClose: () => setConverting(false)
+    }
+  ), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "10px 12px", border: "1px solid " + C.border, opacity: isDone ? 0.6 : 1 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 8 } }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => onUpdate({ status: isDone ? "idea" : "done" }),
+      style: { background: "none", border: "none", cursor: "pointer", fontSize: 15, padding: "1px 0", flexShrink: 0, marginTop: 1 },
+      title: isDone ? "Mark as idea" : "Mark done"
+    },
+    isDone ? "\u2705" : "\u{1F4A1}"
+  ), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text, fontWeight: 500, textDecoration: isDone ? "line-through" : "none", lineHeight: 1.4 } }, todo.title), todo.location && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 3 } }, /* @__PURE__ */ React.createElement(LocationChip, { location: todo.location, style: { fontSize: 12 } })), todo.notes && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid, lineHeight: 1.55, marginTop: 4, whiteSpace: "pre-wrap" } }, todo.notes), todo.url && /* @__PURE__ */ React.createElement(
+    "a",
+    {
+      href: todo.url,
+      target: "_blank",
+      rel: "noreferrer",
+      draggable: false,
+      onMouseDown: (e) => e.stopPropagation(),
+      onClick: (e) => e.stopPropagation(),
+      style: { fontSize: 12, display: "inline-block", marginTop: 4, color: C.accent, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }
+    },
+    "\u{1F517} ",
+    todo.urlLabel || todo.url
+  )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 2, flexShrink: 0, alignItems: "flex-start" } }, trip && !isDone && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setConverting(true),
+      style: { background: "rgba(78,148,120,0.12)", border: "1px solid rgba(78,148,120,0.3)", borderRadius: 6, color: "#4e9478", cursor: "pointer", fontSize: 11, padding: "3px 7px", fontWeight: 600, whiteSpace: "nowrap" },
+      title: "Add to itinerary"
+    },
+    "\u2192 Plan"
+  ), /* @__PURE__ */ React.createElement("button", { onClick: startEdit, style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 13, padding: "2px 4px" }, title: "Edit" }, "\u270F\uFE0F"), /* @__PURE__ */ React.createElement("button", { onClick: onDelete, style: { background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 12, padding: "2px 4px" }, title: "Delete" }, "\u2715")))));
+}
+function ResearchThemeSection({
+  theme,
+  themeIdx,
+  totalThemes,
+  onMutateTheme,
+  onDeleteTheme,
+  onMoveUp,
+  onMoveDown,
+  allThemes,
+  onMoveItem,
+  mobile,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  trip,
+  onConvertToActivity
+}) {
+  const [open, setOpen] = useState(true);
+  const [addingItem, setAddingItem] = useState(false);
+  const [draft, setDraft] = useState({ title: "", url: "", urlLabel: "", location: "", notes: "", status: "idea" });
+  const [editingName, setEditingName] = useState(false);
+  const [nameVal, setNameVal] = useState(theme.name);
+  const items = theme.items || [];
+  const doneCount = items.filter((i) => i.status === "done").length;
+  const undoneCount = items.length - doneCount;
+  const saveItem = () => {
+    if (!draft.title.trim()) return;
+    onMutateTheme((th) => __spreadProps(__spreadValues({}, th), { items: [...th.items || [], newTodo(draft)] }));
+    setDraft({ title: "", url: "", urlLabel: "", location: "", notes: "", status: "idea" });
+    setAddingItem(false);
+  };
+  const updateItem = (id, upds) => onMutateTheme((th) => __spreadProps(__spreadValues({}, th), { items: (th.items || []).map((i) => i.id === id ? __spreadValues(__spreadValues({}, i), upds) : i) }));
+  const deleteItem = (id) => onMutateTheme((th) => __spreadProps(__spreadValues({}, th), { items: (th.items || []).filter((i) => i.id !== id) }));
+  const saveName = () => {
+    if (nameVal.trim()) onMutateTheme((th) => __spreadProps(__spreadValues({}, th), { name: nameVal.trim() }));
+    setEditingName(false);
+  };
+  const sectionStyle = {
+    background: isDragOver ? C.accentBg : C.surface2,
+    border: "1px solid " + (isDragOver ? C.accent : isDragging ? C.accentBdr : C.border),
+    borderRadius: 14,
+    marginBottom: 10,
+    overflow: "hidden",
+    opacity: isDragging ? 0.5 : 1,
+    transition: "all 0.15s"
+  };
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: sectionStyle,
+      draggable: !mobile,
+      onDragStart,
+      onDragOver: (e) => {
+        e.preventDefault();
+        onDragOver();
+      },
+      onDrop: (e) => {
+        e.preventDefault();
+        onDrop();
+      },
+      onDragEnd
+    },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", cursor: "pointer" },
+        onClick: () => setOpen((o) => !o)
+      },
+      !mobile ? /* @__PURE__ */ React.createElement(
+        "span",
+        {
+          style: { color: C.dim, fontSize: 16, cursor: "grab", flexShrink: 0, userSelect: "none" },
+          onMouseDown: (e) => e.stopPropagation(),
+          onClick: (e) => e.stopPropagation()
+        },
+        "\u283F"
+      ) : /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: { display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 },
+          onClick: (e) => e.stopPropagation()
+        },
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            disabled: themeIdx === 0,
+            onClick: onMoveUp,
+            style: { background: "none", border: "none", color: themeIdx === 0 ? C.border : C.dim, cursor: themeIdx === 0 ? "default" : "pointer", fontSize: 12, lineHeight: 1, padding: 0 }
+          },
+          "\u25B2"
+        ),
+        /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            disabled: themeIdx === totalThemes - 1,
+            onClick: onMoveDown,
+            style: { background: "none", border: "none", color: themeIdx === totalThemes - 1 ? C.border : C.dim, cursor: themeIdx === totalThemes - 1 ? "default" : "pointer", fontSize: 12, lineHeight: 1, padding: 0 }
+          },
+          "\u25BC"
+        )
+      ),
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20, flexShrink: 0 } }, theme.icon),
+      editingName ? /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          autoFocus: true,
+          value: nameVal,
+          onChange: (e) => setNameVal(e.target.value),
+          onBlur: saveName,
+          onKeyDown: (e) => {
+            if (e.key === "Enter") saveName();
+            if (e.key === "Escape") {
+              setNameVal(theme.name);
+              setEditingName(false);
+            }
+          },
+          onClick: (e) => e.stopPropagation(),
+          style: { flex: 1, background: C.surface3, border: "1px solid " + C.accent, borderRadius: 6, padding: "3px 8px", color: C.text, fontSize: 15, fontWeight: 600 }
+        }
+      ) : /* @__PURE__ */ React.createElement(
+        "span",
+        {
+          style: { flex: 1, fontSize: 15, fontWeight: 600, color: C.text },
+          onDoubleClick: (e) => {
+            e.stopPropagation();
+            setEditingName(true);
+          }
+        },
+        theme.name
+      ),
+      /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexShrink: 0, alignItems: "center" } }, undoneCount > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, background: C.accent + "22", color: C.accent, borderRadius: 8, padding: "2px 8px", fontWeight: 600 } }, undoneCount), doneCount > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, background: C.surface3, color: C.mid, borderRadius: 8, padding: "2px 8px" } }, doneCount, " done")),
+      /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: (e) => {
+            e.stopPropagation();
+            if (window.confirm("Delete theme " + theme.name + " and all its items?")) onDeleteTheme();
+          },
+          style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 14, padding: "2px 4px", flexShrink: 0 },
+          title: "Delete theme"
+        },
+        "\u{1F5D1}"
+      ),
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, transition: "transform 0.2s", display: "inline-block", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 } }, "\u25BE")
+    ),
+    open && /* @__PURE__ */ React.createElement("div", { style: { padding: "0 14px 14px", borderTop: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginTop: 12 } }, items.map((item) => /* @__PURE__ */ React.createElement(
+      ThemeTodoCard,
+      {
+        key: item.id,
+        todo: item,
+        onUpdate: (upds) => updateItem(item.id, upds),
+        onDelete: () => deleteItem(item.id),
+        allThemes,
+        themeId: theme.id,
+        onMove: (newThemeId) => onMoveItem(theme.id, item.id, newThemeId),
+        trip,
+        onConvertToActivity
+      }
+    )), items.length === 0 && !addingItem && /* @__PURE__ */ React.createElement("div", { style: { color: C.dim, fontSize: 13, fontStyle: "italic", padding: "8px 0" } }, "No ideas yet \u2014 add one below.")), addingItem ? /* @__PURE__ */ React.createElement("div", { style: { marginTop: 12, background: C.surface3, borderRadius: 10, padding: 14, border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Title", value: draft.title, onChange: (v) => setDraft((d) => __spreadProps(__spreadValues({}, d), { title: v })), placeholder: "e.g., Kalepa Ridge Trail" }), /* @__PURE__ */ React.createElement(Input, { label: "Location (optional)", value: draft.location, onChange: (v) => setDraft((d) => __spreadProps(__spreadValues({}, d), { location: v })), placeholder: "Address or place name" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "URL (optional)", value: draft.url, onChange: (v) => setDraft((d) => __spreadProps(__spreadValues({}, d), { url: v })), placeholder: "https://..." }), /* @__PURE__ */ React.createElement(Input, { label: "Link label", value: draft.urlLabel, onChange: (v) => setDraft((d) => __spreadProps(__spreadValues({}, d), { urlLabel: v })) })), /* @__PURE__ */ React.createElement(Textarea, { label: "Notes", value: draft.notes, onChange: (v) => setDraft((d) => __spreadProps(__spreadValues({}, d), { notes: v })), rows: 2 }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Status"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, [{ v: "idea", l: "\u{1F4A1} Idea" }, { v: "done", l: "\u2705 Done" }].map((o) => /* @__PURE__ */ React.createElement("button", { key: o.v, onClick: () => setDraft((d) => __spreadProps(__spreadValues({}, d), { status: o.v })), style: {
+      flex: 1,
+      padding: "7px 8px",
+      borderRadius: 8,
+      border: "1px solid " + (draft.status === o.v ? C.accent : C.border),
+      background: draft.status === o.v ? C.accentBg : C.surface2,
+      color: draft.status === o.v ? C.accent : C.mid,
+      cursor: "pointer",
+      fontSize: 12,
+      fontWeight: 600
+    } }, o.l)))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: saveItem }, "Add"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setAddingItem(false) }, "Cancel")))) : /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setAddingItem(true),
+        style: {
+          marginTop: 10,
+          width: "100%",
+          padding: "8px 0",
+          background: "none",
+          border: "1px dashed " + C.border,
+          borderRadius: 8,
+          color: C.dim,
+          cursor: "pointer",
+          fontSize: 13,
+          transition: "all 0.15s"
+        },
+        onMouseEnter: (e) => {
+          e.currentTarget.style.borderColor = C.accent;
+          e.currentTarget.style.color = C.accent;
+        },
+        onMouseLeave: (e) => {
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.color = C.dim;
+        }
+      },
+      "+ Add idea"
+    ))
+  );
+}
+function ResearchBoard({ city, trip, mutateCity, mutateAllCities, mutateTrip }) {
+  const mobile = useMobile();
+  const [viewAll, setViewAll] = useState(false);
+  const [showAddTheme, setShowAddTheme] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customIcon, setCustomIcon] = useState("\u{1F4A1}");
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+  const migratedRef = useRef(false);
+  const activeCity = city;
+  useEffect(function() {
+    if (migratedRef.current) return;
+    var hasThemes = activeCity.researchThemes && activeCity.researchThemes.length > 0;
+    var hasLegacy = (activeCity.thingsToDo || []).length > 0;
+    if (!hasThemes && hasLegacy) {
+      migratedRef.current = true;
+      var migrated = migrateLegacyTodos(activeCity.thingsToDo || []);
+      mutateCity(function(c) {
+        return Object.assign({}, c, { researchThemes: migrated, thingsToDo: [] });
+      });
+    }
+  }, [activeCity.id]);
+  const themes = getCityThemes(activeCity);
+  const mutateThemes = (fn) => mutateCity((c) => {
+    var curr = c.researchThemes && c.researchThemes.length > 0 ? c.researchThemes : migrateLegacyTodos(c.thingsToDo || []);
+    return __spreadProps(__spreadValues({}, c), { researchThemes: fn(curr), thingsToDo: [] });
+  });
+  const addTheme = (name, icon) => {
+    if (!name.trim()) return;
+    mutateThemes((ths) => [...ths, { id: uid(), name: name.trim(), icon: icon || "\u{1F4A1}", items: [] }]);
+    setShowAddTheme(false);
+    setCustomName("");
+    setCustomIcon("\u{1F4A1}");
+  };
+  const mutateOneTheme = (themeId, fn) => mutateThemes((ths) => ths.map((th) => th.id === themeId ? fn(th) : th));
+  const deleteTheme = (themeId) => mutateThemes((ths) => ths.filter((th) => th.id !== themeId));
+  const moveItemBetweenThemes = (fromThemeId, itemId, toThemeId) => {
+    if (fromThemeId === toThemeId) return;
+    mutateThemes((ths) => {
+      var item = null;
+      var result = ths.map((th) => {
+        if (th.id === fromThemeId) {
+          item = (th.items || []).find((i) => i.id === itemId);
+          return __spreadProps(__spreadValues({}, th), { items: (th.items || []).filter((i) => i.id !== itemId) });
+        }
+        return th;
+      });
+      return result.map((th) => {
+        if (th.id === toThemeId && item) return __spreadProps(__spreadValues({}, th), { items: [...th.items || [], item] });
+        return th;
+      });
+    });
+  };
+  const reorderThemes = (from, to) => {
+    mutateThemes((ths) => {
+      var arr = [...ths];
+      var moved = arr.splice(from, 1)[0];
+      arr.splice(to, 0, moved);
+      return arr;
+    });
+  };
+  const totalAll = trip ? trip.cities.reduce((n, c) => n + getCityThemes(c).reduce((s, th) => s + (th.items || []).length, 0), 0) : 0;
+  const convertToActivity = ({ cityId, dayId, block, activity }) => {
+    if (!mutateTrip) return;
+    mutateTrip((tr) => __spreadProps(__spreadValues({}, tr), {
+      cities: tr.cities.map((c) => c.id !== cityId ? c : __spreadProps(__spreadValues({}, c), {
+        days: c.days.map((d) => d.id !== dayId ? d : __spreadProps(__spreadValues({}, d), {
+          blocks: __spreadProps(__spreadValues({}, d.blocks), { [block]: [...d.blocks[block] || [], activity] })
+        }))
+      }))
+    }));
+  };
+  const allCitiesForMutate = (cityId) => (fn) => {
+    if (mutateAllCities) mutateAllCities(cityId, fn);
+  };
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, color: C.text } }, "Research Board"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 3 } }, viewAll ? "All cities combined" : "Ideas, links, and notes for " + (activeCity ? activeCity.name : ""))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } }, trip && trip.cities.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, background: C.surface2, borderRadius: 8, padding: 3, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(false), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: !viewAll ? C.accent : "none", color: !viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, activeCity ? activeCity.name : "City"), /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(true), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: viewAll ? C.accent : "none", color: viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, "All ", totalAll > 0 && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.8 } }, "(", totalAll, ")"))), !viewAll && /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => setShowAddTheme((s) => !s) }, "+ Theme"))), showAddTheme && !viewAll && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: 18, marginBottom: 16, border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 12 } }, "Add a theme"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 } }, RESEARCH_PRESET_THEMES.filter((p) => !themes.some((t) => t.name === p.name)).map((p) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: p.name,
+      onClick: () => addTheme(p.name, p.icon),
       style: {
-        flex: 2,
-        background: C.surface3,
+        padding: "7px 14px",
+        borderRadius: 20,
         border: "1px solid " + C.border,
-        borderRadius: 8,
+        background: C.surface3,
         color: C.text,
         cursor: "pointer",
-        fontSize: 12,
-        padding: "6px 8px",
-        fontWeight: 500
+        fontSize: 13,
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        transition: "all 0.15s"
+      },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.borderColor = C.accent;
+        e.currentTarget.style.background = C.accentBg;
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.borderColor = C.border;
+        e.currentTarget.style.background = C.surface3;
       }
     },
-    /* @__PURE__ */ React.createElement("option", { value: "idea" }, "\u{1F4A1} Idea"),
-    /* @__PURE__ */ React.createElement("option", { value: "planned" }, "\u{1F4C5} Planned"),
-    /* @__PURE__ */ React.createElement("option", { value: "done" }, "\u2705 Done")
-  ), /* @__PURE__ */ React.createElement("button", { onClick: startEdit, style: {
-    flex: 1,
-    background: "rgba(212,168,83,0.1)",
-    border: "1px solid rgba(212,168,83,0.25)",
-    borderRadius: 8,
-    color: C.accent,
-    cursor: "pointer",
-    fontSize: 12,
-    padding: "6px 0",
-    fontWeight: 500
-  } }, "\u270F\uFE0F Edit"), /* @__PURE__ */ React.createElement("button", { onClick: onDelete, style: {
-    flex: 1,
-    background: "rgba(224,112,112,0.1)",
-    border: "1px solid rgba(224,112,112,0.25)",
-    borderRadius: 8,
-    color: C.warn,
-    cursor: "pointer",
-    fontSize: 12,
-    padding: "6px 0",
-    fontWeight: 500
-  } }, "\u2715")));
+    /* @__PURE__ */ React.createElement("span", null, p.icon),
+    /* @__PURE__ */ React.createElement("span", null, p.name)
+  ))), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, paddingTop: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Custom theme"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "flex-end" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 64 } }, /* @__PURE__ */ React.createElement(Input, { label: "Icon", value: customIcon, onChange: (v) => setCustomIcon(v), placeholder: "\u{1F4A1}" })), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement(Input, { label: "Name", value: customName, onChange: (v) => setCustomName(v), placeholder: "e.g., Viewpoints" })), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => addTheme(customName, customIcon || "\u{1F4A1}"), style: { marginBottom: 1 } }, "Add"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setShowAddTheme(false), style: { marginBottom: 1 } }, "Cancel")))), !viewAll && /* @__PURE__ */ React.createElement("div", null, themes.map((theme, i) => /* @__PURE__ */ React.createElement(
+    ResearchThemeSection,
+    {
+      key: theme.id,
+      theme,
+      themeIdx: i,
+      totalThemes: themes.length,
+      onMutateTheme: (fn) => mutateOneTheme(theme.id, fn),
+      onDeleteTheme: () => deleteTheme(theme.id),
+      onMoveUp: () => reorderThemes(i, i - 1),
+      onMoveDown: () => reorderThemes(i, i + 1),
+      allThemes: themes,
+      onMoveItem: moveItemBetweenThemes,
+      mobile,
+      isDragging: dragIdx === i,
+      isDragOver: dragOverIdx === i,
+      onDragStart: () => setDragIdx(i),
+      onDragOver: () => setDragOverIdx(i),
+      onDrop: () => {
+        if (dragIdx !== null && dragIdx !== i) reorderThemes(dragIdx, i);
+        setDragIdx(null);
+        setDragOverIdx(null);
+      },
+      onDragEnd: () => {
+        setDragIdx(null);
+        setDragOverIdx(null);
+      },
+      trip,
+      onConvertToActivity: convertToActivity
+    }
+  )), themes.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "48px 24px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 32, marginBottom: 12 } }, "\u{1F5C2}"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, color: C.mid, marginBottom: 6 } }, "No research themes yet"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13 } }, "Click ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.accent } }, "+ Theme"), " to organize your ideas by category."))), viewAll && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 32 } }, (trip ? trip.cities : [activeCity]).map((c, ci) => {
+    var cityThemes = getCityThemes(c);
+    if (cityThemes.length === 0) return null;
+    var cColor = CITY_PALETTE[ci % CITY_PALETTE.length];
+    var cityTotalItems = cityThemes.reduce(function(s, th) {
+      return s + (th.items || []).length;
+    }, 0);
+    return /* @__PURE__ */ React.createElement("div", { key: c.id }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: cColor } }), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.text } }, c.name), /* @__PURE__ */ React.createElement("span", { style: { background: C.surface3, borderRadius: 8, padding: "1px 8px", fontSize: 11, color: C.mid } }, cityTotalItems)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, cityThemes.map((th) => {
+      var thItems = th.items || [];
+      return /* @__PURE__ */ React.createElement("div", { key: th.id, style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18 } }, th.icon), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: C.text, flex: 1 } }, th.name), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, thItems.length, " items")), /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 } }, thItems.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, style: { display: "flex", alignItems: "flex-start", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: item.status === "done" ? C.ok : item.status === "planned" ? "#4e9478" : C.accent, flexShrink: 0, marginTop: 1 } }, item.status === "done" ? "\u2705" : item.status === "planned" ? "\u{1F4C5}" : "\u{1F4A1}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text } }, item.title), item.url && /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noreferrer", style: { fontSize: 11, color: C.accent } }, "\u{1F517} ", item.urlLabel || item.url))))));
+    })));
+  }).filter(Boolean), totalAll === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.dim, fontSize: 14 } }, "No research items across any city yet.")));
 }
 function TripSearchModal({ trip, onClose, onOpenDay, onSelectCity, setTripTab }) {
   const [q, setQ] = useState("");
