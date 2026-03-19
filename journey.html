@@ -364,9 +364,22 @@ function useMobile(breakpoint = 640) {
   }, [breakpoint]);
   return mobile;
 }
+function useHasTouch() {
+  const [touch, setTouch] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    const handler = (e) => setTouch(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return touch;
+}
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (n, cur) => n > 0 ? `${cur} ${Number(n).toFixed(2)}` : "\u2014";
-const today = () => (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+const today = () => {
+  const d = /* @__PURE__ */ new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+};
 const fmtDate = (iso) => {
   if (!iso) return "";
   const [y, m, d] = iso.split("-");
@@ -406,6 +419,7 @@ const newActivity = (o = {}) => __spreadValues({
   addedOnTrip: false,
   isConfirmed: false,
   completed: false,
+  photos: [],
   cost: { estimated: "", confirmed: "", paidBy: "split", category: "Other", notes: "" },
   notes: ""
 }, o);
@@ -457,6 +471,14 @@ const newCity = (name, nights, startStr) => ({
   researchThemes: [],
   days: makeCityDays(nights, startStr)
 });
+const newBudgetItem = (o = {}) => __spreadValues({
+  id: uid(),
+  title: "",
+  category: "Other",
+  amount: "",
+  paidBy: "split",
+  notes: ""
+}, o);
 const newTrip = ({ title, startDate, endDate, currency = "USD", ptoDays = "" }) => ({
   id: uid(),
   title,
@@ -473,7 +495,8 @@ const newTrip = ({ title, startDate, endDate, currency = "USD", ptoDays = "" }) 
   exchangeRate: "",
   originCity: "",
   preTripDay: false,
-  postTripDay: false
+  postTripDay: false,
+  budgetItems: []
 });
 const getAllActivities = (trip) => trip.cities.flatMap(
   (c) => c.days.flatMap(
@@ -916,7 +939,8 @@ const restampIds = (trip) => {
     cityId: item.cityId ? idMap[item.cityId] || item.cityId : item.cityId,
     dayId: item.dayId ? idMap[item.dayId] || item.dayId : item.dayId
   }));
-  return __spreadProps(__spreadValues({}, trip), { id: fresh(trip.id), cities: newCities, prepChecklist: newPrep });
+  const newBudget = (trip.budgetItems || []).map((b) => __spreadProps(__spreadValues({}, b), { id: fresh(b.id) }));
+  return __spreadProps(__spreadValues({}, trip), { id: fresh(trip.id), cities: newCities, prepChecklist: newPrep, budgetItems: newBudget });
 };
 const newPrepItem = (o = {}) => __spreadValues({
   id: uid(),
@@ -1573,8 +1597,30 @@ function ToastBar({ toast, onDismiss }) {
     "Undo"
   ), /* @__PURE__ */ React.createElement("button", { onClick: onDismiss, style: { background: "none", border: "none", color: C.dim, fontSize: 18, cursor: "pointer", lineHeight: 1, padding: "0 2px" } }, "\xD7"));
 }
-function OnboardingModal({ onStart }) {
+function OnboardingModal({ onStart, onImport }) {
   const [step, setStep] = useState(0);
+  const fileRef = useRef(null);
+  const [importing, setImporting] = useState(false);
+  const [importErr, setImportErr] = useState("");
+  const handleImportFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setImporting(true);
+    setImportErr("");
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        const trips = validateImport(parsed);
+        onImport(trips);
+      } catch (err) {
+        setImportErr(err.message || "Could not read file.");
+        setImporting(false);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
   const steps = [
     {
       icon: "\u2708\uFE0F",
@@ -1641,7 +1687,21 @@ function OnboardingModal({ onStart }) {
     fontSize: 15,
     fontWeight: 500,
     cursor: "pointer"
-  } }, "Start from scratch")) : /* @__PURE__ */ React.createElement("button", { onClick: () => setStep((s) => s + 1), style: {
+  } }, "Start from scratch"), /* @__PURE__ */ React.createElement("div", { style: { position: "relative" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => fileRef.current && fileRef.current.click(), style: {
+    width: "100%",
+    background: "none",
+    color: C.dim,
+    border: `1px solid ${C.border}`,
+    borderRadius: 10,
+    padding: "13px 20px",
+    fontSize: 15,
+    fontWeight: 500,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8
+  } }, importing ? "Importing\u2026" : "\u21C5 Import existing trips"), /* @__PURE__ */ React.createElement("input", { ref: fileRef, type: "file", accept: ".json,application/json", style: { display: "none" }, onChange: handleImportFile })), importErr && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.warn, marginTop: 4 } }, importErr)) : /* @__PURE__ */ React.createElement("button", { onClick: () => setStep((s) => s + 1), style: {
     background: C.accent,
     color: "#fff",
     border: "none",
@@ -1705,12 +1765,12 @@ function TripCard({ trip, mobile, onOpen, onDuplicate }) {
     background: C.surface,
     border: "1px solid " + cardBorder,
     borderRadius: 16,
-    padding: mobile ? "18px 20px" : "24px 26px",
+    overflow: "hidden",
     cursor: "pointer",
     transition: "all 0.2s",
     position: "relative",
     boxShadow: cardShadow
-  } }, isActive && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: 16, right: 16, display: "flex", alignItems: "center", gap: 6, background: "rgba(92,184,122,0.12)", border: "1px solid rgba(92,184,122,0.3)", borderRadius: 20, padding: "4px 10px 4px 7px" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 7, height: 7, borderRadius: "50%", background: C.ok, animation: "pulse 2s infinite", flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.ok, fontWeight: 700, letterSpacing: "0.04em" } }, "LIVE")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 5, marginBottom: 14, paddingRight: isActive ? 70 : 0 } }, trip.cities.length > 0 ? trip.cities.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { flex: c.nights, height: 3, borderRadius: 2, background: CITY_PALETTE[i % CITY_PALETTE.length] }, title: c.name })) : /* @__PURE__ */ React.createElement("div", { style: { flex: 1, height: 3, borderRadius: 2, background: C.border } })), /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 22 : 26, fontWeight: 400, color: C.text, marginBottom: 4, lineHeight: 1.2 } }, trip.title), /* @__PURE__ */ React.createElement("p", { style: { color: C.accent, fontSize: 13, marginBottom: 12, opacity: 0.85 } }, fmtDateRange(trip.startDate, trip.endDate)), trip.cities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, marginBottom: 12 } }, trip.cities.map((c, i) => /* @__PURE__ */ React.createElement(React.Fragment, { key: c.id }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, padding: "3px 10px", borderRadius: 10, background: CITY_PALETTE[i % CITY_PALETTE.length] + "22", color: CITY_PALETTE[i % CITY_PALETTE.length], fontWeight: 500, whiteSpace: "nowrap" } }, c.name, " \xB7 ", c.nights - 1, "n"), i < trip.cities.length - 1 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, flexShrink: 0 } }, "\u2192")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Tag, { color: sm.color }, sm.label), totalNights > 0 && /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontSize: 13 } }, totalNights, " nights"), trip.ptoDays && /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontSize: 13 } }, trip.ptoDays, " PTO")), isComplete && totalCostConfirmed > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, paddingTop: 10, borderTop: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, "Total spent:"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: C.text } }, trip.currency || "USD", " ", totalCostConfirmed.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }))), onDuplicate && /* @__PURE__ */ React.createElement(
+  } }, isComplete && trip.coverPhoto && /* @__PURE__ */ React.createElement("div", { style: { position: "relative", width: "100%", height: 140, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("img", { src: trip.coverPhoto, alt: "", style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } }), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 40%, " + C.surface + " 100%)" } })), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "18px 20px" : "24px 26px", paddingTop: isComplete && trip.coverPhoto ? "10px" : mobile ? "18px" : "24px" } }, isActive && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: 16, right: 16, display: "flex", alignItems: "center", gap: 6, background: "rgba(92,184,122,0.12)", border: "1px solid rgba(92,184,122,0.3)", borderRadius: 20, padding: "4px 10px 4px 7px" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 7, height: 7, borderRadius: "50%", background: C.ok, animation: "pulse 2s infinite", flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.ok, fontWeight: 700, letterSpacing: "0.04em" } }, "LIVE")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 5, marginBottom: 14, paddingRight: isActive ? 70 : 0 } }, trip.cities.length > 0 ? trip.cities.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { flex: c.nights, height: 3, borderRadius: 2, background: CITY_PALETTE[i % CITY_PALETTE.length] }, title: c.name })) : /* @__PURE__ */ React.createElement("div", { style: { flex: 1, height: 3, borderRadius: 2, background: C.border } })), /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 22 : 26, fontWeight: 400, color: C.text, marginBottom: 4, lineHeight: 1.2 } }, trip.title), /* @__PURE__ */ React.createElement("p", { style: { color: C.accent, fontSize: 13, marginBottom: 12, opacity: 0.85 } }, fmtDateRange(trip.startDate, trip.endDate)), trip.cities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, marginBottom: 12 } }, trip.cities.map((c, i) => /* @__PURE__ */ React.createElement(React.Fragment, { key: c.id }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, padding: "3px 10px", borderRadius: 10, background: CITY_PALETTE[i % CITY_PALETTE.length] + "22", color: CITY_PALETTE[i % CITY_PALETTE.length], fontWeight: 500, whiteSpace: "nowrap" } }, c.name, " \xB7 ", c.nights - 1, "n"), i < trip.cities.length - 1 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, flexShrink: 0 } }, "\u2192")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Tag, { color: sm.color }, sm.label), totalNights > 0 && /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontSize: 13 } }, totalNights, " nights"), trip.ptoDays && /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontSize: 13 } }, trip.ptoDays, " PTO")), isComplete && totalCostConfirmed > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, paddingTop: 10, borderTop: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, "Total spent:"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: C.text } }, trip.currency || "USD", " ", totalCostConfirmed.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }))), onDuplicate && /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: (e) => {
@@ -1736,7 +1796,7 @@ function TripCard({ trip, mobile, onOpen, onDuplicate }) {
       }
     },
     "\u2295 Copy Trip"
-  ));
+  )));
 }
 function DuplicateTripModal({ trip, onConfirm, onClose }) {
   const [form, setForm] = useState({
@@ -1920,7 +1980,120 @@ function MultiCityBuilderModal({ trip, onBuild, onClose }) {
     }
   ), originCity.trim() && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#4e9f78", marginTop: 6 } }, '\u2190 First day will show "Arriving from ', originCity.trim(), '"')), /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border } }), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: addPreTrip, onChange: (e) => setAddPreTrip(e.target.checked), style: { marginTop: 2, flexShrink: 0 } }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: C.text } }, "Add pre-trip departure day"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, "Adds a day before your first city \u2014 great for airport transit and red-eye departures. Dated ", addPreTrip && rows[0].arrival ? isoAddDays(rows[0].arrival, -1) : "day before arrival", "."))), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: addPostTrip, onChange: (e) => setAddPostTrip(e.target.checked), style: { marginTop: 2, flexShrink: 0 } }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: C.text } }, "Add post-trip return day"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, "Adds a day after your last city \u2014 for overnight return flights landing the next morning. Dated ", addPostTrip && rows[rows.length - 1].departure ? isoAddDays(rows[rows.length - 1].departure, 1) : "day after departure", ".")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end", borderTop: "1px solid " + C.border, paddingTop: 18 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid, onClick: handleBuild }, "Build Itinerary \u2192")));
 }
-function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall }) {
+const TRAVEL_PROFILE_FIELDS = [
+  { key: "ktn", label: "Known Traveler Number (KTN / TSA Pre\u2713)", placeholder: "e.g., 123456789" },
+  { key: "globalEntry", label: "Global Entry Number", placeholder: "e.g., 987654321" },
+  { key: "passport", label: "Passport Number", placeholder: "e.g., A12345678" },
+  { key: "passportExp", label: "Passport Expiry", placeholder: "e.g., 2030-06" }
+];
+const LOYALTY_PROGRAMS = [
+  "Delta SkyMiles",
+  "United MileagePlus",
+  "American AAdvantage",
+  "Southwest Rapid Rewards",
+  "JetBlue TrueBlue",
+  "Alaska Mileage Plan",
+  "Air Canada Aeroplan",
+  "Marriott Bonvoy",
+  "Hilton Honors",
+  "IHG One Rewards",
+  "World of Hyatt",
+  "Hertz Gold Plus",
+  "National Emerald Club",
+  "Enterprise Plus"
+];
+function TravelProfileCard({ profile, onSave, mobile }) {
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const hasData = TRAVEL_PROFILE_FIELDS.some((f) => profile[f.key] && profile[f.key].trim()) || (profile.programs || []).some((p) => p.name || p.number) || profile.notes && profile.notes.trim();
+  const startEdit = () => {
+    setDraft(__spreadProps(__spreadValues({}, profile), {
+      programs: profile.programs && profile.programs.length > 0 ? profile.programs.map((p) => __spreadValues({}, p)) : [{ id: uid(), name: "", number: "" }]
+    }));
+    setEditing(true);
+  };
+  const save = () => {
+    const cleaned = __spreadProps(__spreadValues({}, draft), {
+      programs: (draft.programs || []).filter((p) => p.name.trim() || p.number.trim())
+    });
+    onSave(cleaned);
+    setEditing(false);
+    setDraft(null);
+  };
+  const cancel = () => {
+    setEditing(false);
+    setDraft(null);
+  };
+  const updDraft = (k, v) => setDraft((d) => __spreadProps(__spreadValues({}, d), { [k]: v }));
+  const addProgram = () => setDraft((d) => __spreadProps(__spreadValues({}, d), { programs: [...d.programs || [], { id: uid(), name: "", number: "" }] }));
+  const updProgram = (id, k, v) => setDraft((d) => __spreadProps(__spreadValues({}, d), { programs: d.programs.map((p) => p.id === id ? __spreadProps(__spreadValues({}, p), { [k]: v }) : p) }));
+  const delProgram = (id) => setDraft((d) => __spreadProps(__spreadValues({}, d), { programs: d.programs.filter((p) => p.id !== id) }));
+  const summaryParts = [];
+  if (profile.ktn) summaryParts.push("TSA Pre\u2713 " + profile.ktn);
+  if (profile.globalEntry) summaryParts.push("GE " + profile.globalEntry);
+  const progCount = (profile.programs || []).filter((p) => p.name || p.number).length;
+  if (progCount > 0) summaryParts.push(progCount + " loyalty " + (progCount === 1 ? "program" : "programs"));
+  return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => {
+        setOpen((o) => !o);
+        if (!open && !hasData && !editing) {
+          startEdit();
+          setOpen(true);
+        }
+      },
+      style: {
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        background: hasData ? C.surface2 : "none",
+        border: "1px solid " + (hasData ? C.border : C.border),
+        borderRadius: open ? "12px 12px 0 0" : 12,
+        padding: "10px 16px",
+        cursor: "pointer",
+        textAlign: "left",
+        transition: "all 0.15s"
+      },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.borderColor = C.accent;
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.borderColor = hasData ? C.border : C.border;
+      }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, "\u{1FAAA}"),
+    /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: hasData ? C.text : C.dim } }, "Travel Profile"), hasData && !open && summaryParts.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, summaryParts.join(" \xB7 ")), !hasData && !open && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim, marginLeft: 6 } }, "KTN, loyalty programs, passport\u2026")),
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, display: "inline-block", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 } }, "\u25BE")
+  ), open && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, border: "1px solid " + C.border, borderTop: "none", borderRadius: "0 0 12px 12px", padding: "18px 18px 16px" } }, editing && draft ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 12 } }, TRAVEL_PROFILE_FIELDS.map((f) => /* @__PURE__ */ React.createElement(Input, { key: f.key, label: f.label, value: draft[f.key] || "", onChange: (v) => updDraft(f.key, v), placeholder: f.placeholder }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 } }, "Loyalty Programs & Rewards"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, (draft.programs || []).map((p) => /* @__PURE__ */ React.createElement("div", { key: p.id, style: { display: "grid", gridTemplateColumns: "1fr 1fr 28px", gap: 8, alignItems: "end" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 4 } }, "Program"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      list: "prog-list-" + p.id,
+      value: p.name,
+      onChange: (e) => updProgram(p.id, "name", e.target.value),
+      placeholder: "e.g., Delta SkyMiles",
+      style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13 }
+    }
+  ), /* @__PURE__ */ React.createElement("datalist", { id: "prog-list-" + p.id }, LOYALTY_PROGRAMS.map((lp) => /* @__PURE__ */ React.createElement("option", { key: lp, value: lp })))), /* @__PURE__ */ React.createElement(Input, { label: "Member Number", value: p.number, onChange: (v) => updProgram(p.id, "number", v), placeholder: "e.g., SkyMiles #" }), /* @__PURE__ */ React.createElement("button", { onClick: () => delProgram(p.id), style: { background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 16, padding: "0 0 6px", alignSelf: "end" } }, "\u2715"))), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: addProgram,
+      style: { alignSelf: "flex-start", background: "none", border: "1px dashed " + C.border, borderRadius: 8, color: C.dim, cursor: "pointer", fontSize: 12, padding: "6px 14px", transition: "all 0.15s" },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.borderColor = C.accent;
+        e.currentTarget.style.color = C.accent;
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.borderColor = C.border;
+        e.currentTarget.style.color = C.dim;
+      }
+    },
+    "+ Add program"
+  ))), /* @__PURE__ */ React.createElement(Textarea, { label: "Other notes", value: draft.notes || "", onChange: (v) => updDraft("notes", v), placeholder: "NEXUS card, travel insurance policy, emergency contacts, preferred seats\u2026", rows: 2 }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: save }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: cancel }, "Cancel"))) : /* @__PURE__ */ React.createElement("div", null, hasData ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, TRAVEL_PROFILE_FIELDS.filter((f) => profile[f.key] && profile[f.key].trim()).map((f) => /* @__PURE__ */ React.createElement("div", { key: f.key, style: { display: "flex", gap: 12, alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, minWidth: 140 } }, f.label.split("(")[0].trim()), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text, fontFamily: "monospace" } }, profile[f.key]))), (profile.programs || []).filter((p) => p.name || p.number).map((p) => /* @__PURE__ */ React.createElement("div", { key: p.id, style: { display: "flex", gap: 12, alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, minWidth: 140 } }, p.name || "Loyalty"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text, fontFamily: "monospace" } }, p.number || "\u2014"))), profile.notes && profile.notes.trim() && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid, lineHeight: 1.6, borderTop: "1px solid " + C.border, paddingTop: 10, marginTop: 4, whiteSpace: "pre-wrap" } }, profile.notes)) : /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, fontStyle: "italic", marginBottom: 10 } }, "No travel info saved yet."), /* @__PURE__ */ React.createElement("button", { onClick: startEdit, style: { marginTop: 14, background: "none", border: "1px solid " + C.border, borderRadius: 8, color: C.mid, cursor: "pointer", fontSize: 12, padding: "6px 14px", display: "flex", alignItems: "center", gap: 5 } }, "\u270F\uFE0F ", hasData ? "Edit" : "Add travel info"))));
+}
+function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile }) {
   const mobile = useMobile();
   const visibleTrips = search.trim() ? trips.filter((t) => {
     const q = search.toLowerCase();
@@ -1944,7 +2117,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
       placeholder: "\u{1F50D}  Search trips, destinations...",
       style: { width: "100%", padding: "10px 16px", fontSize: 15, borderRadius: 10 }
     }
-  )), pwaPrompt && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4F2}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Install Journey"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Add to your home screen for offline access and a native app feel.")), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onInstall }, "Install"), /* @__PURE__ */ React.createElement("button", { onClick: () => onInstall(null), style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 18, padding: "0 4px" } }, "\xD7"))), visibleTrips.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "80px 0", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, search ? "\u{1F50D}" : "\u{1F5FA}\uFE0F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 18, marginBottom: 8 } }, search ? `No trips match "${search}"` : "No trips yet."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14 } }, search ? "Try a different search term." : "Create your first trip to get started.")) : (() => {
+  )), pwaPrompt && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4F2}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Install Journey"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Add to your home screen for offline access and a native app feel.")), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onInstall }, "Install"), /* @__PURE__ */ React.createElement("button", { onClick: () => onInstall(null), style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 18, padding: "0 4px" } }, "\xD7")), /* @__PURE__ */ React.createElement(TravelProfileCard, { profile: travelProfile, onSave: onSaveTravelProfile, mobile })), visibleTrips.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "80px 0", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, search ? "\u{1F50D}" : "\u{1F5FA}\uFE0F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 18, marginBottom: 8 } }, search ? `No trips match "${search}"` : "No trips yet."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14 } }, search ? "Try a different search term." : "Create your first trip to get started.")) : (() => {
     const currentYear = (/* @__PURE__ */ new Date()).getFullYear().toString();
     const sorted = visibleTrips.slice().sort((a, b) => {
       if (a.status === "active" && b.status !== "active") return -1;
@@ -2493,7 +2666,62 @@ function LookBackView({ trip, mutateTrip }) {
   const confTotal = allActs.filter((a) => a.confirmation).length;
   const allCosts = allActs.reduce((s, a) => s + parseFloat(a.cost && (a.cost.confirmed || a.cost.estimated) || 0), 0);
   const [exportModal, setExportModal] = useState(false);
-  return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 820, margin: "0 auto", padding: mobile ? "24px 16px" : "36px 28px" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: mobile ? 20 : 32, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 28 : 40, fontWeight: 300, color: C.text, lineHeight: 1.1 } }, "\u{1F4D6} ", trip.title), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: mobile ? 13 : 15, marginTop: 6 } }, fmtDateRange(trip.startDate, trip.endDate)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, trip.ptoDays || "?", " PTO"), /* @__PURE__ */ React.createElement(Tag, null, trip.cities.reduce((s, c) => s + (c.nights - 1), 0), " nights"), /* @__PURE__ */ React.createElement(Tag, { color: C.purple }, onTrip, " spontaneous"), /* @__PURE__ */ React.createElement(Tag, { color: C.teal }, confTotal, " reservations"))), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setExportModal(true) }, "\u{1F4E4} Export")), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "20px 24px", marginBottom: 28 } }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 820, margin: "0 auto", padding: mobile ? "24px 16px" : "36px 28px" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: mobile ? 20 : 32, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 28 : 40, fontWeight: 300, color: C.text, lineHeight: 1.1 } }, "\u{1F4D6} ", trip.title), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: mobile ? 13 : 15, marginTop: 6 } }, fmtDateRange(trip.startDate, trip.endDate)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, trip.ptoDays || "?", " PTO"), /* @__PURE__ */ React.createElement(Tag, null, trip.cities.reduce((s, c) => s + (c.nights - 1), 0), " nights"), /* @__PURE__ */ React.createElement(Tag, { color: C.purple }, onTrip, " spontaneous"), /* @__PURE__ */ React.createElement(Tag, { color: C.teal }, confTotal, " reservations"))), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setExportModal(true) }, "\u{1F4E4} Export")), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "20px 24px", marginBottom: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "\u{1F5BC} Trip Cover Photo"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 2 } }, "Shown on the home screen card for this trip")), trip.coverPhoto && /* @__PURE__ */ React.createElement("button", { onClick: () => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { coverPhoto: null })), style: { background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 12, padding: "4px 8px" } }, "Remove")), trip.coverPhoto ? /* @__PURE__ */ React.createElement("div", { style: { position: "relative", borderRadius: 10, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("img", { src: trip.coverPhoto, alt: "Trip cover", style: { width: "100%", height: 180, objectFit: "cover", display: "block" } }), /* @__PURE__ */ React.createElement("label", { style: {
+    position: "absolute",
+    bottom: 10,
+    right: 10,
+    background: "rgba(0,0,0,0.6)",
+    border: "1px solid rgba(255,255,255,0.2)",
+    borderRadius: 8,
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: 12,
+    padding: "6px 12px",
+    fontWeight: 500
+  } }, "Change photo", /* @__PURE__ */ React.createElement("input", { type: "file", accept: "image/*", style: { display: "none" }, onChange: (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { coverPhoto: ev.target.result }));
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  } }))) : /* @__PURE__ */ React.createElement(
+    "label",
+    {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "28px 20px",
+        border: "1px dashed " + C.border,
+        borderRadius: 10,
+        cursor: "pointer",
+        color: C.dim,
+        fontSize: 13,
+        gap: 8,
+        transition: "all 0.15s"
+      },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.borderColor = C.accent;
+        e.currentTarget.style.color = C.accent;
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.borderColor = C.border;
+        e.currentTarget.style.color = C.dim;
+      }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 28 } }, "\u{1F4F8}"),
+    /* @__PURE__ */ React.createElement("span", null, "Upload a cover photo"),
+    /* @__PURE__ */ React.createElement("input", { type: "file", accept: "image/*", style: { display: "none" }, onChange: (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { coverPhoto: ev.target.result }));
+      reader.readAsDataURL(file);
+      e.target.value = "";
+    } })
+  )), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "20px 24px", marginBottom: 28 } }, /* @__PURE__ */ React.createElement(
     Textarea,
     {
       label: "\u270D\uFE0F Trip reflection \u2014 overall thoughts, memories, what to remember next time",
@@ -3144,7 +3372,6 @@ function ThemeTodoCard({ todo, onUpdate, onDelete, allThemes, themeId, onMove, t
   const [editing, setEditing] = useState(false);
   const [converting, setConverting] = useState(false);
   const [draft, setDraft] = useState(null);
-  const mobile = useMobile();
   const startEdit = () => {
     setDraft({ title: todo.title, url: todo.url || "", urlLabel: todo.urlLabel || "", location: todo.location || "", notes: todo.notes || "", status: todo.status });
     setEditing(true);
@@ -3186,7 +3413,19 @@ function ThemeTodoCard({ todo, onUpdate, onDelete, allThemes, themeId, onMove, t
         style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 }
       },
       allThemes.map((th) => /* @__PURE__ */ React.createElement("option", { key: th.id, value: th.id }, th.icon, " ", th.name))
-    ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: saveEdit }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: cancelEdit }, "Cancel"))));
+    ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, paddingTop: 4, borderTop: "1px solid " + C.border, marginTop: 2 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: saveEdit }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: cancelEdit }, "Cancel"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          if (window.confirm("Delete this item?")) {
+            onDelete();
+            setEditing(false);
+          }
+        },
+        style: { marginLeft: "auto", background: "rgba(224,112,112,0.1)", border: "1px solid rgba(224,112,112,0.3)", borderRadius: 8, color: C.warn, cursor: "pointer", fontSize: 12, padding: "5px 12px", fontWeight: 500 }
+      },
+      "\u{1F5D1} Delete"
+    ))));
   }
   return /* @__PURE__ */ React.createElement(React.Fragment, null, converting && trip && /* @__PURE__ */ React.createElement(
     ResearchConvertModal,
@@ -3229,7 +3468,7 @@ function ThemeTodoCard({ todo, onUpdate, onDelete, allThemes, themeId, onMove, t
       title: "Add to itinerary"
     },
     "\u2192 Plan"
-  ), /* @__PURE__ */ React.createElement("button", { onClick: startEdit, style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 13, padding: "2px 4px" }, title: "Edit" }, "\u270F\uFE0F"), /* @__PURE__ */ React.createElement("button", { onClick: onDelete, style: { background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 12, padding: "2px 4px" }, title: "Delete" }, "\u2715")))));
+  ), /* @__PURE__ */ React.createElement("button", { onClick: startEdit, style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 13, padding: "2px 4px" }, title: "Edit" }, "\u270F\uFE0F")))));
 }
 function ResearchThemeSection({
   theme,
@@ -3251,7 +3490,8 @@ function ResearchThemeSection({
   trip,
   onConvertToActivity
 }) {
-  const [open, setOpen] = useState(true);
+  const hasTouch = useHasTouch();
+  const [open, setOpen] = useState(false);
   const [addingItem, setAddingItem] = useState(false);
   const [draft, setDraft] = useState({ title: "", url: "", urlLabel: "", location: "", notes: "", status: "idea" });
   const [editingName, setEditingName] = useState(false);
@@ -3284,7 +3524,7 @@ function ResearchThemeSection({
     "div",
     {
       style: sectionStyle,
-      draggable: !mobile,
+      draggable: !hasTouch,
       onDragStart,
       onDragOver: (e) => {
         e.preventDefault();
@@ -3302,7 +3542,7 @@ function ResearchThemeSection({
         style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", cursor: "pointer" },
         onClick: () => setOpen((o) => !o)
       },
-      !mobile ? /* @__PURE__ */ React.createElement(
+      !hasTouch ? /* @__PURE__ */ React.createElement(
         "span",
         {
           style: { color: C.dim, fontSize: 16, cursor: "grab", flexShrink: 0, userSelect: "none" },
@@ -3440,7 +3680,26 @@ function ResearchBoard({ city, trip, mutateCity, mutateAllCities, mutateTrip }) 
   const [dragIdx, setDragIdx] = useState(null);
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const migratedRef = useRef(false);
+  const boardRef = useRef(null);
   const activeCity = city;
+  const withScrollPreserved = (fn) => {
+    var el = boardRef.current;
+    var scrollEl = null;
+    while (el) {
+      if (el.scrollHeight > el.clientHeight && (getComputedStyle(el).overflowY === "auto" || getComputedStyle(el).overflowY === "scroll")) {
+        scrollEl = el;
+        break;
+      }
+      el = el.parentElement;
+    }
+    var savedTop = scrollEl ? scrollEl.scrollTop : 0;
+    fn();
+    if (scrollEl) {
+      requestAnimationFrame(function() {
+        scrollEl.scrollTop = savedTop;
+      });
+    }
+  };
   useEffect(function() {
     if (migratedRef.current) return;
     var hasThemes = activeCity.researchThemes && activeCity.researchThemes.length > 0;
@@ -3454,10 +3713,10 @@ function ResearchBoard({ city, trip, mutateCity, mutateAllCities, mutateTrip }) 
     }
   }, [activeCity.id]);
   const themes = getCityThemes(activeCity);
-  const mutateThemes = (fn) => mutateCity((c) => {
+  const mutateThemes = (fn) => withScrollPreserved(() => mutateCity((c) => {
     var curr = c.researchThemes && c.researchThemes.length > 0 ? c.researchThemes : migrateLegacyTodos(c.thingsToDo || []);
     return __spreadProps(__spreadValues({}, c), { researchThemes: fn(curr), thingsToDo: [] });
-  });
+  }));
   const addTheme = (name, icon) => {
     if (!name.trim()) return;
     mutateThemes((ths) => [...ths, { id: uid(), name: name.trim(), icon: icon || "\u{1F4A1}", items: [] }]);
@@ -3506,7 +3765,7 @@ function ResearchBoard({ city, trip, mutateCity, mutateAllCities, mutateTrip }) 
   const allCitiesForMutate = (cityId) => (fn) => {
     if (mutateAllCities) mutateAllCities(cityId, fn);
   };
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, color: C.text } }, "Research Board"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 3 } }, viewAll ? "All cities combined" : "Ideas, links, and notes for " + (activeCity ? activeCity.name : ""))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } }, trip && trip.cities.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, background: C.surface2, borderRadius: 8, padding: 3, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(false), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: !viewAll ? C.accent : "none", color: !viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, activeCity ? activeCity.name : "City"), /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(true), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: viewAll ? C.accent : "none", color: viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, "All ", totalAll > 0 && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.8 } }, "(", totalAll, ")"))), !viewAll && /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => setShowAddTheme((s) => !s) }, "+ Theme"))), showAddTheme && !viewAll && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: 18, marginBottom: 16, border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 12 } }, "Add a theme"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 } }, RESEARCH_PRESET_THEMES.filter((p) => !themes.some((t) => t.name === p.name)).map((p) => /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { ref: boardRef }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, color: C.text } }, "Research Board"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 3 } }, viewAll ? "All cities combined" : "Ideas, links, and notes for " + (activeCity ? activeCity.name : ""))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } }, trip && trip.cities.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, background: C.surface2, borderRadius: 8, padding: 3, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(false), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: !viewAll ? C.accent : "none", color: !viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, activeCity ? activeCity.name : "City"), /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(true), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: viewAll ? C.accent : "none", color: viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, "All ", totalAll > 0 && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.8 } }, "(", totalAll, ")"))), !viewAll && /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => setShowAddTheme((s) => !s) }, "+ Theme"))), showAddTheme && !viewAll && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: 18, marginBottom: 16, border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 12 } }, "Add a theme"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 } }, RESEARCH_PRESET_THEMES.filter((p) => !themes.some((t) => t.name === p.name)).map((p) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: p.name,
@@ -3835,6 +4094,86 @@ function MobileAccordion({ day, isToday, open, reorderActivity }) {
     })
   );
 }
+function DayPlanningNotes({ day, mutateDay, mobile }) {
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(day.planningNotes || "");
+  const hasNotes = !!(day.planningNotes && day.planningNotes.trim());
+  const save = () => {
+    mutateDay((d) => __spreadProps(__spreadValues({}, d), { planningNotes: draft }));
+    setEditing(false);
+  };
+  const cancel = () => {
+    setDraft(day.planningNotes || "");
+    setEditing(false);
+  };
+  return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 18 } }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => {
+        setOpen((o) => !o);
+        if (!open && !hasNotes) setEditing(true);
+      },
+      style: {
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        background: hasNotes ? C.surface2 : "none",
+        border: "1px solid " + (hasNotes ? C.border : C.border),
+        borderRadius: open ? "10px 10px 0 0" : 10,
+        padding: "9px 14px",
+        cursor: "pointer",
+        textAlign: "left",
+        transition: "all 0.15s"
+      },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.borderColor = C.accent;
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.borderColor = hasNotes ? C.border : C.border;
+      }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: C.dim } }, "\u{1F4DD}"),
+    /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontSize: 13, fontWeight: 500, color: hasNotes ? C.text : C.dim } }, hasNotes ? "Planning Notes" : "Day planning notes\u2026"),
+    hasNotes && !open && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: mobile ? 120 : 260 } }, day.planningNotes.split("\n")[0]),
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, display: "inline-block", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0, marginLeft: 4 } }, "\u25BE")
+  ), open && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, border: "1px solid " + C.border, borderTop: "none", borderRadius: "0 0 10px 10px", padding: "14px 14px 12px" } }, editing ? /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
+    "textarea",
+    {
+      value: draft,
+      onChange: (e) => setDraft(e.target.value),
+      placeholder: "Logistics, reminders, things to check, rough plan for the day\u2026",
+      rows: 4,
+      style: {
+        width: "100%",
+        background: C.surface3,
+        border: "1px solid " + C.accent,
+        borderRadius: 8,
+        padding: "10px 12px",
+        color: C.text,
+        fontSize: 13,
+        lineHeight: 1.6,
+        resize: "vertical",
+        fontFamily: "inherit"
+      }
+    }
+  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: save }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: cancel }, "Cancel"))) : /* @__PURE__ */ React.createElement("div", null, hasNotes ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text, lineHeight: 1.65, whiteSpace: "pre-wrap", marginBottom: 10 } }, day.planningNotes) : /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, fontStyle: "italic", marginBottom: 10 } }, "No planning notes yet."), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+    setDraft(day.planningNotes || "");
+    setEditing(true);
+  }, style: {
+    background: "none",
+    border: "1px solid " + C.border,
+    borderRadius: 7,
+    color: C.mid,
+    cursor: "pointer",
+    fontSize: 12,
+    padding: "5px 12px",
+    display: "flex",
+    alignItems: "center",
+    gap: 5
+  } }, "\u270F\uFE0F ", hasNotes ? "Edit notes" : "Add notes"))));
+}
 function DayView({ trip, city, day, onBack, addActivity, updateActivity, deleteActivity, reorderActivity, moveActivity, mutateDay, setModal, goDay }) {
   const [actModal, setActModal] = useState(null);
   const mobile = useMobile();
@@ -3857,7 +4196,74 @@ function DayView({ trip, city, day, onBack, addActivity, updateActivity, deleteA
   const isArrival = isFirstDay && prevCity;
   const isFirstCity = trip.cities[0] && city.id === trip.cities[0].id;
   const isOriginArrival = isFirstDay && isFirstCity && !prevCity && trip.originCity;
-  return /* @__PURE__ */ React.createElement("div", { className: "view-enter", style: { height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { className: "safe-top", style: { background: C.surface, borderBottom: `1px solid ${C.border}`, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "14px 14px 0" : "18px 28px 0", maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", gap: mobile ? 10 : 16 } }, /* @__PURE__ */ React.createElement("button", { onClick: onBack, style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 20, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "6px 14px 6px 10px", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 } }, "\u2039 Trip"), /* @__PURE__ */ React.createElement("div", { style: { width: 3, height: mobile ? 18 : 22, background: cityColor, borderRadius: 2 } }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 20 : 26, fontWeight: 400, color: C.text, lineHeight: 1 } }, day.label), isToday && /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, "Today"), day.isPreTrip && /* @__PURE__ */ React.createElement(Tag, { color: C.accent }, "\u2708 Departure Day"), day.isPostTrip && /* @__PURE__ */ React.createElement(Tag, { color: "#4e9f78" }, "\u{1F3E0} Return Home"), !day.isPreTrip && !day.isPostTrip && isArrival && /* @__PURE__ */ React.createElement(Tag, { color: "#4e9f78" }, "\u2190 ", prevCity.name), !day.isPreTrip && !day.isPostTrip && isOriginArrival && /* @__PURE__ */ React.createElement(Tag, { color: "#4e9f78" }, "\u2190 ", trip.originCity), !day.isPreTrip && !day.isPostTrip && isDeparture && /* @__PURE__ */ React.createElement(Tag, { color: C.accent }, "\u2192 ", nextCityObj.name)), /* @__PURE__ */ React.createElement("span", { style: { color: C.mid, fontSize: 12 } }, mobile ? `${city.name} \xB7 ` : "", fmtDow(day.date) && `${fmtDow(day.date)} \xB7 `, fmtDate(day.date)))), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "0 14px" : "0 28px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, borderTop: `1px solid ${C.border}`, marginTop: 10 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => navToDay(prevDay), disabled: !prevDay, style: { flex: 1, display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: "8px 4px", cursor: prevDay ? "pointer" : "default", opacity: prevDay ? 1 : 0.3 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: C.mid } }, "\u2039"), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "left", minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1 } }, "Prev Day"), prevDay && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.text, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, prevDay.label || fmtDate(prevDay.date)))), /* @__PURE__ */ React.createElement("div", { style: { width: 1, background: C.border, margin: "6px 0" } }), /* @__PURE__ */ React.createElement("button", { onClick: () => navToDay(nextDay), disabled: !nextDay, style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, background: "none", border: "none", padding: "8px 4px", cursor: nextDay ? "pointer" : "default", opacity: nextDay ? 1 : 0.3 } }, /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right", minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1 } }, "Next Day"), nextDay && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.text, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, nextDay.label || fmtDate(nextDay.date))), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: C.mid } }, "\u203A"))))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflow: "auto", padding: mobile ? "14px" : "28px" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1280, margin: "0 auto" } }, !mobile && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22, marginBottom: 28 } }, BLOCKS.map((block) => /* @__PURE__ */ React.createElement(DayBlock, { key: block, block, day, open, reorderActivity: (bl, fi, ti) => reorderActivity(bl, fi, ti) }))), mobile && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement(MobileAccordion, { day, isToday, open, reorderActivity: (bl, fi, ti) => reorderActivity(bl, fi, ti) })), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "view-enter", style: { height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { className: "safe-top", style: { background: C.surface, borderBottom: `1px solid ${C.border}`, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "14px 14px 0" : "18px 28px 0", maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", gap: mobile ? 10 : 16 } }, /* @__PURE__ */ React.createElement("button", { onClick: onBack, style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 20, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "6px 14px 6px 10px", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 } }, "\u2039 Trip"), /* @__PURE__ */ React.createElement("div", { style: { width: 3, height: mobile ? 18 : 22, background: cityColor, borderRadius: 2 } }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 20 : 26, fontWeight: 400, color: C.text, lineHeight: 1 } }, day.label), isToday && /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, "Today"), day.isPreTrip && /* @__PURE__ */ React.createElement(Tag, { color: C.accent }, "\u2708 Departure Day"), day.isPostTrip && /* @__PURE__ */ React.createElement(Tag, { color: "#4e9f78" }, "\u{1F3E0} Return Home"), !day.isPreTrip && !day.isPostTrip && isArrival && /* @__PURE__ */ React.createElement(Tag, { color: "#4e9f78" }, "\u2190 ", prevCity.name), !day.isPreTrip && !day.isPostTrip && isOriginArrival && /* @__PURE__ */ React.createElement(Tag, { color: "#4e9f78" }, "\u2190 ", trip.originCity), !day.isPreTrip && !day.isPostTrip && isDeparture && /* @__PURE__ */ React.createElement(Tag, { color: C.accent }, "\u2192 ", nextCityObj.name)), /* @__PURE__ */ React.createElement("span", { style: { color: C.mid, fontSize: 12 } }, mobile ? `${city.name} \xB7 ` : "", fmtDow(day.date) && `${fmtDow(day.date)} \xB7 `, fmtDate(day.date)))), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "0 14px" : "0 28px", marginTop: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, paddingBottom: 10 } }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => navToDay(prevDay),
+      disabled: !prevDay,
+      style: {
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        background: prevDay ? C.surface2 : "transparent",
+        border: "1px solid " + (prevDay ? C.border : "transparent"),
+        borderRadius: 10,
+        padding: "8px 12px",
+        cursor: prevDay ? "pointer" : "default",
+        opacity: prevDay ? 1 : 0,
+        transition: "all 0.15s"
+      },
+      onMouseEnter: (e) => {
+        if (prevDay) {
+          e.currentTarget.style.borderColor = C.accent;
+          e.currentTarget.style.background = C.accentBg;
+        }
+      },
+      onMouseLeave: (e) => {
+        if (prevDay) {
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.background = C.surface2;
+        }
+      }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, color: C.accent, fontWeight: 700, lineHeight: 1, flexShrink: 0 } }, "\u2190"),
+    /* @__PURE__ */ React.createElement("div", { style: { textAlign: "left", minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1, marginBottom: 2 } }, "Prev"), prevDay && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, prevDay.label || fmtDate(prevDay.date)))
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => navToDay(nextDay),
+      disabled: !nextDay,
+      style: {
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        gap: 8,
+        background: nextDay ? C.surface2 : "transparent",
+        border: "1px solid " + (nextDay ? C.border : "transparent"),
+        borderRadius: 10,
+        padding: "8px 12px",
+        cursor: nextDay ? "pointer" : "default",
+        opacity: nextDay ? 1 : 0,
+        transition: "all 0.15s"
+      },
+      onMouseEnter: (e) => {
+        if (nextDay) {
+          e.currentTarget.style.borderColor = C.accent;
+          e.currentTarget.style.background = C.accentBg;
+        }
+      },
+      onMouseLeave: (e) => {
+        if (nextDay) {
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.background = C.surface2;
+        }
+      }
+    },
+    /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right", minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1, marginBottom: 2 } }, "Next"), nextDay && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, nextDay.label || fmtDate(nextDay.date))),
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, color: C.accent, fontWeight: 700, lineHeight: 1, flexShrink: 0 } }, "\u2192")
+  )))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflow: "auto", padding: mobile ? "14px" : "28px" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1280, margin: "0 auto" } }, /* @__PURE__ */ React.createElement(DayPlanningNotes, { day, mutateDay, mobile }), !mobile && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22, marginBottom: 28 } }, BLOCKS.map((block) => /* @__PURE__ */ React.createElement(DayBlock, { key: block, block, day, open, reorderActivity: (bl, fi, ti) => reorderActivity(bl, fi, ti) }))), mobile && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement(MobileAccordion, { day, isToday, open, reorderActivity: (bl, fi, ti) => reorderActivity(bl, fi, ti) })), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement(
     Textarea,
     {
       label: "\u{1F4D6} Day reflection \u2014 saved in Look Back view",
@@ -3951,7 +4357,7 @@ function ActivityCard({ activity, blockAccent, onClick }) {
         e.currentTarget.style.borderColor = activity.isConfirmed ? "rgba(92,184,122,0.3)" : C.border;
       }
     },
-    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, typeInfo.icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 500, color: C.text, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, activity.title || /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontStyle: "italic" } }, "Untitled")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: activity.location || firstRef || activity.notes ? 5 : 0 } }, activity.time && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, activity.time), activity.duration && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, "\xB7 ", activity.duration), activity.confirmation && /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, "\u2713 ", activity.confirmation), activity.addedOnTrip && /* @__PURE__ */ React.createElement(Tag, { color: C.purple }, "on trip"), activity.completed && /* @__PURE__ */ React.createElement(Tag, { color: C.dim }, "done")), activity.location && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: firstRef || activity.notes ? 4 : 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, "\u{1F4CD} ", activity.location), firstRef && firstRef.url && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 4, marginTop: 2 } }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, typeInfo.icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 500, color: C.text, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, activity.title || /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontStyle: "italic" } }, "Untitled")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: activity.location || firstRef || activity.notes ? 5 : 0 } }, activity.time && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, activity.time), activity.duration && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, "\xB7 ", activity.duration), activity.confirmation && /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, "\u2713 ", activity.confirmation), activity.addedOnTrip && /* @__PURE__ */ React.createElement(Tag, { color: C.purple }, "on trip"), activity.completed && /* @__PURE__ */ React.createElement(Tag, { color: C.dim }, "done")), activity.location && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: firstRef || activity.notes ? 4 : 0, wordBreak: "break-word", overflowWrap: "break-word" } }, "\u{1F4CD} ", activity.location), firstRef && firstRef.url && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 4, marginTop: 2 } }, /* @__PURE__ */ React.createElement(
       "a",
       {
         href: firstRef.url,
@@ -3962,8 +4368,202 @@ function ActivityCard({ activity, blockAccent, onClick }) {
       },
       "\u{1F517} ",
       firstRef.label || firstRef.url
-    ), extraRefs > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.dim, flexShrink: 0 } }, "+", extraRefs, " more")), !firstRef && activity.notes && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontStyle: "italic" } }, activity.notes)))
+    ), extraRefs > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.dim, flexShrink: 0 } }, "+", extraRefs, " more")), !firstRef && activity.notes && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 3, wordBreak: "break-word", overflowWrap: "break-word", fontStyle: "italic" } }, activity.notes)))
   );
+}
+function MoveActivitySheet({ activity, block, cityId, dayId, trip, moveActivity, onClose, onDone }) {
+  const mobile = useMobile();
+  const allDaysFlat = trip ? trip.cities.flatMap((c) => c.days.map((d) => __spreadProps(__spreadValues({}, d), { cityId: c.id, cityName: c.name }))) : [];
+  const [selCityId, setSelCityId] = useState(cityId || (trip && trip.cities[0] ? trip.cities[0].id : ""));
+  const [selDayId, setSelDayId] = useState(dayId || (allDaysFlat[0] ? allDaysFlat[0].id : ""));
+  const [selBlock, setSelBlock] = useState(block);
+  const selCity = trip ? trip.cities.find((c) => c.id === selCityId) : null;
+  const selDays = selCity ? selCity.days : [];
+  const handleCityChange = (cid) => {
+    setSelCityId(cid);
+    const city = trip ? trip.cities.find((c) => c.id === cid) : null;
+    if (city && city.days.length > 0) setSelDayId(city.days[0].id);
+  };
+  const unchanged = selCityId === cityId && selDayId === dayId && selBlock === block;
+  const doMove = () => {
+    if (unchanged) {
+      onClose();
+      return;
+    }
+    moveActivity(cityId, dayId, block, activity.id, selCityId, selDayId, selBlock);
+    onDone();
+  };
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: { position: "fixed", inset: 0, zIndex: 1100, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(0,0,0,0.55)" },
+      onClick: (e) => {
+        if (e.target === e.currentTarget) onClose();
+      }
+    },
+    /* @__PURE__ */ React.createElement("div", { style: { background: C.bg, borderRadius: mobile ? "20px 20px 0 0" : 16, width: "100%", maxWidth: 480, padding: mobile ? "24px 20px 36px" : "28px 28px 28px", boxShadow: "0 -4px 32px rgba(0,0,0,0.4)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: C.text } }, "Move Activity"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginTop: 3 } }, '"', activity.title || "Untitled", '" \u2192 choose a new time slot')), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 22, padding: "0 4px" } }, "\xD7")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, trip && trip.cities.length > 1 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "City"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, trip.cities.map((c, i) => {
+      const col = CITY_PALETTE[i % CITY_PALETTE.length];
+      const active = selCityId === c.id;
+      return /* @__PURE__ */ React.createElement("button", { key: c.id, onClick: () => handleCityChange(c.id), style: {
+        padding: "7px 14px",
+        borderRadius: 20,
+        border: "1px solid " + (active ? col : C.border),
+        background: active ? col + "22" : C.surface2,
+        color: active ? col : C.mid,
+        cursor: "pointer",
+        fontSize: 13,
+        fontWeight: active ? 600 : 400,
+        transition: "all 0.15s"
+      } }, c.name);
+    }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Day"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: selDayId,
+        onChange: (e) => setSelDayId(e.target.value),
+        style: { width: "100%", background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14 }
+      },
+      selDays.map((d, i) => /* @__PURE__ */ React.createElement("option", { key: d.id, value: d.id }, d.date ? d.date.slice(5).replace("-", "/") : "Day " + (i + 1), " \u2014 ", d.label))
+    )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 } }, "Time of Day"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 } }, BLOCKS.map((bl) => {
+      const m = BLOCK_META[bl];
+      const active = selBlock === bl;
+      return /* @__PURE__ */ React.createElement("button", { key: bl, onClick: () => setSelBlock(bl), style: {
+        padding: "10px 8px",
+        borderRadius: 10,
+        border: "1px solid " + (active ? m.accent : C.border),
+        background: active ? m.accent + "18" : C.surface2,
+        cursor: "pointer",
+        textAlign: "center",
+        transition: "all 0.15s"
+      } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18 } }, m.icon), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: active ? 600 : 400, color: active ? m.accent : C.mid, marginTop: 3 } }, m.label));
+    }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, paddingTop: 4 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose, style: { flex: 1 } }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: doMove, style: { flex: 2, opacity: unchanged ? 0.4 : 1 } }, unchanged ? "No change" : "Move Here \u2197"))))
+  );
+}
+function ActivityPhotoTab({ photos, onAdd, onDelete, onCaption }) {
+  const fileRef = useRef(null);
+  const [lightbox, setLightbox] = useState(null);
+  const handleFiles = (files) => {
+    Array.from(files || []).forEach((file) => {
+      if (!file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = (e) => onAdd(e.target.result);
+      reader.readAsDataURL(file);
+    });
+  };
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => fileRef.current && fileRef.current.click(),
+      style: {
+        width: "100%",
+        padding: "12px 0",
+        background: "none",
+        border: "1px dashed " + C.border,
+        borderRadius: 10,
+        color: C.dim,
+        cursor: "pointer",
+        fontSize: 13,
+        fontWeight: 500,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        transition: "all 0.15s"
+      },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.borderColor = C.accent;
+        e.currentTarget.style.color = C.accent;
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.borderColor = C.border;
+        e.currentTarget.style.color = C.dim;
+      }
+    },
+    "\u{1F4F7} Add photos or screenshots"
+  ), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      ref: fileRef,
+      type: "file",
+      accept: "image/*",
+      multiple: true,
+      style: { display: "none" },
+      onChange: (e) => {
+        handleFiles(e.target.files);
+        e.target.value = "";
+      }
+    }
+  )), photos.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "32px 20px", color: C.dim, fontSize: 13 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 36, marginBottom: 8 } }, "\u{1F5BC}"), "No photos yet \u2014 tap above to add screenshots, receipts, or memory photos"), photos.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 } }, photos.map((photo, idx) => /* @__PURE__ */ React.createElement("div", { key: photo.id, style: { position: "relative", borderRadius: 10, overflow: "hidden", background: C.surface3, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement(
+    "img",
+    {
+      src: photo.dataUrl,
+      alt: photo.caption || "Photo " + (idx + 1),
+      onClick: () => setLightbox(idx),
+      style: { width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block", cursor: "pointer" }
+    }
+  ), /* @__PURE__ */ React.createElement("button", { onClick: () => onDelete(photo.id), style: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    background: "rgba(0,0,0,0.6)",
+    border: "none",
+    borderRadius: "50%",
+    width: 24,
+    height: 24,
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: 12,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  } }, "\u2715"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: photo.caption || "",
+      onChange: (e) => onCaption(photo.id, e.target.value),
+      placeholder: "Caption...",
+      style: {
+        width: "100%",
+        background: "rgba(0,0,0,0.5)",
+        border: "none",
+        padding: "5px 8px",
+        color: "#fff",
+        fontSize: 11,
+        outline: "none"
+      }
+    }
+  )))), lightbox !== null && photos[lightbox] && /* @__PURE__ */ React.createElement("div", { style: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.92)",
+    zIndex: 1200,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16
+  }, onClick: () => setLightbox(null) }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: "95vw", maxHeight: "90vh", position: "relative" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("img", { src: photos[lightbox].dataUrl, alt: "", style: { maxWidth: "100%", maxHeight: "85vh", borderRadius: 10, objectFit: "contain" } }), photos[lightbox].caption && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", color: "rgba(255,255,255,0.75)", fontSize: 13, marginTop: 10 } }, photos[lightbox].caption), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 12, marginTop: 12 } }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setLightbox((i) => Math.max(0, i - 1)),
+      disabled: lightbox === 0,
+      style: { background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, color: "#fff", padding: "8px 16px", cursor: lightbox === 0 ? "default" : "pointer", opacity: lightbox === 0 ? 0.3 : 1 }
+    },
+    "\u2190 Prev"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setLightbox(null),
+      style: { background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, color: "#fff", padding: "8px 16px", cursor: "pointer" }
+    },
+    "Close"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setLightbox((i) => Math.min(photos.length - 1, i + 1)),
+      disabled: lightbox === photos.length - 1,
+      style: { background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, color: "#fff", padding: "8px 16px", cursor: lightbox === photos.length - 1 ? "default" : "pointer", opacity: lightbox === photos.length - 1 ? 0.3 : 1 }
+    },
+    "Next \u2192"
+  )))));
 }
 function ActivityModal({ activity, block, isNew, currency, trip, onSave, onDelete, onClose, moveActivity, cityId, dayId }) {
   const mobile = useMobile();
@@ -3971,9 +4571,7 @@ function ActivityModal({ activity, block, isNew, currency, trip, onSave, onDelet
   const [tab, setTab] = useState("details");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showPresets, setShowPresets] = useState(isNew);
-  const allDaysFlat = trip ? trip.cities.flatMap((c) => c.days.map((d) => __spreadProps(__spreadValues({}, d), { cityId: c.id, cityName: c.name }))) : [];
-  const [moveBlock, setMoveBlock] = useState(block);
-  const [moveDayId, setMoveDayId] = useState(dayId || (allDaysFlat[0] ? allDaysFlat[0].id : ""));
+  const [showMoveSheet, setShowMoveSheet] = useState(false);
   const upd = (k, v) => setForm((f) => __spreadProps(__spreadValues({}, f), { [k]: v }));
   const updCost = (k, v) => setForm((f) => __spreadProps(__spreadValues({}, f), { cost: __spreadProps(__spreadValues({}, f.cost), { [k]: v }) }));
   const addRef = () => setForm((f) => __spreadProps(__spreadValues({}, f), { references: [...f.references, { id: uid(), url: "", label: "", notes: "" }] }));
@@ -3988,6 +4586,7 @@ function ActivityModal({ activity, block, isNew, currency, trip, onSave, onDelet
       if (mobile) return "\u{1F517}" + (form.references.length ? "\xB7" + form.references.length : "");
       return "\u{1F517} Links" + (cnt > 0 ? " (" + cnt + ")" : "");
     })() },
+    { id: "photos", label: mobile ? "\u{1F4F7}" + (form.photos && form.photos.length ? "\xB7" + form.photos.length : "") : "\u{1F4F7} Photos" + (form.photos && form.photos.length ? " (" + form.photos.length + ")" : "") },
     { id: "transit", label: mobile ? "\u{1F687}" : "\u{1F687} Transit" }
   ];
   const currentType = ACT_TYPES.find((t) => t.id === form.type) || ACT_TYPES[7];
@@ -4037,17 +4636,11 @@ function ActivityModal({ activity, block, isNew, currency, trip, onSave, onDelet
     color: tab === t.id ? meta.accent : C.mid,
     borderBottom: `2px solid ${tab === t.id ? meta.accent : "transparent"}`,
     flex: mobile ? 1 : "none"
-  } }, t.label)))), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "16px" : "20px 24px", overflowY: "auto", flex: 1 } }, tab === "details" && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: mobile ? 12 : 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Time", value: form.time, onChange: (v) => upd("time", v), placeholder: "14:30" }), /* @__PURE__ */ React.createElement(Input, { label: "Duration", value: form.duration, onChange: (v) => upd("duration", v), placeholder: "2h 30m" })), /* @__PURE__ */ React.createElement(Input, { label: "Location / Address", value: form.location, onChange: (v) => upd("location", v), placeholder: "Where is this?" }), /* @__PURE__ */ React.createElement(Textarea, { label: "Notes", value: form.notes, onChange: (v) => upd("notes", v), placeholder: "Tips, reminders, access info...", rows: 3 }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: mobile ? "column" : "row", gap: mobile ? 10 : 24 } }, [
+  } }, t.label)))), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "16px" : "20px 24px", overflowY: "auto", flex: 1 } }, tab === "details" && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: mobile ? 12 : 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Time", value: form.time, onChange: (v) => upd("time", v), placeholder: "14:30" }), /* @__PURE__ */ React.createElement(Input, { label: "Duration", value: form.duration, onChange: (v) => upd("duration", v), placeholder: "2h 30m" })), /* @__PURE__ */ React.createElement(Input, { label: "Location / Address", value: form.location, onChange: (v) => upd("location", v), placeholder: "Where is this?" }), /* @__PURE__ */ React.createElement(Textarea, { label: "Notes", value: form.notes, onChange: (v) => upd("notes", v), placeholder: "Tips, reminders, access info...", rows: mobile ? 4 : 5 }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: mobile ? "column" : "row", gap: mobile ? 10 : 24 } }, [
     { key: "isConfirmed", label: "\u2713 Reserved / Booked" },
     { key: "addedOnTrip", label: "\u{1F3F7}\uFE0F Added during trip" },
     { key: "completed", label: "\u2705 Completed" }
-  ].map(({ key, label }) => /* @__PURE__ */ React.createElement("label", { key, style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: C.mid } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: form[key], onChange: (e) => upd(key, e.target.checked) }), label))), !isNew && moveActivity && allDaysFlat.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "14px 16px", border: `1px solid ${C.border}`, marginTop: 4 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 } }, "Move to"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, color: C.dim, display: "block", marginBottom: 4 } }, "Block"), /* @__PURE__ */ React.createElement("select", { value: moveBlock, onChange: (e) => setMoveBlock(e.target.value) }, BLOCKS.map((bl) => /* @__PURE__ */ React.createElement("option", { key: bl, value: bl }, BLOCK_META[bl].icon, " ", BLOCK_META[bl].label)))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, color: C.dim, display: "block", marginBottom: 4 } }, "Day"), /* @__PURE__ */ React.createElement("select", { value: moveDayId, onChange: (e) => setMoveDayId(e.target.value) }, allDaysFlat.map((d) => /* @__PURE__ */ React.createElement("option", { key: d.id, value: d.id }, d.cityName, " \xB7 ", fmtDate(d.date), " ", d.label !== fmtDate(d.date) ? "\u2014 " + d.label : ""))))), (moveBlock !== block || moveDayId !== (dayId || "")) && /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => {
-    const toCity = allDaysFlat.find((d) => d.id === moveDayId);
-    if (toCity) {
-      moveActivity(cityId, dayId, block, activity.id, toCity.cityId, moveDayId, moveBlock);
-      onClose();
-    }
-  } }, "\u2197 Move Activity"))), tab === "cost" && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 14 } }, trip && trip.multiCurrency && trip.localCurrency && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface3, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.mid } }, /* @__PURE__ */ React.createElement("strong", { style: { color: C.accent } }, "Multi-currency on."), " Enter the local ", trip.localCurrency, " amount \u2014 the budget will auto-convert to ", currency, "."), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: `Estimated (${currency})`, value: form.cost.estimated, onChange: (v) => updCost("estimated", v), placeholder: "0.00", type: "number" }), /* @__PURE__ */ React.createElement(Input, { label: `Confirmed (${currency})`, value: form.cost.confirmed, onChange: (v) => updCost("confirmed", v), placeholder: "0.00", type: "number" })), trip && trip.multiCurrency && trip.localCurrency && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: `Local est. (${trip.localCurrency})`, value: form.cost.localAmount || "", onChange: (v) => updCost("localAmount", v), placeholder: "0", type: "number" }), /* @__PURE__ */ React.createElement(Input, { label: `Local confirmed (${trip.localCurrency})`, value: form.cost.localConfirmed || "", onChange: (v) => updCost("localConfirmed", v), placeholder: "0", type: "number" })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(Sel, { label: "Paid by", value: form.cost.paidBy, onChange: (v) => updCost("paidBy", v), options: [{ value: "you", label: "You" }, { value: "partner", label: "Partner" }, { value: "split", label: "Split" }, { value: "comp", label: "Comp / Free" }] }), /* @__PURE__ */ React.createElement(Sel, { label: "Category", value: form.cost.category, onChange: (v) => updCost("category", v), options: COST_CATS })), /* @__PURE__ */ React.createElement(Input, { label: "Cost notes", value: form.cost.notes, onChange: (v) => updCost("notes", v), placeholder: 'e.g., "Booked on points, includes tip..."' })), tab === "references" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "14px 16px", border: `1px solid ${form.confirmation ? C.okBdr : C.border}` } }, /* @__PURE__ */ React.createElement(
+  ].map(({ key, label }) => /* @__PURE__ */ React.createElement("label", { key, style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, color: C.mid } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: form[key], onChange: (e) => upd(key, e.target.checked) }), label)))), tab === "cost" && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 14 } }, trip && trip.multiCurrency && trip.localCurrency && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface3, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.mid } }, /* @__PURE__ */ React.createElement("strong", { style: { color: C.accent } }, "Multi-currency on."), " Enter the local ", trip.localCurrency, " amount \u2014 the budget will auto-convert to ", currency, "."), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: `Estimated (${currency})`, value: form.cost.estimated, onChange: (v) => updCost("estimated", v), placeholder: "0.00", type: "number" }), /* @__PURE__ */ React.createElement(Input, { label: `Confirmed (${currency})`, value: form.cost.confirmed, onChange: (v) => updCost("confirmed", v), placeholder: "0.00", type: "number" })), trip && trip.multiCurrency && trip.localCurrency && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: `Local est. (${trip.localCurrency})`, value: form.cost.localAmount || "", onChange: (v) => updCost("localAmount", v), placeholder: "0", type: "number" }), /* @__PURE__ */ React.createElement(Input, { label: `Local confirmed (${trip.localCurrency})`, value: form.cost.localConfirmed || "", onChange: (v) => updCost("localConfirmed", v), placeholder: "0", type: "number" })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Paid by"), /* @__PURE__ */ React.createElement("select", { value: form.cost.paidBy, onChange: (e) => updCost("paidBy", e.target.value), style: { width: "100%", background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 14 } }, trip && trip.travelers && trip.travelers.length >= 1 && /* @__PURE__ */ React.createElement("option", { value: "you" }, trip.travelers[0]), trip && trip.travelers && trip.travelers.length >= 2 && /* @__PURE__ */ React.createElement("option", { value: "partner" }, trip.travelers[1]), /* @__PURE__ */ React.createElement("option", { value: "split" }, "Split equally"), /* @__PURE__ */ React.createElement("option", { value: "comp" }, "Comp / Free"))), /* @__PURE__ */ React.createElement(Sel, { label: "Category", value: form.cost.category, onChange: (v) => updCost("category", v), options: COST_CATS })), /* @__PURE__ */ React.createElement(Input, { label: "Cost notes", value: form.cost.notes, onChange: (v) => updCost("notes", v), placeholder: 'e.g., "Booked on points, includes tip..."' })), tab === "references" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "14px 16px", border: `1px solid ${form.confirmation ? C.okBdr : C.border}` } }, /* @__PURE__ */ React.createElement(
     Input,
     {
       label: "Confirmation / Booking #",
@@ -4055,7 +4648,15 @@ function ActivityModal({ activity, block, isNew, currency, trip, onSave, onDelet
       onChange: (v) => upd("confirmation", v),
       placeholder: "e.g., JL4892, HTLX-00192..."
     }
-  ), form.confirmation && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "Appears in Vault and on the activity card"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontSize: 14, color: C.ok, fontWeight: 700, marginLeft: "auto" } }, form.confirmation))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: -4 } }, "Links shown directly on the activity card \u2014 booking pages, maps, menus, etc."), form.references.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { color: C.dim, fontSize: 14, fontStyle: "italic" } }, "No links yet."), form.references.map((ref) => /* @__PURE__ */ React.createElement("div", { key: ref.id, style: { background: C.surface2, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "URL", value: ref.url, onChange: (v) => updRef(ref.id, "url", v), placeholder: "https://..." }), /* @__PURE__ */ React.createElement(Input, { label: "Label", value: ref.label, onChange: (v) => updRef(ref.id, "label", v), placeholder: '"Reserve here", "Map", "Menu"...' })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "flex-end" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement(Input, { label: "Notes", value: ref.notes, onChange: (v) => updRef(ref.id, "notes", v), placeholder: "Research notes..." })), /* @__PURE__ */ React.createElement("button", { onClick: () => delRef(ref.id), style: { background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 18, paddingBottom: 8 } }, "\u2715")), ref.url && /* @__PURE__ */ React.createElement("a", { href: ref.url, target: "_blank", rel: "noreferrer", style: { fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, color: C.accent } }, "\u{1F517} ", ref.label || ref.url, " \u2197"))), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: addRef }, "+ Add Link")), tab === "transit" && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 14 } }, /* @__PURE__ */ React.createElement(
+  ), form.confirmation && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "Appears in Vault and on the activity card"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontSize: 14, color: C.ok, fontWeight: 700, marginLeft: "auto" } }, form.confirmation))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: -4 } }, "Links shown directly on the activity card \u2014 booking pages, maps, menus, etc."), form.references.length === 0 && /* @__PURE__ */ React.createElement("p", { style: { color: C.dim, fontSize: 14, fontStyle: "italic" } }, "No links yet."), form.references.map((ref) => /* @__PURE__ */ React.createElement("div", { key: ref.id, style: { background: C.surface2, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "URL", value: ref.url, onChange: (v) => updRef(ref.id, "url", v), placeholder: "https://..." }), /* @__PURE__ */ React.createElement(Input, { label: "Label", value: ref.label, onChange: (v) => updRef(ref.id, "label", v), placeholder: '"Reserve here", "Map", "Menu"...' })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "flex-end" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement(Input, { label: "Notes", value: ref.notes, onChange: (v) => updRef(ref.id, "notes", v), placeholder: "Research notes..." })), /* @__PURE__ */ React.createElement("button", { onClick: () => delRef(ref.id), style: { background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 18, paddingBottom: 8 } }, "\u2715")), ref.url && /* @__PURE__ */ React.createElement("a", { href: ref.url, target: "_blank", rel: "noreferrer", style: { fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, color: C.accent } }, "\u{1F517} ", ref.label || ref.url, " \u2197"))), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: addRef }, "+ Add Link")), tab === "photos" && /* @__PURE__ */ React.createElement(
+    ActivityPhotoTab,
+    {
+      photos: form.photos || [],
+      onAdd: (dataUrl) => setForm((f) => __spreadProps(__spreadValues({}, f), { photos: [...f.photos || [], { id: uid(), dataUrl, caption: "" }] })),
+      onDelete: (id) => setForm((f) => __spreadProps(__spreadValues({}, f), { photos: (f.photos || []).filter((p) => p.id !== id) })),
+      onCaption: (id, caption) => setForm((f) => __spreadProps(__spreadValues({}, f), { photos: (f.photos || []).map((p) => p.id === id ? __spreadProps(__spreadValues({}, p), { caption }) : p) }))
+    }
+  ), tab === "transit" && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 14 } }, /* @__PURE__ */ React.createElement(
     Textarea,
     {
       label: "Step-by-step transit directions",
@@ -4065,8 +4666,21 @@ function ActivityModal({ activity, block, isNew, currency, trip, onSave, onDelet
       rows: mobile ? 7 : 9
     }
   ), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim } }, "These directions appear in Travel Mode when this is the current or next activity."))), mobile ? (
-    /* Mobile: stacked layout — save/cancel full width, delete separate below */
-    /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 16px", borderTop: `1px solid ${C.border}`, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose, style: { flex: 1 } }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: () => onSave(form), style: { flex: 2 } }, isNew ? "Add Activity" : "Save Changes")), !isNew && onDelete && (confirmDelete ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => setConfirmDelete(false), style: { flex: 1 } }, "Keep it"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", onClick: onDelete, style: { flex: 1 } }, "Yes, Delete")) : /* @__PURE__ */ React.createElement("button", { onClick: () => setConfirmDelete(true), style: {
+    /* Mobile: stacked layout */
+    /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 16px", borderTop: `1px solid ${C.border}`, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose, style: { flex: 1 } }, "Cancel"), !isNew && moveActivity && /* @__PURE__ */ React.createElement("button", { onClick: () => setShowMoveSheet(true), style: {
+      flex: 1,
+      background: C.surface2,
+      border: "1px solid " + C.border,
+      borderRadius: 10,
+      color: C.mid,
+      cursor: "pointer",
+      fontSize: 13,
+      fontWeight: 500,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 5
+    } }, "\u2197 Move"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: () => onSave(form), style: { flex: 2 } }, isNew ? "Add Activity" : "Save Changes")), !isNew && onDelete && (confirmDelete ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: () => setConfirmDelete(false), style: { flex: 1 } }, "Keep it"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", onClick: onDelete, style: { flex: 1 } }, "Yes, Delete")) : /* @__PURE__ */ React.createElement("button", { onClick: () => setConfirmDelete(true), style: {
       background: "none",
       border: "none",
       color: C.warn,
@@ -4076,8 +4690,48 @@ function ActivityModal({ activity, block, isNew, currency, trip, onSave, onDelet
       textAlign: "center"
     } }, "Delete this activity")))
   ) : (
-    /* Desktop: original layout */
-    /* @__PURE__ */ React.createElement("div", { style: { padding: "14px 24px", borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", null, !isNew && onDelete && /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: onDelete }, "Delete")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: () => onSave(form) }, isNew ? "Add Activity" : "Save Changes")))
+    /* Desktop */
+    /* @__PURE__ */ React.createElement("div", { style: { padding: "14px 24px", borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, !isNew && onDelete && /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: onDelete }, "Delete"), !isNew && moveActivity && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setShowMoveSheet(true),
+        style: {
+          background: C.surface2,
+          border: "1px solid " + C.border,
+          borderRadius: 8,
+          color: C.mid,
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 500,
+          padding: "6px 14px",
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          transition: "all 0.15s"
+        },
+        onMouseEnter: (e) => {
+          e.currentTarget.style.borderColor = C.accent;
+          e.currentTarget.style.color = C.accent;
+        },
+        onMouseLeave: (e) => {
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.color = C.mid;
+        }
+      },
+      "\u2197 Move"
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: () => onSave(form) }, isNew ? "Add Activity" : "Save Changes")))
+  ), showMoveSheet && !isNew && moveActivity && trip && /* @__PURE__ */ React.createElement(
+    MoveActivitySheet,
+    {
+      activity,
+      block,
+      cityId,
+      dayId,
+      trip,
+      moveActivity,
+      onClose: () => setShowMoveSheet(false),
+      onDone: onClose
+    }
   ));
 }
 function VaultView({ activities, currency }) {
@@ -4122,73 +4776,116 @@ function BudgetView({ activities, currency, travelers, trip, mutateTrip }) {
   const rate = parseFloat(trip ? trip.exchangeRate : 0) || 1;
   const useLocal = trip && trip.multiCurrency && trip.localCurrency && rate > 0;
   const toBase = (localAmt) => useLocal ? localAmt / rate : localAmt;
-  const withCost = activities.filter((a) => a.cost && (a.cost.estimated || a.cost.confirmed));
   const t1 = travelers[0] || "You";
   const t2 = travelers[1] || "Partner";
-  const totals = withCost.reduce((acc, a) => {
-    const est = parseFloat(a.cost.estimated || 0);
-    const conf = parseFloat(a.cost.confirmed || 0);
-    const estBase = a.cost.localAmount ? toBase(parseFloat(a.cost.localAmount)) : est;
-    const confBase = a.cost.localConfirmed ? toBase(parseFloat(a.cost.localConfirmed)) : conf;
-    const val = confBase || estBase;
-    acc.estimated += estBase;
-    acc.actual += val;
-    if (a.cost.paidBy === "you") {
-      acc.byT1 += val;
-    }
-    if (a.cost.paidBy === "partner") {
-      acc.byT2 += val;
-    }
-    if (a.cost.paidBy === "split") {
-      acc.splitTotal += val;
-      acc.eachOwes += val / 2;
-    }
-    return acc;
-  }, { estimated: 0, actual: 0, byT1: 0, byT2: 0, splitTotal: 0, eachOwes: 0 });
-  const settlement = (totals.byT1 - totals.byT2) / 2;
-  const byCategory = COST_CATS.map((cat) => ({
-    cat,
-    total: withCost.filter((a) => a.cost.category === cat).reduce((s, a) => {
-      const conf = parseFloat(a.cost.localConfirmed || a.cost.confirmed || 0);
-      const est = parseFloat(a.cost.localAmount || a.cost.estimated || 0);
-      return s + toBase(conf || est);
-    }, 0)
-  })).filter((x) => x.total > 0).sort((a, b) => b.total - a.total);
-  const byCity = activities.reduce((acc, a) => {
-    if (!(a.cost && a.cost.estimated) && !(a.cost && a.cost.confirmed)) return acc;
+  const budgetItems = trip.budgetItems || [];
+  const [addingExpense, setAddingExpense] = useState(false);
+  const [expDraft, setExpDraft] = useState({ title: "", category: "Other", amount: "", paidBy: "split", notes: "" });
+  const [showLedger, setShowLedger] = useState(true);
+  const saveExpense = () => {
+    if (!expDraft.title.trim() || !expDraft.amount) return;
+    mutateTrip((t) => __spreadProps(__spreadValues({}, t), { budgetItems: [...t.budgetItems || [], newBudgetItem(expDraft)] }));
+    setExpDraft({ title: "", category: "Other", amount: "", paidBy: "split", notes: "" });
+    setAddingExpense(false);
+  };
+  const deleteExpense = (id) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { budgetItems: (t.budgetItems || []).filter((b) => b.id !== id) }));
+  const withCost = activities.filter((a) => a.cost && (a.cost.estimated || a.cost.confirmed));
+  const actVal = (a) => {
     const conf = parseFloat(a.cost.localConfirmed || a.cost.confirmed || 0);
     const est = parseFloat(a.cost.localAmount || a.cost.estimated || 0);
-    acc[a.cityName] = (acc[a.cityName] || 0) + toBase(conf || est);
+    return toBase(conf || est);
+  };
+  const budgVal = (b) => parseFloat(b.amount || 0);
+  const totals = (() => {
+    let estimated = 0, actual = 0, byT1 = 0, byT2 = 0, splitTotal = 0;
+    withCost.forEach((a) => {
+      const est = toBase(parseFloat(a.cost.localAmount || a.cost.estimated || 0));
+      const val = actVal(a);
+      estimated += est;
+      actual += val;
+      if (a.cost.paidBy === "you") byT1 += val;
+      else if (a.cost.paidBy === "partner") byT2 += val;
+      else splitTotal += val;
+    });
+    budgetItems.forEach((b) => {
+      const val = budgVal(b);
+      estimated += val;
+      actual += val;
+      if (b.paidBy === "you") byT1 += val;
+      else if (b.paidBy === "partner") byT2 += val;
+      else splitTotal += val;
+    });
+    return { estimated, actual, byT1, byT2, splitTotal, eachOwes: splitTotal / 2 };
+  })();
+  const settlement = (totals.byT1 - totals.byT2) / 2;
+  const t1Total = totals.byT1 + totals.eachOwes;
+  const t2Total = totals.byT2 + totals.eachOwes;
+  const byCategory = COST_CATS.map((cat) => {
+    const fromActs = withCost.filter((a) => a.cost.category === cat).reduce((s, a) => s + actVal(a), 0);
+    const fromBudg = budgetItems.filter((b) => b.category === cat).reduce((s, b) => s + budgVal(b), 0);
+    return { cat, total: fromActs + fromBudg };
+  }).filter((x) => x.total > 0).sort((a, b) => b.total - a.total);
+  const byCity = activities.reduce((acc, a) => {
+    if (!a.cost || !a.cost.estimated && !a.cost.confirmed) return acc;
+    acc[a.cityName] = (acc[a.cityName] || 0) + actVal(a);
     return acc;
   }, {});
-  return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 820, margin: "0 auto", padding: mobile ? "20px 14px" : "36px 28px" } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 26 : 32, color: C.text, marginBottom: mobile ? 18 : 24 } }, "\u{1F4B0} Budget Summary"), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "14px 18px", marginBottom: 18, display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: "1 1 160px", minWidth: 130 } }, /* @__PURE__ */ React.createElement(CurrencySel, { label: "Base Currency", value: trip.currency || "USD", onChange: (v) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { currency: v })) })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, flex: "1 1 200px" } }, /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.mid } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: !!trip.multiCurrency, onChange: async (e) => {
+  const ledgerRows = [
+    ...withCost.map((a) => ({ id: a.id, title: a.title || "Untitled", category: a.cost.category || "Other", amount: actVal(a), paidBy: a.cost.paidBy, source: "activity", cityName: a.cityName })),
+    ...budgetItems.map((b) => ({ id: b.id, title: b.title, category: b.category, amount: budgVal(b), paidBy: b.paidBy, source: "budget", notes: b.notes }))
+  ].filter((r) => r.amount > 0);
+  const fmtAmt = (v) => currency + " " + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const StatCard = ({ label, value, color, sub }) => /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 14, padding: mobile ? "16px 14px" : "20px 18px", border: "1px solid " + C.border, textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 600 } }, label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 22 : 26, fontWeight: 400, color: color || C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1, marginBottom: sub ? 4 : 0 } }, value === "\u2014" ? "\u2014" : fmtAmt(value)), sub && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, sub));
+  return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 860, margin: "0 auto", padding: mobile ? "20px 14px" : "36px 28px" } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 26 : 32, color: C.text, marginBottom: mobile ? 18 : 24 } }, "\u{1F4B0} Budget"), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "14px 18px", marginBottom: 18, display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: "1 1 140px", minWidth: 120 } }, /* @__PURE__ */ React.createElement(CurrencySel, { label: "Base Currency", value: trip.currency || "USD", onChange: (v) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { currency: v })) })), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.mid, flex: "0 0 auto" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: !!trip.multiCurrency, onChange: async (e) => {
     const on = e.target.checked;
     mutateTrip((t) => __spreadProps(__spreadValues({}, t), { multiCurrency: on }));
     if (on && trip.currency && trip.localCurrency && !trip.exchangeRate) {
       const r = await fetchExchangeRate(trip.currency, trip.localCurrency);
       if (r) mutateTrip((t) => __spreadProps(__spreadValues({}, t), { exchangeRate: r }));
     }
-  }, style: { width: "auto", transform: "scale(1.2)" } }), "Multi-currency")), trip.multiCurrency && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { flex: "1 1 160px", minWidth: 130 } }, /* @__PURE__ */ React.createElement(CurrencySel, { label: "Local Currency", value: trip.localCurrency || "", onChange: async (v) => {
+  }, style: { width: "auto", transform: "scale(1.2)" } }), "Multi-currency"), trip.multiCurrency && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { flex: "1 1 140px", minWidth: 120 } }, /* @__PURE__ */ React.createElement(CurrencySel, { label: "Local Currency", value: trip.localCurrency || "", onChange: async (v) => {
     mutateTrip((t) => __spreadProps(__spreadValues({}, t), { localCurrency: v }));
     if (v && trip.currency) {
       const r = await fetchExchangeRate(trip.currency, v);
       if (r) mutateTrip((t) => __spreadProps(__spreadValues({}, t), { exchangeRate: r }));
     }
-  } })), /* @__PURE__ */ React.createElement("div", { style: { flex: "1 1 140px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, color: C.dim, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" } }, (trip.localCurrency || "Local") + " per 1 " + (trip.currency || "USD")), /* @__PURE__ */ React.createElement("button", { onClick: async () => {
+  } })), /* @__PURE__ */ React.createElement("div", { style: { flex: "1 1 130px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, color: C.dim, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" } }, (trip.localCurrency || "Local") + " per 1 " + (trip.currency || "USD")), /* @__PURE__ */ React.createElement("button", { onClick: async () => {
     const r = await fetchExchangeRate(trip.currency, trip.localCurrency);
     if (r) mutateTrip((t) => __spreadProps(__spreadValues({}, t), { exchangeRate: r }));
-  }, style: { background: "none", border: "none", fontSize: 10, color: C.accent, cursor: "pointer", padding: 0 } }, "\u21BB Live rate")), /* @__PURE__ */ React.createElement("input", { type: "number", value: trip.exchangeRate || "", onChange: (e) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { exchangeRate: e.target.value })), placeholder: "fetching...", style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 14 } })))), useLocal && /* @__PURE__ */ React.createElement("div", { style: { background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 8, padding: "10px 14px", marginBottom: 18, fontSize: 13, color: C.mid } }, /* @__PURE__ */ React.createElement("strong", { style: { color: C.accent } }, "Multi-currency on"), " \u2014 local ", trip.localCurrency, " amounts converted to ", currency, " at rate ", rate, " : 1."), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3, 1fr)", gap: mobile ? 10 : 16, marginBottom: mobile ? 18 : 28 } }, [
-    { label: "Estimated Total", value: fmt(totals.estimated, currency), color: C.mid },
-    { label: "Actual / Confirmed", value: fmt(totals.actual, currency), color: C.ok },
+  }, style: { background: "none", border: "none", fontSize: 10, color: C.accent, cursor: "pointer", padding: 0 } }, "\u21BB Live rate")), /* @__PURE__ */ React.createElement("input", { type: "number", value: trip.exchangeRate || "", onChange: (e) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { exchangeRate: e.target.value })), placeholder: "e.g. 1.08", style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 14 } })))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: mobile ? 8 : 12, marginBottom: 16 } }, /* @__PURE__ */ React.createElement(StatCard, { label: "Estimated", value: totals.estimated, color: C.mid }), /* @__PURE__ */ React.createElement(StatCard, { label: "Confirmed", value: totals.actual, color: C.ok }), /* @__PURE__ */ React.createElement(StatCard, { label: t1 + " fronted", value: totals.byT1, color: C.accent, sub: "+ " + fmtAmt(totals.eachOwes) + " split" }), /* @__PURE__ */ React.createElement(StatCard, { label: t2 + " fronted", value: totals.byT2, color: "#7a8fcc", sub: "+ " + fmtAmt(totals.eachOwes) + " split" })), totals.actual > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20, padding: "14px 18px", borderRadius: 12, border: "1px solid " + (trip.debtSettled ? C.okBdr : settlement === 0 ? C.okBdr : C.accentBdr), background: trip.debtSettled ? C.okBg : settlement === 0 ? C.okBg : C.accentBg, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("div", null, settlement === 0 ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15, color: C.ok, fontWeight: 600 } }, "\u2713 All square \u2014 expenses are evenly split!") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15, color: trip.debtSettled ? C.ok : C.accent, fontWeight: 600 } }, trip.debtSettled ? "\u2713 Settled \u2014 " : "", /* @__PURE__ */ React.createElement("strong", null, settlement > 0 ? t2 : t1), " owes ", /* @__PURE__ */ React.createElement("strong", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 18 } }, fmtAmt(Math.abs(settlement))), " to even out"), settlement !== 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 4 } }, t1, " total share: ", fmtAmt(t1Total), " \xB7 ", t2, " total share: ", fmtAmt(t2Total))), settlement !== 0 && /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.mid, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: trip.debtSettled || false, onChange: (e) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { debtSettled: e.target.checked })) }), "Mark settled")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, addingExpense ? /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: 18, border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: C.accent, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 } }, "Add Expense"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: "Description", value: expDraft.title, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { title: v })), placeholder: "e.g., Gas, Tolls, Snacks, Pet sitter" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Sel, { label: "Category", value: expDraft.category, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { category: v })), options: COST_CATS }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Paid by"), /* @__PURE__ */ React.createElement("select", { value: expDraft.paidBy, onChange: (e) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { paidBy: e.target.value })), style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 } }, /* @__PURE__ */ React.createElement("option", { value: "split" }, "Split equally"), /* @__PURE__ */ React.createElement("option", { value: "you" }, t1), /* @__PURE__ */ React.createElement("option", { value: "partner" }, t2))), /* @__PURE__ */ React.createElement(Input, { label: "Amount (" + (trip.currency || "USD") + ")", type: "number", value: expDraft.amount, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { amount: v })), placeholder: "0.00" })), /* @__PURE__ */ React.createElement(Input, { label: "Notes (optional)", value: expDraft.notes, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { notes: v })), placeholder: "Any details..." }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: saveExpense }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setAddingExpense(false) }, "Cancel")))) : /* @__PURE__ */ React.createElement(
+    "button",
     {
-      label: settlement === 0 ? "All square!" : settlement > 0 ? `${t2} owes ${t1}` : `${t1} owes ${t2}`,
-      value: fmt(Math.abs(settlement), currency),
-      color: settlement === 0 ? C.ok : C.accent
-    }
-  ].map((card) => /* @__PURE__ */ React.createElement("div", { key: card.label, style: { background: C.surface, borderRadius: 12, padding: "20px 18px", border: `1px solid ${C.border}`, textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.mid, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" } }, card.label), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6 } }, card.value === "\u2014" ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 26, fontWeight: 600, color: card.color, fontFamily: "'Cormorant Garamond', serif" } }, "\u2014") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: card.color, opacity: 0.75, letterSpacing: "0.04em", fontFamily: "DM Sans, sans-serif" } }, currency), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 30, fontWeight: 400, color: card.color, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 } }, Number(card.value.replace(/[^0-9.]/g, "")).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))))))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 } }, byCategory.length > 0 && /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "20px 22px" } }, /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, marginBottom: 16, fontSize: 15, fontWeight: 500 } }, "By Category"), byCategory.map(({ cat, total }) => {
+      onClick: () => setAddingExpense(true),
+      style: {
+        width: "100%",
+        padding: "11px 0",
+        background: "none",
+        border: "1px dashed " + C.border,
+        borderRadius: 10,
+        color: C.dim,
+        cursor: "pointer",
+        fontSize: 13,
+        fontWeight: 500,
+        transition: "all 0.15s"
+      },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.borderColor = C.accent;
+        e.currentTarget.style.color = C.accent;
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.borderColor = C.border;
+        e.currentTarget.style.color = C.dim;
+      }
+    },
+    "+ Add standalone expense"
+  )), ledgerRows.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowLedger((s) => !s), style: { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface2, border: "1px solid " + C.border, borderRadius: showLedger ? "12px 12px 0 0" : 12, padding: "12px 18px", cursor: "pointer", textAlign: "left" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "All Expenses ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 400, color: C.mid } }, "(", ledgerRows.length, " items \xB7 ", fmtAmt(totals.actual), ")")), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, transform: showLedger ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "inline-block" } }, "\u25BE")), showLedger && /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid " + C.border, borderTop: "none", borderRadius: "0 0 12px 12px", overflow: "hidden" } }, [
+    { key: "you", label: "\u{1F4B3} " + t1, rows: ledgerRows.filter((r) => r.paidBy === "you") },
+    { key: "partner", label: "\u{1F4B3} " + t2, rows: ledgerRows.filter((r) => r.paidBy === "partner") },
+    { key: "split", label: "\u{1F91D} Split equally", rows: ledgerRows.filter((r) => r.paidBy === "split" || !r.paidBy) }
+  ].filter((g) => g.rows.length > 0).map((group, gi) => /* @__PURE__ */ React.createElement("div", { key: group.key }, gi > 0 && /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border } }), /* @__PURE__ */ React.createElement("div", { style: { padding: "8px 18px 4px", background: C.surface3, fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", display: "flex", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", null, group.label), /* @__PURE__ */ React.createElement("span", null, fmtAmt(group.rows.reduce((s, r) => s + r.amount, 0)))), group.rows.map((row, ri) => /* @__PURE__ */ React.createElement("div", { key: row.id, style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 18px", borderTop: ri === 0 ? "none" : "1px solid " + C.border, background: ri % 2 === 0 ? "transparent" : C.surface2 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, row.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 1 } }, row.category, row.cityName ? " \xB7 " + row.cityName : "", row.source === "budget" ? " \xB7 standalone" : "")), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 500, color: C.text, flexShrink: 0 } }, fmtAmt(row.amount)), row.source === "budget" && /* @__PURE__ */ React.createElement("button", { onClick: () => deleteExpense(row.id), style: { background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 13, padding: "0 0 0 4px", flexShrink: 0 }, title: "Delete" }, "\u2715"))))))), (byCategory.length > 0 || Object.keys(byCity).length > 0) && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 16 } }, byCategory.length > 0 && /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, marginBottom: 14, fontSize: 14, fontWeight: 600 } }, "By Category"), byCategory.map(({ cat, total }) => {
     const pct = totals.actual > 0 ? total / totals.actual * 100 : 0;
-    return /* @__PURE__ */ React.createElement("div", { key: cat, style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 5 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: C.text } }, cat), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid } }, fmt(total, currency))), /* @__PURE__ */ React.createElement("div", { style: { height: 5, background: C.surface3, borderRadius: 3 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: `${pct}%`, background: C.accent, borderRadius: 3 } })));
-  })), Object.keys(byCity).length > 0 && /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "20px 22px" } }, /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, marginBottom: 16, fontSize: 15, fontWeight: 500 } }, "By City"), Object.entries(byCity).sort((a, b) => b[1] - a[1]).map(([city, total], i) => /* @__PURE__ */ React.createElement("div", { key: city, style: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: CITY_PALETTE[i % CITY_PALETTE.length] } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: C.text } }, city)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: C.mid } }, fmt(total, currency)))))), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "20px 22px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, marginBottom: 6, fontSize: 15, fontWeight: 500 } }, "Bill Split"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginBottom: 14 } }, "Settlement = half the difference of individually-fronted costs. Split items are 50/50."), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 14 } }, [[t1, totals.byT1, "Fronted solo"], [t2, totals.byT2, "Fronted solo"], ["Split items", totals.splitTotal, `${fmt(totals.eachOwes, currency)} each`]].map(([who, amt, sub]) => /* @__PURE__ */ React.createElement("div", { key: who, style: { background: C.surface2, borderRadius: 8, padding: "12px 16px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid, marginBottom: 2 } }, who), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20, fontFamily: "'Cormorant Garamond', serif", color: C.text } }, fmt(amt, currency)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, sub)))), settlement !== 0 && /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 16px", background: trip.debtSettled ? C.okBg : C.accentBg, borderRadius: 8, border: `1px solid ${trip.debtSettled ? C.okBdr : C.accentBdr}`, fontSize: 14, color: trip.debtSettled ? C.ok : C.accent, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("span", null, trip.debtSettled ? "\u2713 Settled \u2014 " : "", /* @__PURE__ */ React.createElement("strong", null, settlement > 0 ? t2 : t1), " owes ", /* @__PURE__ */ React.createElement("strong", null, fmt(Math.abs(settlement), currency)), " to even things out."), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: trip.debtSettled || false, onChange: (e) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { debtSettled: e.target.checked })) }), "Mark settled")), settlement === 0 && totals.actual > 0 && /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 16px", background: C.okBg, borderRadius: 8, border: `1px solid ${C.okBdr}`, fontSize: 14, color: C.ok } }, "\u2713 All square \u2014 expenses are evenly split!")));
+    return /* @__PURE__ */ React.createElement("div", { key: cat, style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text } }, cat), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, fmtAmt(total), " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, "(", Math.round(pct), "%)"))), /* @__PURE__ */ React.createElement("div", { style: { height: 5, background: C.surface3, borderRadius: 3 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: pct + "%", background: C.accent, borderRadius: 3, transition: "width 0.4s ease" } })));
+  })), Object.keys(byCity).length > 0 && /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, marginBottom: 14, fontSize: 14, fontWeight: 600 } }, "By City"), Object.entries(byCity).sort((a, b) => b[1] - a[1]).map(([city, total], i) => /* @__PURE__ */ React.createElement("div", { key: city, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: CITY_PALETTE[i % CITY_PALETTE.length], flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text } }, city)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid } }, fmtAmt(total)))))), totals.actual === 0 && budgetItems.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 20px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\u{1F4B0}"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, marginBottom: 6, color: C.mid } }, "No costs tracked yet"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13 } }, "Add costs to activities in the Itinerary, or use the button above for standalone expenses.")));
 }
 function NewTripModal({ onSave, onClose }) {
   const [form, setForm] = useState({ title: "", startDate: "", endDate: "", currency: "USD", ptoDays: "" });
@@ -4903,6 +5600,42 @@ function TemplatesModal({ trip, templates, onSave, onDelete, onImport, onClose }
   const canImport = !!selected && !!trip && !!onImport;
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", maxHeight: "90vh" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "18px 18px 0" : "22px 24px 0", borderBottom: "1px solid " + C.border, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: C.text } }, "Checklist Templates"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 2 } }, "Reusable packing lists and checklists for any trip.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", flexShrink: 0 } }, "x")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, marginTop: 8 } }, trip && onImport && tabBtn("browse", "Browse & Import"), tabBtn("edit", "My Templates"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "16px 18px" : "20px 24px" } }, tab === "browse" && renderBrowse(), tab === "edit" && renderEdit()), tab === "browse" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, borderTop: "1px solid " + C.border, padding: mobile ? "12px 18px" : "14px 24px", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" } }, tpl && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid, flex: 1 } }, tpl.items.length, " items selected"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !canImport, onClick: doImport }, canImport ? "Import to Trip" : "Select a template")), tab === "edit" && editView === "list" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, borderTop: "1px solid " + C.border, padding: mobile ? "12px 18px" : "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.dim } }, templates.length, " custom template", templates.length !== 1 ? "s" : ""), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Close"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: startNew }, "+ New Template"))), tab === "edit" && editView === "form" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, height: 1, background: C.border } }));
 }
+const LOGO_DATA_URL = "data:image/png;base64,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";
+function SplashScreen({ onDone }) {
+  const [visible, setVisible] = useState(true);
+  const [fading, setFading] = useState(false);
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setFading(true), 800);
+    const doneTimer = setTimeout(() => {
+      setVisible(false);
+      onDone();
+    }, 1200);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(doneTimer);
+    };
+  }, []);
+  if (!visible) return null;
+  return /* @__PURE__ */ React.createElement("div", { style: {
+    position: "fixed",
+    inset: 0,
+    background: "#000",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+    opacity: fading ? 0 : 1,
+    transition: "opacity 0.4s ease"
+  } }, /* @__PURE__ */ React.createElement("img", { src: LOGO_DATA_URL, alt: "Journey", style: { width: 80, height: 80, objectFit: "contain", marginBottom: 18 } }), /* @__PURE__ */ React.createElement("span", { style: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 42,
+    fontWeight: 300,
+    color: "#e8e4dc",
+    letterSpacing: "-0.01em",
+    lineHeight: 1
+  } }, "Journey"));
+}
 function App() {
   const [trips, setTrips] = useState(function() { try { var s = localStorage.getItem("journey_trips_v1"); if (s) return JSON.parse(s); } catch(e) {} return SAMPLE_TRIPS; });
   const [templates, setTemplates] = useState(function() { try { var s = localStorage.getItem("journey_templates_v1"); if (s) return JSON.parse(s); } catch(e) {} return []; });
@@ -4935,7 +5668,22 @@ function App() {
       return false;
     }
   });
+  const [showSplash, setShowSplash] = useState(true);
   const [homeSearch, setHomeSearch] = useState("");
+  const [travelProfile, setTravelProfile] = useState(() => {
+    try {
+      const s = localStorage.getItem("journey_travel_profile");
+      return s ? JSON.parse(s) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("journey_travel_profile", JSON.stringify(travelProfile));
+    } catch (e) {
+    }
+  }, [travelProfile]);
   const showToast = (msg, undoFn, duration = 5e3) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ msg, undo: undoFn });
@@ -5048,11 +5796,19 @@ function App() {
     setDayId(did);
     setView("day");
   };
-  return /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: "100vh", color: C.text } }, /* @__PURE__ */ React.createElement(ToastBar, { toast, onDismiss: () => setToast(null) }), showOnboarding && /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: "100vh", color: C.text } }, showSplash && /* @__PURE__ */ React.createElement(SplashScreen, { onDone: () => setShowSplash(false) }), /* @__PURE__ */ React.createElement(ToastBar, { toast, onDismiss: () => setToast(null) }), showOnboarding && /* @__PURE__ */ React.createElement(
     OnboardingModal,
     {
       onStart: (withDemo) => {
         if (!withDemo) setTrips([]);
+        try {
+          localStorage.setItem("journey_onboarded", "1");
+        } catch (e) {
+        }
+        setShowOnboarding(false);
+      },
+      onImport: (trips2) => {
+        setTrips(trips2.map(restampIds));
         try {
           localStorage.setItem("journey_onboarded", "1");
         } catch (e) {
@@ -5074,6 +5830,8 @@ function App() {
       search: homeSearch,
       onSearch: setHomeSearch,
       pwaPrompt,
+      travelProfile,
+      onSaveTravelProfile: setTravelProfile,
       onInstall: (e) => {
         if (!e) {
           setPwaPrompt(null);
