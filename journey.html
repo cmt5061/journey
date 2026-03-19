@@ -4237,6 +4237,7 @@ function DayView({ trip, city, day, onBack, addActivity, updateActivity, deleteA
       disabled: !prevDay,
       style: {
         flex: 1,
+        minWidth: 0,
         display: "flex",
         alignItems: "center",
         gap: 8,
@@ -4262,7 +4263,7 @@ function DayView({ trip, city, day, onBack, addActivity, updateActivity, deleteA
       }
     },
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, color: C.accent, fontWeight: 700, lineHeight: 1, flexShrink: 0 } }, "\u2190"),
-    /* @__PURE__ */ React.createElement("div", { style: { textAlign: "left", minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1, marginBottom: 2 } }, "Prev"), prevDay && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, prevDay.label || fmtDate(prevDay.date)))
+    /* @__PURE__ */ React.createElement("div", { style: { textAlign: "left", minWidth: 0, flex: 1, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1, marginBottom: 2 } }, "Prev"), prevDay && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, prevDay.label || fmtDate(prevDay.date)))
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -4270,6 +4271,7 @@ function DayView({ trip, city, day, onBack, addActivity, updateActivity, deleteA
       disabled: !nextDay,
       style: {
         flex: 1,
+        minWidth: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "flex-end",
@@ -4295,7 +4297,7 @@ function DayView({ trip, city, day, onBack, addActivity, updateActivity, deleteA
         }
       }
     },
-    /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right", minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1, marginBottom: 2 } }, "Next"), nextDay && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, nextDay.label || fmtDate(nextDay.date))),
+    /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right", minWidth: 0, flex: 1, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1, marginBottom: 2 } }, "Next"), nextDay && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, nextDay.label || fmtDate(nextDay.date))),
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, color: C.accent, fontWeight: 700, lineHeight: 1, flexShrink: 0 } }, "\u2192")
   )))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflow: "auto", padding: mobile ? "14px" : "28px" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1280, margin: "0 auto" } }, /* @__PURE__ */ React.createElement(DayPlanningNotes, { day, mutateDay, mobile }), !mobile && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22, marginBottom: 28 } }, BLOCKS.map((block) => /* @__PURE__ */ React.createElement(DayBlock, { key: block, block, day, open, reorderActivity: (bl, fi, ti) => reorderActivity(bl, fi, ti) }))), mobile && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement(MobileAccordion, { day, isToday, open, reorderActivity: (bl, fi, ti) => reorderActivity(bl, fi, ti) })), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement(
     Textarea,
