@@ -4098,7 +4098,7 @@ function MobileAccordion({ day, isToday, open, reorderActivity }) {
                 ),
                 React.createElement(
                   "div",
-                  { style: { flex: 1 } },
+                  { style: { flex: 1, minWidth: 0 } },
                   React.createElement(ActivityCard, { activity: act, blockAccent: meta.accent, onClick: function() {
                     open(bl, act);
                   } })
@@ -4405,7 +4405,16 @@ function ActivityCard({ activity, blockAccent, onClick }) {
       },
       "\u{1F517} ",
       firstRef.label || firstRef.url
-    ), extraRefs > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.dim, flexShrink: 0 } }, "+", extraRefs, " more")), !firstRef && activity.notes && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 3, wordBreak: "break-word", overflowWrap: "break-word", fontStyle: "italic" } }, activity.notes)))
+    ), extraRefs > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.dim, flexShrink: 0 } }, "+", extraRefs, " more")), !firstRef && activity.notes && /* @__PURE__ */ React.createElement("div", { style: {
+      fontSize: 11,
+      color: C.dim,
+      marginTop: 3,
+      fontStyle: "italic",
+      overflow: "hidden",
+      display: "-webkit-box",
+      WebkitLineClamp: 2,
+      WebkitBoxOrient: "vertical"
+    } }, activity.notes.split("\n")[0])))
   );
 }
 function MoveActivitySheet({ activity, block, cityId, dayId, trip, moveActivity, onClose, onDone }) {
