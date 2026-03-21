@@ -918,26 +918,33 @@ const readJSONFile = (file) => new Promise((resolve, reject) => {
   reader.readAsText(file);
 });
 const fixCorruptedEmoji = (trips) => {
-  const tryFix = (str) => {
-    if (typeof str !== "string" || str.length < 2) return str;
-    if (str.length <= 6 && Array.from(str).every((c) => c.charCodeAt(0) >= 128 && c.charCodeAt(0) <= 255)) {
-      try {
-        const bytes = new Uint8Array(str.length);
-        for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
-        const decoded = new TextDecoder("utf-8").decode(bytes);
-        if (Array.from(decoded).length < str.length) return decoded;
-      } catch (e) {
+  const repairString = (str) => {
+    if (typeof str !== "string" || str.length === 0) return str;
+    let hasHighBytes = false;
+    for (let i = 0; i < str.length; i++) {
+      if (str.charCodeAt(i) > 127 && str.charCodeAt(i) <= 255) {
+        hasHighBytes = true;
+        break;
       }
     }
-    return str;
+    if (!hasHighBytes) return str;
+    try {
+      const bytes = new Uint8Array(str.length);
+      for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i) & 255;
+      const decoded = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      return decoded;
+    } catch (e) {
+      return str;
+    }
   };
   const fixObj = (obj) => {
     if (Array.isArray(obj)) return obj.map(fixObj);
     if (obj && typeof obj === "object") {
       const out = {};
-      for (const k in obj) out[k] = typeof obj[k] === "string" ? tryFix(obj[k]) : fixObj(obj[k]);
+      for (const k in obj) out[k] = fixObj(obj[k]);
       return out;
     }
+    if (typeof obj === "string") return repairString(obj);
     return obj;
   };
   return trips.map((t) => fixObj(t));
