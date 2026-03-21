@@ -1807,7 +1807,7 @@ function TripCard({ trip, mobile, onOpen, onDuplicate }) {
     transition: "all 0.2s",
     position: "relative",
     boxShadow: cardShadow
-  } }, isComplete && trip.coverPhoto && /* @__PURE__ */ React.createElement("div", { style: { position: "relative", width: "100%", height: 140, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("img", { src: trip.coverPhoto, alt: "", style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } }), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 40%, " + C.surface + " 100%)" } })), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "18px 20px" : "24px 26px", paddingTop: isComplete && trip.coverPhoto ? "10px" : mobile ? "18px" : "24px" } }, isActive && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: 16, right: 16, display: "flex", alignItems: "center", gap: 6, background: "rgba(92,184,122,0.12)", border: "1px solid rgba(92,184,122,0.3)", borderRadius: 20, padding: "4px 10px 4px 7px" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 7, height: 7, borderRadius: "50%", background: C.ok, animation: "pulse 2s infinite", flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.ok, fontWeight: 700, letterSpacing: "0.04em" } }, "LIVE")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 5, marginBottom: 14, paddingRight: isActive ? 70 : 0 } }, trip.cities.length > 0 ? trip.cities.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { flex: c.nights, height: 3, borderRadius: 2, background: CITY_PALETTE[i % CITY_PALETTE.length] }, title: c.name })) : /* @__PURE__ */ React.createElement("div", { style: { flex: 1, height: 3, borderRadius: 2, background: C.border } })), /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 22 : 26, fontWeight: 400, color: C.text, marginBottom: 4, lineHeight: 1.2 } }, trip.title), /* @__PURE__ */ React.createElement("p", { style: { color: C.accent, fontSize: 13, marginBottom: 12, opacity: 0.85 } }, fmtDateRange(trip.startDate, trip.endDate)), trip.cities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, marginBottom: 12 } }, trip.cities.map((c, i) => /* @__PURE__ */ React.createElement(React.Fragment, { key: c.id }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, padding: "3px 10px", borderRadius: 10, background: CITY_PALETTE[i % CITY_PALETTE.length] + "22", color: CITY_PALETTE[i % CITY_PALETTE.length], fontWeight: 500, whiteSpace: "nowrap" } }, c.name, " \xB7 ", c.nights - 1, "n"), i < trip.cities.length - 1 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, flexShrink: 0 } }, "\u2192")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Tag, { color: sm.color }, sm.label), totalNights > 0 && /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontSize: 13 } }, totalNights, " nights"), trip.ptoDays && /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontSize: 13 } }, trip.ptoDays, " PTO")), isComplete && totalCostConfirmed > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, paddingTop: 10, borderTop: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, "Total spent:"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: C.text } }, trip.currency || "USD", " ", totalCostConfirmed.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }))), onDuplicate && /* @__PURE__ */ React.createElement(
+  } }, isComplete && trip.coverPhoto && /* @__PURE__ */ React.createElement("div", { style: { position: "relative", width: "100%", height: 140, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("img", { src: trip.coverPhoto, alt: "", style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } }), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 40%, " + C.surface + " 100%)" } })), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "18px 20px" : "24px 26px", paddingTop: isComplete && trip.coverPhoto ? "10px" : mobile ? "18px" : "24px" } }, isActive && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: 16, right: 16, display: "flex", alignItems: "center", gap: 6, background: "rgba(92,184,122,0.12)", border: "1px solid rgba(92,184,122,0.3)", borderRadius: 20, padding: "4px 10px 4px 7px" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 7, height: 7, borderRadius: "50%", background: C.ok, animation: "pulse 2s infinite", flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.ok, fontWeight: 700, letterSpacing: "0.04em" } }, "LIVE")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14, paddingRight: isActive ? 70 : 0 } }, trip.cities.length > 0 ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 3, marginBottom: 6 } }, trip.cities.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { flex: c.nights, height: 3, borderRadius: 2, background: CITY_PALETTE[i % CITY_PALETTE.length] }, title: c.name + " \xB7 " + (c.nights - 1) + " nights" }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 3 } }, trip.cities.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { flex: c.nights, minWidth: 0, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: CITY_PALETTE[i % CITY_PALETTE.length], whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "0.02em" } }, c.name), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, whiteSpace: "nowrap" } }, c.nights - 1, "n"))))) : /* @__PURE__ */ React.createElement("div", { style: { height: 3, borderRadius: 2, background: C.border } })), /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 22 : 26, fontWeight: 400, color: C.text, marginBottom: 4, lineHeight: 1.2 } }, trip.title), /* @__PURE__ */ React.createElement("p", { style: { color: C.accent, fontSize: 13, marginBottom: 12, opacity: 0.85 } }, fmtDateRange(trip.startDate, trip.endDate)), trip.cities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, marginBottom: 12 } }, trip.cities.map((c, i) => /* @__PURE__ */ React.createElement(React.Fragment, { key: c.id }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, padding: "3px 10px", borderRadius: 10, background: CITY_PALETTE[i % CITY_PALETTE.length] + "22", color: CITY_PALETTE[i % CITY_PALETTE.length], fontWeight: 500, whiteSpace: "nowrap" } }, c.name, " \xB7 ", c.nights - 1, "n"), i < trip.cities.length - 1 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, flexShrink: 0 } }, "\u2192")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Tag, { color: sm.color }, sm.label), totalNights > 0 && /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontSize: 13 } }, totalNights, " nights"), trip.ptoDays && /* @__PURE__ */ React.createElement("span", { style: { color: C.dim, fontSize: 13 } }, trip.ptoDays, " PTO")), isComplete && totalCostConfirmed > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, paddingTop: 10, borderTop: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, "Total spent:"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: C.text } }, trip.currency || "USD", " ", totalCostConfirmed.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }))), onDuplicate && /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: (e) => {
@@ -3894,6 +3894,8 @@ function ResearchBoard({ city, trip, mutateCity, mutateAllCities, mutateTrip }) 
   const migratedRef = useRef(false);
   const boardRef = useRef(null);
   const activeCity = city;
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestError, setSuggestError] = useState(null);
   const withScrollPreserved = (fn) => {
     var el = boardRef.current;
     var scrollEl = null;
@@ -3936,6 +3938,45 @@ function ResearchBoard({ city, trip, mutateCity, mutateAllCities, mutateTrip }) 
     setCustomName("");
     setCustomIcon("\u{1F4A1}");
   };
+  const suggestActivities = async () => {
+    setSuggesting(true);
+    setSuggestError(null);
+    try {
+      const existingThemes = themes.map((th) => th.name + ": " + th.items.map((i) => i.title).join(", ")).join("\n");
+      const tripContext = trip ? trip.title + ", " + (trip.startDate || "") + " to " + (trip.endDate || "") + ", travelers: " + (trip.travelers || []).join(", ") : "";
+      const prompt = "You are a travel expert. Generate 5 specific, useful activity suggestions for a traveler visiting " + activeCity.name + ".\n\nTrip: " + tripContext + "\n\nExisting research (avoid duplicating these):\n" + existingThemes + '\n\nReturn ONLY a JSON array, no markdown, no explanation:\n[\n  {"theme": "Theme Name", "icon": "emoji", "title": "Activity title", "notes": "1-2 sentences of specific practical info"},\n  ...\n]\n\nRules:\n- Be specific to ' + activeCity.name + ", not generic\n- Include a mix of food, sights, experiences, local tips\n- Notes should include practical details (price, hours, tips)\n- Use a relevant emoji for the theme\n- Group by theme (can reuse theme names that already exist)";
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1e3,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content && data.content[0] && data.content[0].text;
+      if (!text) throw new Error("No response");
+      const clean = text.replace(/```json|```/g, "").trim();
+      const suggestions = JSON.parse(clean);
+      mutateThemes((ths) => {
+        let updated = [...ths];
+        suggestions.forEach((s) => {
+          const existing = updated.find((th) => th.name.toLowerCase() === s.theme.toLowerCase());
+          const newItem = { id: uid(), title: s.title, url: "", urlLabel: "", notes: s.notes || "", location: "", status: "idea" };
+          if (existing) {
+            updated = updated.map((th) => th.id === existing.id ? __spreadProps(__spreadValues({}, th), { items: [...th.items, newItem] }) : th);
+          } else {
+            updated = [...updated, { id: uid(), name: s.theme, icon: s.icon || "\u{1F4A1}", items: [newItem] }];
+          }
+        });
+        return updated;
+      });
+    } catch (e) {
+      setSuggestError("Suggestions unavailable \u2014 try again");
+    }
+    setSuggesting(false);
+  };
   const mutateOneTheme = (themeId, fn) => mutateThemes((ths) => ths.map((th) => th.id === themeId ? fn(th) : th));
   const deleteTheme = (themeId) => mutateThemes((ths) => ths.filter((th) => th.id !== themeId));
   const moveItemBetweenThemes = (fromThemeId, itemId, toThemeId) => {
@@ -3977,7 +4018,33 @@ function ResearchBoard({ city, trip, mutateCity, mutateAllCities, mutateTrip }) 
   const allCitiesForMutate = (cityId) => (fn) => {
     if (mutateAllCities) mutateAllCities(cityId, fn);
   };
-  return /* @__PURE__ */ React.createElement("div", { ref: boardRef }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, color: C.text } }, "Research Board"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 3 } }, viewAll ? "All cities combined" : "Ideas, links, and notes for " + (activeCity ? activeCity.name : ""))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center" } }, trip && trip.cities.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, background: C.surface2, borderRadius: 8, padding: 3, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(false), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: !viewAll ? C.accent : "none", color: !viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, activeCity ? activeCity.name : "City"), /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(true), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: viewAll ? C.accent : "none", color: viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, "All ", totalAll > 0 && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.8 } }, "(", totalAll, ")"))), !viewAll && /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => setShowAddTheme((s) => !s) }, "+ Theme"))), showAddTheme && !viewAll && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: 18, marginBottom: 16, border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 12 } }, "Add a theme"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 } }, RESEARCH_PRESET_THEMES.filter((p) => !themes.some((t) => t.name === p.name)).map((p) => /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { ref: boardRef }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, color: C.text } }, "Research Board"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 3 } }, viewAll ? "All cities combined" : "Ideas, links, and notes for " + (activeCity ? activeCity.name : "")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" } }, trip && trip.cities.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, background: C.surface2, borderRadius: 8, padding: 3, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(false), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: !viewAll ? C.accent : "none", color: !viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, activeCity ? activeCity.name : "City"), /* @__PURE__ */ React.createElement("button", { onClick: () => setViewAll(true), style: { padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: viewAll ? C.accent : "none", color: viewAll ? "#fff" : C.mid, transition: "all 0.15s" } }, "All ", totalAll > 0 && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.8 } }, "(", totalAll, ")"))), !viewAll && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: suggestActivities,
+      disabled: suggesting,
+      style: { display: "flex", alignItems: "center", gap: 5, background: suggesting ? C.surface2 : C.accentBg, border: "1px solid " + (suggesting ? C.border : C.accentBdr), borderRadius: 8, padding: "6px 12px", fontSize: 12, color: suggesting ? C.dim : C.accent, cursor: suggesting ? "default" : "pointer", fontWeight: 600, whiteSpace: "nowrap" }
+    },
+    suggesting ? "\u2728 Thinking\u2026" : "\u2728 Suggest"
+  ), !viewAll && /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => setShowAddTheme((s) => !s) }, "+ Theme"), !viewAll && activeCity && /* @__PURE__ */ React.createElement(
+    "a",
+    {
+      href: "https://maps.google.com/maps?q=" + encodeURIComponent(activeCity.name) + "&layer=c",
+      target: "_blank",
+      rel: "noreferrer",
+      title: "Open " + activeCity.name + " in Google Maps \u2014 tap \u22EF \u2192 Download offline map",
+      style: { display: "flex", alignItems: "center", gap: 5, background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: C.mid, textDecoration: "none", fontWeight: 500, whiteSpace: "nowrap" },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.borderColor = C.accent;
+        e.currentTarget.style.color = C.accent;
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.borderColor = C.border;
+        e.currentTarget.style.color = C.mid;
+      }
+    },
+    "\u{1F5FA} Offline Map"
+  ))), suggestError && !viewAll && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.warn, marginBottom: 10, marginTop: -8 } }, suggestError), suggesting && !viewAll && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.accent, marginBottom: 10, marginTop: -8 } }, "\u2728 Getting ideas for ", activeCity ? activeCity.name : "this city", "\u2026"), showAddTheme && !viewAll && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: 18, marginBottom: 16, border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 12 } }, "Add a theme"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 } }, RESEARCH_PRESET_THEMES.filter((p) => !themes.some((t) => t.name === p.name)).map((p) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: p.name,
