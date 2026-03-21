@@ -2187,7 +2187,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
       style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", color: C.dim, display: "flex", alignItems: "center", gap: 6 }
     },
     "\u21C5 Sync"
-  ), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew }, "+ New Trip")))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew }, "+ New Trip")))), ghReady && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.ok : C.dim } }, ghSyncStatus.state === "syncing" && "\u21C5 Syncing\u2026", ghSyncStatus.state === "ok" && ghSyncStatus.lastSync && "\u2713 Last synced " + new Date(ghSyncStatus.lastSync).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), ghSyncStatus.state === "error" && "\u2715 Sync error \u2014 " + ghSyncStatus.error, ghSyncStatus.state === "idle" && "\u21C5 Not yet synced"), /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 } }, "Configure")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(
     "input",
     {
       value: search,
