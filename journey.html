@@ -2251,7 +2251,7 @@ function StatusCycleBtn({ status, onChange, size }) {
     } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18 } }, s.icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: isSelected ? sc.color : "#e8e4dc" } }, s.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#8a8fa8", marginTop: 1 } }, s.desc)), isSelected && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: sc.color } }, "\u2713"));
   })));
 }
-function TripView({ trip, city, cityTab, setCityTab, tripTab, setTripTab, onBack, onSelectCity, onOpenDay, mutateTrip, mutateCity, mutateDay, setModal, templates, onDeleteTrip, isDark, onToggleTheme }) {
+function TripView({ trip, city, cityTab, setCityTab, tripTab, setTripTab, onBack, onSelectCity, onOpenDay, mutateTrip, mutateCity, mutateDay, setModal, templates, onDeleteTrip, isDark, onToggleTheme, flightApiKey, onSaveFlightApiKey }) {
   const mobile = useMobile();
   const cityIdx = trip.cities.findIndex((c) => c.id === (city ? city.id : null));
   const cityColor = CITY_PALETTE[Math.max(0, cityIdx) % CITY_PALETTE.length];
@@ -2277,7 +2277,7 @@ function TripView({ trip, city, cityTab, setCityTab, tripTab, setTripTab, onBack
     borderBottom: `2px solid ${tripTab === t.id ? t.id === "travel" ? C.ok : C.accent : "transparent"}`,
     transition: "all 0.15s",
     whiteSpace: "nowrap"
-  } }, t.label))))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflow: "auto", overflowX: "hidden" } }, tripTab === "itinerary" && /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1280, margin: "0 auto", padding: mobile ? "18px 14px" : "28px", overflowX: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement(CityRibbon, { trip, city, onSelectCity, setModal })), trip.cities.length > 0 && /* @__PURE__ */ React.createElement("button", { onClick: () => setModal({ type: "cityMgmt", tripId: trip.id }), style: { flexShrink: 0, marginBottom: 16, background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: C.mid } }, "\u2699")), city && /* @__PURE__ */ React.createElement(React.Fragment, null, city.days.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14, marginTop: -10 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 3, height: 14, borderRadius: 2, background: cityColor, flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid, fontWeight: 500 } }, fmtDow(city.days[0].date) ? fmtDow(city.days[0].date) + ", " : "", fmtDate(city.days[0].date), " \u2013 ", fmtDow(city.days[city.days.length - 1].date) ? fmtDow(city.days[city.days.length - 1].date) + ", " : "", fmtDate(city.days[city.days.length - 1].date))), /* @__PURE__ */ React.createElement("div", { className: "h-scroll", style: { marginBottom: 18 } }, /* @__PURE__ */ React.createElement(Btn, { variant: cityTab === "days" ? "accent" : "ghost", size: "sm", onClick: () => setCityTab("days") }, "\u{1F4C5} Days"), /* @__PURE__ */ React.createElement(Btn, { variant: cityTab === "research" ? "accent" : "ghost", size: "sm", onClick: () => setCityTab("research") }, "\u{1F50D} Research", getAllThemeItems(city).length > 0 && /* @__PURE__ */ React.createElement("span", { style: { background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "0 6px", fontSize: 11, marginLeft: 4 } }, getAllThemeItems(city).length))), cityTab === "days" && /* @__PURE__ */ React.createElement(DaysOverview, { trip, city, cityColor, onOpenDay, onEditCityNotes: (notes) => mutateCity(city.id, (c) => __spreadProps(__spreadValues({}, c), { notes })), onRenameDay: (dayId, label) => mutateCity(city.id, (c) => __spreadProps(__spreadValues({}, c), { days: c.days.map((d) => d.id === dayId ? __spreadProps(__spreadValues({}, d), { label }) : d) })) }), cityTab === "research" && /* @__PURE__ */ React.createElement(ResearchBoard, { city, trip, mutateCity: (fn) => mutateCity(city.id, fn), mutateAllCities: (cityId, fn) => mutateCity(cityId, fn), mutateTrip }))), tripTab === "vault" && /* @__PURE__ */ React.createElement(VaultView, { activities: allActs.filter((a) => a.confirmation), currency: trip.currency }), tripTab === "prep" && /* @__PURE__ */ React.createElement(PrepChecklist, { trip, mutateTrip, templates, setModal }), tripTab === "budget" && /* @__PURE__ */ React.createElement(BudgetView, { activities: allActs, currency: trip.currency, travelers: trip.travelers, trip, mutateTrip: (fn) => mutateTrip(fn) }), tripTab === "travel" && /* @__PURE__ */ React.createElement(TravelMode, { trip, mutateTrip, setModal }), tripTab === "lookback" && /* @__PURE__ */ React.createElement(LookBackView, { trip, mutateTrip }), tripTab === "settings" && /* @__PURE__ */ React.createElement(SettingsView, { trip, mutateTrip, onDeleteTrip, isDark, onToggleTheme, setModal })));
+  } }, t.label))))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflow: "auto", overflowX: "hidden" } }, tripTab === "itinerary" && /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1280, margin: "0 auto", padding: mobile ? "18px 14px" : "28px", overflowX: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement(CityRibbon, { trip, city, onSelectCity, setModal })), trip.cities.length > 0 && /* @__PURE__ */ React.createElement("button", { onClick: () => setModal({ type: "cityMgmt", tripId: trip.id }), style: { flexShrink: 0, marginBottom: 16, background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: C.mid } }, "\u2699")), city && /* @__PURE__ */ React.createElement(React.Fragment, null, city.days.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14, marginTop: -10 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 3, height: 14, borderRadius: 2, background: cityColor, flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid, fontWeight: 500 } }, fmtDow(city.days[0].date) ? fmtDow(city.days[0].date) + ", " : "", fmtDate(city.days[0].date), " \u2013 ", fmtDow(city.days[city.days.length - 1].date) ? fmtDow(city.days[city.days.length - 1].date) + ", " : "", fmtDate(city.days[city.days.length - 1].date))), /* @__PURE__ */ React.createElement("div", { className: "h-scroll", style: { marginBottom: 18 } }, /* @__PURE__ */ React.createElement(Btn, { variant: cityTab === "days" ? "accent" : "ghost", size: "sm", onClick: () => setCityTab("days") }, "\u{1F4C5} Days"), /* @__PURE__ */ React.createElement(Btn, { variant: cityTab === "research" ? "accent" : "ghost", size: "sm", onClick: () => setCityTab("research") }, "\u{1F50D} Research", getAllThemeItems(city).length > 0 && /* @__PURE__ */ React.createElement("span", { style: { background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "0 6px", fontSize: 11, marginLeft: 4 } }, getAllThemeItems(city).length))), cityTab === "days" && /* @__PURE__ */ React.createElement(DaysOverview, { trip, city, cityColor, onOpenDay, onEditCityNotes: (notes) => mutateCity(city.id, (c) => __spreadProps(__spreadValues({}, c), { notes })), onRenameDay: (dayId, label) => mutateCity(city.id, (c) => __spreadProps(__spreadValues({}, c), { days: c.days.map((d) => d.id === dayId ? __spreadProps(__spreadValues({}, d), { label }) : d) })) }), cityTab === "research" && /* @__PURE__ */ React.createElement(ResearchBoard, { city, trip, mutateCity: (fn) => mutateCity(city.id, fn), mutateAllCities: (cityId, fn) => mutateCity(cityId, fn), mutateTrip }))), tripTab === "vault" && /* @__PURE__ */ React.createElement(VaultView, { activities: allActs.filter((a) => a.confirmation), currency: trip.currency }), tripTab === "prep" && /* @__PURE__ */ React.createElement(PrepChecklist, { trip, mutateTrip, templates, setModal }), tripTab === "budget" && /* @__PURE__ */ React.createElement(BudgetView, { activities: allActs, currency: trip.currency, travelers: trip.travelers, trip, mutateTrip: (fn) => mutateTrip(fn) }), tripTab === "travel" && /* @__PURE__ */ React.createElement(TravelMode, { trip, mutateTrip, setModal, flightApiKey }), tripTab === "lookback" && /* @__PURE__ */ React.createElement(LookBackView, { trip, mutateTrip }), tripTab === "settings" && /* @__PURE__ */ React.createElement(SettingsView, { trip, mutateTrip, onDeleteTrip, isDark, onToggleTheme, setModal, flightApiKey, onSaveFlightApiKey })));
 }
 function CityRibbon({ trip, city, onSelectCity, setModal }) {
   if (trip.cities.length === 0) return /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "48px 20px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, marginBottom: 14 } }, "\u{1F5FA}\uFE0F"), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: C.text, marginBottom: 8 } }, "Where are you going?"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.mid, marginBottom: 20, maxWidth: 280, margin: "0 auto 20px" } }, "Plan all your stops at once, or add cities one by one."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: () => setModal({ type: "multiCityBuilder", tripId: trip.id }) }, "\u{1F5FA} Let's Go!")));
@@ -2464,7 +2464,7 @@ function CityBriefingCard({ city }) {
     t.urlLabel || t.url
   ))))))));
 }
-function TravelMode({ trip, mutateTrip, setModal }) {
+function TravelMode({ trip, mutateTrip, setModal, flightApiKey }) {
   const mobile = useMobile();
   const [travelTab, setTravelTab] = useState("today");
   const [quickAdd, setQuickAdd] = useState(false);
@@ -2474,6 +2474,7 @@ function TravelMode({ trip, mutateTrip, setModal }) {
   const t = today();
   const todayCity = trip.cities.find((c) => c.days.some((d) => d.date === t));
   const todayDay = todayCity ? todayCity.days.find((d) => d.date === t) : null;
+  const [actModal, setActModal] = useState(null);
   const markComplete = (act) => {
     mutateTrip((tr) => __spreadProps(__spreadValues({}, tr), {
       cities: tr.cities.map((c) => __spreadProps(__spreadValues({}, c), {
@@ -2482,6 +2483,34 @@ function TravelMode({ trip, mutateTrip, setModal }) {
             Object.entries(d.blocks).map(([bl, acts]) => [
               bl,
               acts.map((a) => a.id === act.id ? __spreadProps(__spreadValues({}, a), { completed: !a.completed }) : a)
+            ])
+          )
+        }))
+      }))
+    }));
+  };
+  const updateActivity = (act, updates) => {
+    mutateTrip((tr) => __spreadProps(__spreadValues({}, tr), {
+      cities: tr.cities.map((c) => c.id !== act.cityId ? c : __spreadProps(__spreadValues({}, c), {
+        days: c.days.map((d) => d.id !== act.dayId ? d : __spreadProps(__spreadValues({}, d), {
+          blocks: Object.fromEntries(
+            Object.entries(d.blocks).map(([bl, acts]) => [
+              bl,
+              acts.map((a) => a.id === act.id ? __spreadValues(__spreadValues({}, a), updates) : a)
+            ])
+          )
+        }))
+      }))
+    }));
+  };
+  const deleteActivity = (act) => {
+    mutateTrip((tr) => __spreadProps(__spreadValues({}, tr), {
+      cities: tr.cities.map((c) => c.id !== act.cityId ? c : __spreadProps(__spreadValues({}, c), {
+        days: c.days.map((d) => d.id !== act.dayId ? d : __spreadProps(__spreadValues({}, d), {
+          blocks: Object.fromEntries(
+            Object.entries(d.blocks).map(([bl, acts]) => [
+              bl,
+              acts.filter((a) => a.id !== act.id)
             ])
           )
         }))
@@ -2501,6 +2530,64 @@ function TravelMode({ trip, mutateTrip, setModal }) {
   const allDays = trip.cities.flatMap((c) => c.days.map((d) => __spreadProps(__spreadValues({}, d), { cityName: c.name, cityColor: CITY_PALETTE[trip.cities.indexOf(c) % CITY_PALETTE.length] })));
   const todayIdx = allDays.findIndex((d) => d.date === t);
   const next3Days = todayIdx >= 0 ? allDays.slice(todayIdx, todayIdx + 3) : allDays.slice(0, 3);
+  const upcomingFlights = next3Days.flatMap(function(d) {
+    return BLOCKS.flatMap(function(b) {
+      return (d.blocks[b] || []).filter(function(a) {
+        return a.type === "flight" && a.confirmation;
+      });
+    });
+  });
+  const [flightStatuses, setFlightStatuses] = useState({});
+  const [flightLoading, setFlightLoading] = useState(false);
+  useEffect(function() {
+    if (!upcomingFlights.length) return;
+    if (!flightApiKey) return;
+    setFlightLoading(true);
+    Promise.all(upcomingFlights.map(function(a) {
+      const flightNum = (a.confirmation || "").replace(/\s+/g, "").toUpperCase();
+      return fetch(
+        "https://api.aviationstack.com/v1/flights?access_key=" + flightApiKey + "&flight_iata=" + flightNum + "&limit=1"
+      ).then(function(res) {
+        return res.json();
+      }).then(function(json) {
+        const data = json.data && json.data[0];
+        if (!data) return { id: a.id, status: "unknown" };
+        return {
+          id: a.id,
+          status: (data.flight_status || "unknown").toLowerCase(),
+          depDelay: data.departure && data.departure.delay,
+          gate: data.departure && data.departure.gate
+        };
+      }).catch(function() {
+        return { id: a.id, status: "error" };
+      });
+    })).then(function(results) {
+      const map = {};
+      results.forEach(function(r) {
+        map[r.id] = r;
+      });
+      setFlightStatuses(map);
+      setFlightLoading(false);
+    });
+  }, [t, flightApiKey]);
+  const flightStatusBadge = function(actId, confirmation) {
+    const s = flightStatuses[actId];
+    if (!flightApiKey && confirmation) {
+      const num = confirmation.replace(/\s+/g, "");
+      return { link: "https://flightaware.com/live/flight/" + num };
+    }
+    if (flightLoading && !s) return { label: "Checking\u2026", color: C.dim };
+    if (!s) return null;
+    if (s.status === "active" || s.status === "en-route") return { label: "\u2708 In Air", color: C.ok };
+    if (s.status === "landed") return { label: "\u2713 Landed", color: C.ok };
+    if (s.status === "cancelled") return { label: "\u2715 Cancelled", color: C.warn };
+    if (s.status === "diverted") return { label: "\u26A0 Diverted", color: C.warn };
+    if (s.status === "scheduled") {
+      if (s.depDelay && s.depDelay > 0) return { label: "\u23F1 Delayed " + s.depDelay + "m", color: "#e8a838", detail: s.gate ? "Gate " + s.gate : "" };
+      return { label: "\u{1F7E2} On Time", color: C.ok, detail: s.gate ? "Gate " + s.gate : "" };
+    }
+    return null;
+  };
   const todayCityName = todayCity ? todayCity.name : "";
   const todayDateArr = todayDay ? [t] : [];
   const todayWx = useWeather(todayCityName, todayDateArr);
@@ -2566,22 +2653,72 @@ function TravelMode({ trip, mutateTrip, setModal }) {
     const acts = todayDay.blocks[bl];
     if (acts.length === 0) return null;
     const m = BLOCK_META[bl];
-    return /* @__PURE__ */ React.createElement("div", { key: bl, style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: m.accent, fontWeight: 600, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 } }, m.icon, " ", m.label), acts.map((act) => /* @__PURE__ */ React.createElement(TravelActivityRow, { key: act.id, activity: act, onToggle: () => markComplete(act) })));
+    return /* @__PURE__ */ React.createElement("div", { key: bl, style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: m.accent, fontWeight: 600, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 } }, m.icon, " ", m.label), acts.map((act) => /* @__PURE__ */ React.createElement(
+      TravelActivityRow,
+      {
+        key: act.id,
+        activity: act,
+        onToggle: () => markComplete(act),
+        onEdit: () => setActModal(act),
+        flightBadge: act.type === "flight" ? flightStatusBadge(act.id, act.confirmation) : null
+      }
+    )));
   }), todayActs.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.dim } }, /* @__PURE__ */ React.createElement("p", null, "No activities planned for today yet."), /* @__PURE__ */ React.createElement("p", { style: { marginTop: 6 } }, "Use \u26A1 Quick Add to capture what you're up to!"))) : /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "48px 0", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 36, marginBottom: 12 } }, "\u{1F4CD}"), /* @__PURE__ */ React.createElement("p", null, "Today (", t, ") doesn't match any day in your itinerary."), /* @__PURE__ */ React.createElement("p", { style: { marginTop: 6, fontSize: 13 } }, "You can still use Quick Add to log activities."))), travelTab === "next3" && /* @__PURE__ */ React.createElement("div", null, next3Days.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "48px 0", color: C.dim } }, /* @__PURE__ */ React.createElement("p", null, "No upcoming days found in your itinerary.")) : next3Days.map((d) => {
     const isToday = d.date === t;
     const allBlkActs = BLOCKS.flatMap((b) => d.blocks[b].map((a) => __spreadProps(__spreadValues({}, a), { block: b })));
-    return /* @__PURE__ */ React.createElement("div", { key: d.id, style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: d.cityColor, flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 20, color: C.text } }, d.cityName, " \xB7 ", d.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, fmtDow(d.date) && `${fmtDow(d.date)} \xB7 `, fmtDate(d.date)), isToday && /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, "Today"), /* @__PURE__ */ React.createElement(WeatherChip, { wx: n3WeatherMap[d.date], loading: n3Loading && !n3WeatherMap[d.date], err: !n3Loading && n3Err && !n3WeatherMap[d.date] ? n3Err : null })), allBlkActs.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, fontStyle: "italic", paddingLeft: 18 } }, "Nothing scheduled yet") : allBlkActs.map((act) => /* @__PURE__ */ React.createElement(TravelActivityRow, { key: act.id, activity: act, compact: true, onToggle: () => markComplete(act) })));
+    return /* @__PURE__ */ React.createElement("div", { key: d.id, style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: d.cityColor, flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 20, color: C.text } }, d.cityName, " \xB7 ", d.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, fmtDow(d.date) && `${fmtDow(d.date)} \xB7 `, fmtDate(d.date)), isToday && /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, "Today"), /* @__PURE__ */ React.createElement(WeatherChip, { wx: n3WeatherMap[d.date], loading: n3Loading && !n3WeatherMap[d.date], err: !n3Loading && n3Err && !n3WeatherMap[d.date] ? n3Err : null })), allBlkActs.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, fontStyle: "italic", paddingLeft: 18 } }, "Nothing scheduled yet") : allBlkActs.map((act) => /* @__PURE__ */ React.createElement(
+      TravelActivityRow,
+      {
+        key: act.id,
+        activity: act,
+        compact: true,
+        onToggle: () => markComplete(act),
+        onEdit: () => setActModal(act),
+        flightBadge: act.type === "flight" ? flightStatusBadge(act.id, act.confirmation) : null
+      }
+    )));
   })), travelTab === "full" && /* @__PURE__ */ React.createElement("div", null, trip.cities.map((c, ci) => /* @__PURE__ */ React.createElement("div", { key: c.id, style: { marginBottom: 32 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 12, height: 12, borderRadius: "50%", background: CITY_PALETTE[ci % CITY_PALETTE.length], flexShrink: 0 } }), /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 24, color: C.text } }, c.name), /* @__PURE__ */ React.createElement(Tag, { color: CITY_PALETTE[ci % CITY_PALETTE.length] }, c.nights - 1, " nights")), c.days.map((d) => {
     const isToday = d.date === t;
     const allBlkActs = BLOCKS.flatMap((b) => d.blocks[b].map((a) => __spreadProps(__spreadValues({}, a), { block: b })));
     if (allBlkActs.length === 0 && !isToday) return null;
-    return /* @__PURE__ */ React.createElement("div", { key: d.id, style: { marginBottom: 12, paddingLeft: 24, borderLeft: `2px solid ${isToday ? C.ok : C.dim}` } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8, display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: isToday ? C.ok : C.text } }, d.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, d.date), isToday && /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, "Today")), allBlkActs.map((act) => /* @__PURE__ */ React.createElement(TravelActivityRow, { key: act.id, activity: act, compact: true, onToggle: () => markComplete(act) })), allBlkActs.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, fontStyle: "italic", paddingBottom: 4 } }, "No activities yet"));
+    return /* @__PURE__ */ React.createElement("div", { key: d.id, style: { marginBottom: 12, paddingLeft: 24, borderLeft: `2px solid ${isToday ? C.ok : C.dim}` } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8, display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: isToday ? C.ok : C.text } }, d.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, d.date), isToday && /* @__PURE__ */ React.createElement(Tag, { color: C.ok }, "Today")), allBlkActs.map((act) => /* @__PURE__ */ React.createElement(
+      TravelActivityRow,
+      {
+        key: act.id,
+        activity: act,
+        compact: true,
+        onToggle: () => markComplete(act),
+        onEdit: () => setActModal(act),
+        flightBadge: act.type === "flight" ? flightStatusBadge(act.id, act.confirmation) : null
+      }
+    )), allBlkActs.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, fontStyle: "italic", paddingBottom: 4 } }, "No activities yet"));
   })))), quickAdd && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setQuickAdd(false), maxWidth: 480 }, /* @__PURE__ */ React.createElement(QuickAddSheet, { trip, onAdd: (data) => {
     addQuick(data);
     setQuickAdd(false);
-  }, onClose: () => setQuickAdd(false) })));
+  }, onClose: () => setQuickAdd(false) })), actModal && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setActModal(null), sheet: true }, /* @__PURE__ */ React.createElement(
+    ActivityModal,
+    {
+      activity: actModal,
+      block: actModal.block,
+      isNew: false,
+      currency: trip.currency,
+      trip,
+      onSave: (updates) => {
+        updateActivity(actModal, updates);
+        setActModal(null);
+      },
+      onDelete: () => {
+        deleteActivity(actModal);
+        setActModal(null);
+      },
+      onClose: () => setActModal(null),
+      moveActivity: null,
+      cityId: actModal.cityId,
+      dayId: actModal.dayId
+    }
+  )));
 }
-function TravelActivityRow({ activity, onToggle, compact }) {
+function TravelActivityRow({ activity, onToggle, compact, flightBadge, onEdit }) {
   const t = ACT_TYPES.find((x) => x.id === activity.type) || ACT_TYPES[7];
   const [open, setOpen] = useState(false);
   return /* @__PURE__ */ React.createElement("div", { style: {
@@ -2597,7 +2734,20 @@ function TravelActivityRow({ activity, onToggle, compact }) {
     fontWeight: 500,
     color: C.text,
     textDecoration: activity.completed ? "line-through" : "none"
-  } }, activity.title || "Untitled"), activity.time && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim, marginLeft: 8 } }, activity.time), activity.addedOnTrip && /* @__PURE__ */ React.createElement(Tag, { color: C.purple, style: { marginLeft: 6 } }, "on trip")), (activity.confirmation || activity.location || activity.transitSteps || activity.notes) && /* @__PURE__ */ React.createElement("button", { onClick: () => setOpen((o) => !o), style: { background: "none", border: "none", color: C.dim, fontSize: 12, padding: "2px 4px" } }, open ? "\u25B2" : "\u25BC")), open && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 8 } }, activity.confirmation && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, "Confirmation:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontSize: 16, color: C.ok, fontWeight: 700 } }, activity.confirmation)), activity.location && /* @__PURE__ */ React.createElement(LocationChip, { location: activity.location }), activity.transitSteps && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface3, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.mid, whiteSpace: "pre-line", lineHeight: 1.7 } }, activity.transitSteps), activity.notes && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid, lineHeight: 1.6 } }, activity.notes)));
+  } }, activity.title || "Untitled"), activity.time && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim, marginLeft: 8 } }, activity.time), activity.addedOnTrip && /* @__PURE__ */ React.createElement(Tag, { color: C.purple, style: { marginLeft: 6 } }, "on trip")), flightBadge && flightBadge.link && /* @__PURE__ */ React.createElement(
+    "a",
+    {
+      href: flightBadge.link,
+      target: "_blank",
+      rel: "noreferrer",
+      onClick: (e) => e.stopPropagation(),
+      style: { fontSize: 11, color: C.accent, border: "1px solid " + C.accentBdr, borderRadius: 6, padding: "2px 7px", flexShrink: 0, whiteSpace: "nowrap", textDecoration: "none" }
+    },
+    "Track \u2197"
+  ), flightBadge && flightBadge.label && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: flightBadge.color, border: "1px solid " + flightBadge.color + "44", borderRadius: 6, padding: "2px 7px", flexShrink: 0, whiteSpace: "nowrap", fontWeight: 600 } }, flightBadge.label, flightBadge.detail ? " \xB7 " + flightBadge.detail : ""), onEdit && /* @__PURE__ */ React.createElement("button", { onClick: (e) => {
+    e.stopPropagation();
+    onEdit();
+  }, style: { background: "none", border: "none", color: C.dim, fontSize: 14, padding: "2px 4px", cursor: "pointer", flexShrink: 0, lineHeight: 1 }, title: "Edit activity" }, "\u270F\uFE0F"), (activity.confirmation || activity.location || activity.transitSteps || activity.notes) && /* @__PURE__ */ React.createElement("button", { onClick: () => setOpen((o) => !o), style: { background: "none", border: "none", color: C.dim, fontSize: 12, padding: "2px 4px" } }, open ? "\u25B2" : "\u25BC")), open && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 8 } }, activity.confirmation && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, "Confirmation:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontSize: 16, color: C.ok, fontWeight: 700 } }, activity.confirmation)), activity.location && /* @__PURE__ */ React.createElement(LocationChip, { location: activity.location }), activity.transitSteps && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface3, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.mid, whiteSpace: "pre-line", lineHeight: 1.7 } }, activity.transitSteps), activity.notes && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid, lineHeight: 1.6 } }, activity.notes)));
 }
 function QuickAddSheet({ trip, onAdd, onClose }) {
   const mobile = useMobile();
@@ -2936,7 +3086,7 @@ function DataMgmtSection({ trip, mobile, onDeleteTrip, deleteConfirm, setDeleteC
     textAlign: "left"
   } }, /* @__PURE__ */ React.createElement("h3", { style: { fontSize: 15, fontWeight: 600, color: C.text, margin: 0 } }, "Data Management"), chevron(open)), open && /* @__PURE__ */ React.createElement("div", { style: { padding: "4px 22px 22px", borderTop: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { paddingTop: 18, marginBottom: 24 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 12 } }, "Export This Trip"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => setExportOpen(true) }, "\u{1F4E4} Export Trip Summary")), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginBottom: 12 } }, "Styled HTML document \u2014 choose detail level, tone, and what to include. Open in browser to print or save as PDF."), /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border, marginBottom: 12 } }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 8, fontWeight: 600 } }, "Raw data exports"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => exportTripJSON(trip) }, "\u{1F4BE} JSON Backup"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => exportBudgetCSV(trip) }, "\u{1F4CA} Budget CSV"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => exportItineraryMD(trip) }, "\u{1F4C4} Itinerary MD")), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginTop: 10 } }, "JSON backups can be re-imported. CSV and Markdown are export-only.")), exportOpen && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setExportOpen(false), maxWidth: 560 }, /* @__PURE__ */ React.createElement(TripExportModal, { trip, onClose: () => setExportOpen(false) })), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.warnBdr, paddingTop: 18 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.warn, marginBottom: 12 } }, "Delete Trip"), deleteConfirm !== "confirm" ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: mobile ? "flex-start" : "center", flexDirection: mobile ? "column" : "row", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, fontSize: 13, color: C.mid } }, "Permanently removes all cities, days, activities, and checklist items. This cannot be undone."), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: () => setDeleteConfirm("confirm"), style: { flexShrink: 0 } }, "\u{1F5D1} Delete Trip")) : /* @__PURE__ */ React.createElement("div", { style: { background: C.warnBg, border: "1px solid " + C.warnBdr, borderRadius: 10, padding: "16px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: C.warn, marginBottom: 8 } }, "Are you absolutely sure?"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid, marginBottom: 16, lineHeight: 1.6 } }, "Permanently deletes ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.text } }, '"', trip.title, '"'), " \u2014 all ", trip.cities.length, " ", trip.cities.length === 1 ? "city" : "cities", ", activities, and checklist items. ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.warn } }, "This cannot be undone.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setDeleteConfirm(null), style: { flex: 1 } }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: onDeleteTrip, style: { flex: 1 } }, "Yes, Delete Forever"))))));
 }
-function SettingsView({ trip, mutateTrip, onDeleteTrip, isDark, onToggleTheme, setModal }) {
+function SettingsView({ trip, mutateTrip, onDeleteTrip, isDark, onToggleTheme, setModal, flightApiKey, onSaveFlightApiKey }) {
   const mobile = useMobile();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [form, setForm] = useState({
@@ -3086,7 +3236,16 @@ function SettingsView({ trip, mutateTrip, onDeleteTrip, isDark, onToggleTheme, s
         });
       }
     }
-  ))), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, paddingTop: 18 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.text, margin: 0 } }, "Cities & Structure"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setModal({ type: "multiCityBuilder", tripId: trip.id }) }, "\u{1F5FA} Multi-City Builder")), /* @__PURE__ */ React.createElement(TripStructureEditor, { trip, mutateTrip, mobile })), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, paddingTop: 18 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 6 } }, "PTO"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.mid, marginBottom: 12 } }, "Weekdays in your trip date range (excludes Sat/Sun). Override if needed."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 14, alignItems: "flex-end" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement(Input, { label: "PTO days used", type: "number", value: form.ptoDays, onChange: (v) => upd("ptoDays", v), placeholder: "Override..." })), form.startDate && form.endDate && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, paddingBottom: 2 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 6 } }, "Auto-calculated"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20, fontWeight: 700, color: C.accent, fontFamily: "'Cormorant Garamond', serif" } }, autoPTO), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid } }, "weekdays"), /* @__PURE__ */ React.createElement(Btn, { size: "sm", variant: "ghost", onClick: () => upd("ptoDays", autoPTO) }, "Use this"))))), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, paddingTop: 18 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 8 } }, "Travelers"), /* @__PURE__ */ React.createElement(Input, { label: "Names (comma-separated)", value: form.travelers, onChange: (v) => upd("travelers", v), placeholder: "You, Partner" }), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginTop: 8 } }, "Used in the Budget bill-split view.")))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: save, style: { width: "100%" } }, saved ? "\u2713 Saved!" : "Save Settings")), /* @__PURE__ */ React.createElement(DataMgmtSection, { trip, mobile, onDeleteTrip, deleteConfirm, setDeleteConfirm, chevron }), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 500, color: C.text } }, isDark ? "\u{1F319} Dark mode" : "\u2600\uFE0F Light mode"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 2 } }, "Changes appearance across the whole app")), /* @__PURE__ */ React.createElement("button", { onClick: onToggleTheme, style: { background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 20, padding: "6px 16px", fontSize: 13, fontWeight: 600, color: C.text, cursor: "pointer" } }, isDark ? "Switch to Light" : "Switch to Dark"))));
+  ))), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, paddingTop: 18 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.text, margin: 0 } }, "Cities & Structure"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setModal({ type: "multiCityBuilder", tripId: trip.id }) }, "\u{1F5FA} Multi-City Builder")), /* @__PURE__ */ React.createElement(TripStructureEditor, { trip, mutateTrip, mobile })), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, paddingTop: 18 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 6 } }, "PTO"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.mid, marginBottom: 12 } }, "Weekdays in your trip date range (excludes Sat/Sun). Override if needed."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 14, alignItems: "flex-end" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement(Input, { label: "PTO days used", type: "number", value: form.ptoDays, onChange: (v) => upd("ptoDays", v), placeholder: "Override..." })), form.startDate && form.endDate && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, paddingBottom: 2 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 6 } }, "Auto-calculated"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20, fontWeight: 700, color: C.accent, fontFamily: "'Cormorant Garamond', serif" } }, autoPTO), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid } }, "weekdays"), /* @__PURE__ */ React.createElement(Btn, { size: "sm", variant: "ghost", onClick: () => upd("ptoDays", autoPTO) }, "Use this"))))), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, paddingTop: 18 } }, /* @__PURE__ */ React.createElement("h4", { style: { fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 8 } }, "Travelers"), /* @__PURE__ */ React.createElement(Input, { label: "Names (comma-separated)", value: form.travelers, onChange: (v) => upd("travelers", v), placeholder: "You, Partner" }), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginTop: 8 } }, "Used in the Budget bill-split view.")))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: save, style: { width: "100%" } }, saved ? "\u2713 Saved!" : "Save Settings")), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 4 } }, "\u2708\uFE0F Flight Status"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, lineHeight: 1.6 } }, "Enter an ", /* @__PURE__ */ React.createElement("a", { href: "https://aviationstack.com", target: "_blank", rel: "noreferrer", style: { color: C.accent } }, "AviationStack"), " API key to auto-check flight status in Travel Mode. Free tier gives 100 requests/month \u2014 enough for any trip. The key is stored locally on this device only.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "password",
+      value: flightApiKey,
+      onChange: (e) => onSaveFlightApiKey(e.target.value.trim()),
+      placeholder: "Paste API key here\u2026",
+      style: { flex: 1, background: C.surface2, border: "1px solid " + (flightApiKey ? C.okBdr : C.border), borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, fontFamily: "monospace" }
+    }
+  ), flightApiKey && /* @__PURE__ */ React.createElement("button", { onClick: () => onSaveFlightApiKey(""), style: { background: "none", border: "1px solid " + C.border, borderRadius: 8, color: C.dim, cursor: "pointer", padding: "8px 12px", fontSize: 12 } }, "Clear")), flightApiKey && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.ok, marginTop: 6 } }, "\u2713 API key saved \u2014 flight status checks enabled in Travel Mode"), !flightApiKey && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 6 } }, "Without an API key, flight activities will show a FlightAware link instead")), /* @__PURE__ */ React.createElement(DataMgmtSection, { trip, mobile, onDeleteTrip, deleteConfirm, setDeleteConfirm, chevron }), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 500, color: C.text } }, isDark ? "\u{1F319} Dark mode" : "\u2600\uFE0F Light mode"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 2 } }, "Changes appearance across the whole app")), /* @__PURE__ */ React.createElement("button", { onClick: onToggleTheme, style: { background: C.surface3, border: `1px solid ${C.border}`, borderRadius: 20, padding: "6px 16px", fontSize: 13, fontWeight: 600, color: C.text, cursor: "pointer" } }, isDark ? "Switch to Light" : "Switch to Dark"))));
 }
 function TripStructureEditor({ trip, mutateTrip, mobile }) {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -5690,6 +5849,19 @@ function App() {
     } catch (e) {
     }
   }, [travelProfile]);
+  const [flightApiKey, setFlightApiKey] = useState(() => {
+    try {
+      return localStorage.getItem("journey_flight_api_key") || "";
+    } catch (e) {
+      return "";
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("journey_flight_api_key", flightApiKey);
+    } catch (e) {
+    }
+  }, [flightApiKey]);
   const showToast = (msg, undoFn, duration = 5e3) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ msg, undo: undoFn });
@@ -5869,7 +6041,9 @@ function App() {
       templates,
       onDeleteTrip: deleteTrip,
       isDark,
-      onToggleTheme: toggleTheme
+      onToggleTheme: toggleTheme,
+      flightApiKey,
+      onSaveFlightApiKey: setFlightApiKey
     }
   ), view === "day" && trip && city && day && /* @__PURE__ */ React.createElement(
     DayView,
@@ -6013,4 +6187,15 @@ class ErrorBoundary extends React.Component {
 
     const root=ReactDOM.createRoot(document.getElementById("root"));
     root.render(React.createElement(ErrorBoundary, null, React.createElement(App)));
-  </script></body></html>
+  </script>
+  
+  <script>
+    (function() {
+      try {
+        if (!('serviceWorker' in navigator)) return;
+        var blob = new Blob(["const CACHE='journey-v2';const SHELL=[location.pathname];self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(SHELL);}));self.skipWaiting();});self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(keys){return Promise.all(keys.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));}));self.clients.claim();});self.addEventListener('fetch',function(e){var url=new URL(e.request.url);var isSameOrigin=url.origin===location.origin;var isCDN=url.hostname==='cdnjs.cloudflare.com';var isFont=url.hostname==='fonts.googleapis.com'||url.hostname==='fonts.gstatic.com';if(!isSameOrigin&&!isCDN&&!isFont)return;e.respondWith(caches.match(e.request).then(function(cached){var network=fetch(e.request).then(function(res){if(res&&res.status===200&&(isSameOrigin||isCDN||isFont)){caches.open(CACHE).then(function(c){c.put(e.request,res.clone());});}return res;}).catch(function(){return cached;});return cached||network;}));});"], { type: 'application/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(blob), { scope: './' }).catch(function() {});
+      } catch(e) {}
+    })();
+  </script>
+</body></html>
