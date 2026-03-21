@@ -2130,7 +2130,7 @@ function TravelProfileCard({ profile, onSave, mobile }) {
     "+ Add program"
   ))), /* @__PURE__ */ React.createElement(Textarea, { label: "Other notes", value: draft.notes || "", onChange: (v) => updDraft("notes", v), placeholder: "NEXUS card, travel insurance policy, emergency contacts, preferred seats\u2026", rows: 2 }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: save }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: cancel }, "Cancel"))) : /* @__PURE__ */ React.createElement("div", null, hasData ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, TRAVEL_PROFILE_FIELDS.filter((f) => profile[f.key] && profile[f.key].trim()).map((f) => /* @__PURE__ */ React.createElement("div", { key: f.key, style: { display: "flex", gap: 12, alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, minWidth: 140 } }, f.label.split("(")[0].trim()), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text, fontFamily: "monospace" } }, profile[f.key]))), (profile.programs || []).filter((p) => p.name || p.number).map((p) => /* @__PURE__ */ React.createElement("div", { key: p.id, style: { display: "flex", gap: 12, alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, minWidth: 140 } }, p.name || "Loyalty"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text, fontFamily: "monospace" } }, p.number || "\u2014"))), profile.notes && profile.notes.trim() && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid, lineHeight: 1.6, borderTop: "1px solid " + C.border, paddingTop: 10, marginTop: 4, whiteSpace: "pre-wrap" } }, profile.notes)) : /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, fontStyle: "italic", marginBottom: 10 } }, "No travel info saved yet."), /* @__PURE__ */ React.createElement("button", { onClick: startEdit, style: { marginTop: 14, background: "none", border: "1px solid " + C.border, borderRadius: 8, color: C.mid, cursor: "pointer", fontSize: 12, padding: "6px 14px", display: "flex", alignItems: "center", gap: 5 } }, "\u270F\uFE0F ", hasData ? "Edit" : "Add travel info"))));
 }
-function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile }) {
+function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, ghReady, ghSyncStatus, onGhPull, onGhPush, onOpenSync }) {
   const mobile = useMobile();
   const visibleTrips = search.trim() ? trips.filter((t) => {
     const q = search.toLowerCase();
@@ -2145,8 +2145,24 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     letterSpacing: "-0.01em"
   } }, "Journey")))), mobile ? (
     /* Mobile: big primary button + overflow menu */
-    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, width: "100%" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew, style: { flex: 1 } }, "+ New Trip"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "lg", onClick: onImportExport }, "\u21C5"), /* @__PURE__ */ React.createElement("button", { onClick: onToggleTheme, title: isDark ? "Switch to light mode" : "Switch to dark mode", style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "0 14px", fontSize: 18, cursor: "pointer" } }, isDark ? "\u2600\uFE0F" : "\u{1F319}"))
-  ) : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } }, /* @__PURE__ */ React.createElement("button", { onClick: onToggleTheme, title: isDark ? "Light mode" : "Dark mode", style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 14px", fontSize: 16, cursor: "pointer" } }, isDark ? "\u2600\uFE0F" : "\u{1F319}"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "lg", onClick: onImportExport }, "\u21C5 Import / Export"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew }, "+ New Trip")))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, width: "100%" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew, style: { flex: 1 } }, "+ New Trip"), ghReady && /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, title: "Sync with GitHub", style: { background: C.surface2, border: `1px solid ${ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.okBdr : C.border}`, borderRadius: 10, padding: "0 14px", fontSize: 16, cursor: "pointer", color: ghSyncStatus.state === "syncing" ? C.accent : C.text } }, ghSyncStatus.state === "syncing" ? "\u2026" : "\u21C5"), !ghReady && /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, title: "Set up GitHub Sync", style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "0 14px", fontSize: 16, cursor: "pointer", color: C.dim } }, "\u21C5"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "lg", onClick: onImportExport }, "\u21C5"), /* @__PURE__ */ React.createElement("button", { onClick: onToggleTheme, title: isDark ? "Switch to light mode" : "Switch to dark mode", style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "0 14px", fontSize: 18, cursor: "pointer" } }, isDark ? "\u2600\uFE0F" : "\u{1F319}"))
+  ) : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } }, /* @__PURE__ */ React.createElement("button", { onClick: onToggleTheme, title: isDark ? "Light mode" : "Dark mode", style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 14px", fontSize: 16, cursor: "pointer" } }, isDark ? "\u2600\uFE0F" : "\u{1F319}"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "lg", onClick: onImportExport }, "\u21C5 Import / Export"), ghReady && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: onOpenSync,
+      title: ghSyncStatus.state === "error" ? "Sync error \u2014 click to configure" : ghSyncStatus.lastSync ? "Last synced " + new Date(ghSyncStatus.lastSync).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Configure sync",
+      style: { background: C.surface2, border: `1px solid ${ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.okBdr : C.border}`, borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", color: ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.ok : C.text, display: "flex", alignItems: "center", gap: 6 }
+    },
+    ghSyncStatus.state === "syncing" ? "\u21C5 Syncing\u2026" : ghSyncStatus.state === "error" ? "\u21C5 Sync Error" : ghSyncStatus.state === "ok" ? "\u21C5 Synced" : "\u21C5 Sync"
+  ), !ghReady && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: onOpenSync,
+      title: "Set up GitHub Sync",
+      style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", color: C.dim, display: "flex", alignItems: "center", gap: 6 }
+    },
+    "\u21C5 Sync"
+  ), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew }, "+ New Trip")))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(
     "input",
     {
       value: search,
@@ -5242,6 +5258,15 @@ function NewCityModal({ existingCities, onSave, onClose }) {
   const valid = form.name.trim() && form.nights > 0 && form.startDate;
   return /* @__PURE__ */ React.createElement("div", { style: { padding: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 30, color: C.text } }, "Add City / Segment"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 4 } }, "Days are auto-generated from the start date.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22 } }, "\xD7")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ React.createElement(Input, { label: "City name", value: form.name, onChange: (v) => upd("name", v), placeholder: "e.g., Kyoto, Paris, Lisbon..." }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, minWidth: 0 } }, /* @__PURE__ */ React.createElement(Input, { label: "Nights", type: "number", value: form.nights, onChange: (v) => upd("nights", Math.max(1, parseInt(v) || 1)) }), /* @__PURE__ */ React.createElement(Input, { label: "Arrival", type: "date", value: form.startDate, onChange: (v) => upd("startDate", v) })), existingCities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.mid } }, "Will follow ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.text } }, existingCities[existingCities.length - 1].name), " in the city ribbon.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 24 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid, onClick: () => onSave(newCity(form.name.trim(), parseInt(form.nights), form.startDate)) }, "Add City")));
 }
+function GhSyncModal({ ghConfig, onSaveGhConfig, ghSyncStatus, onGhPull, onGhPush, onClose }) {
+  const mobile = useMobile();
+  const ready = !!(ghConfig.token && ghConfig.owner && ghConfig.repo && ghConfig.path);
+  return /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "20px 16px" : "28px 28px", maxWidth: 480, width: "100%" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 400, color: C.text } }, "\u21C5 GitHub Sync"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", lineHeight: 1 } }, "\u2715")), ghSyncStatus.state === "ok" && /* @__PURE__ */ React.createElement("div", { style: { background: C.okBg, border: "1px solid " + C.okBdr, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: C.ok } }, "\u2713 All trips synced \xB7 ", ghSyncStatus.lastSync ? new Date(ghSyncStatus.lastSync).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""), ghSyncStatus.state === "error" && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(220,80,80,0.1)", border: "1px solid rgba(220,80,80,0.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: C.warn } }, "\u2715 Sync error: ", ghSyncStatus.error), ghSyncStatus.state === "syncing" && /* @__PURE__ */ React.createElement("div", { style: { background: C.accentBg, border: "1px solid " + C.accentBdr, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: C.accent } }, "\u21C5 Syncing all trips\u2026"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } }, /* @__PURE__ */ React.createElement(Input, { label: "GitHub Username", value: ghConfig.owner, onChange: (v) => onSaveGhConfig((c) => __spreadProps(__spreadValues({}, c), { owner: v.trim() })), placeholder: "yourusername" }), /* @__PURE__ */ React.createElement(Input, { label: "Repository", value: ghConfig.repo, onChange: (v) => onSaveGhConfig((c) => __spreadProps(__spreadValues({}, c), { repo: v.trim() })), placeholder: "journey-data" })), /* @__PURE__ */ React.createElement(Input, { label: "File Path", value: ghConfig.path, onChange: (v) => onSaveGhConfig((c) => __spreadProps(__spreadValues({}, c), { path: v.trim() })), placeholder: "journey-trips.json" }), /* @__PURE__ */ React.createElement(Input, { label: "Personal Access Token", value: ghConfig.token, onChange: (v) => onSaveGhConfig((c) => __spreadProps(__spreadValues({}, c), { token: v.trim() })), placeholder: "ghp_\u2026" }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6 } }, "Create a ", /* @__PURE__ */ React.createElement("a", { href: "https://github.com/settings/tokens/new?scopes=repo&description=Journey+Sync", target: "_blank", rel: "noreferrer", style: { color: C.accent } }, "Personal Access Token"), " with ", /* @__PURE__ */ React.createElement("code", { style: { background: C.surface3, padding: "1px 4px", borderRadius: 3 } }, "repo"), " scope. Share the same token with travel companions. All trips are synced together.")), ready ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "secondary", onClick: () => {
+    onGhPull();
+  }, style: { flex: 1 }, disabled: ghSyncStatus.state === "syncing" }, "\u2B07 Pull \u2014 Get latest"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: () => {
+    onGhPush();
+  }, style: { flex: 1 }, disabled: ghSyncStatus.state === "syncing" }, "\u2B06 Push \u2014 Save all trips")) : /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "12px 14px", fontSize: 13, color: C.dim, textAlign: "center" } }, "Fill in all fields above to enable sync"));
+}
 function ImportExportModal({ trips, currentTrip, onImport, onClose }) {
   const [tab, setTab] = useState(currentTrip ? "export" : "import");
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -5873,6 +5898,79 @@ function App() {
     } catch (e) {
     }
   }, [flightApiKey]);
+  const [ghConfig, setGhConfig] = useState(() => {
+    try {
+      const s = localStorage.getItem("journey_gh_config");
+      return s ? JSON.parse(s) : { token: "", owner: "", repo: "", path: "journey-trips.json" };
+    } catch (e) {
+      return { token: "", owner: "", repo: "", path: "journey-trips.json" };
+    }
+  });
+  const [ghSyncStatus, setGhSyncStatus] = useState({ state: "idle", lastSync: null, error: null });
+  const ghSha = useRef(null);
+  useEffect(() => {
+    try {
+      localStorage.setItem("journey_gh_config", JSON.stringify(ghConfig));
+    } catch (e) {
+    }
+  }, [ghConfig]);
+  const ghReady = !!(ghConfig.token && ghConfig.owner && ghConfig.repo && ghConfig.path);
+  const ghApiUrl = () => `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${ghConfig.path}`;
+  const ghHeaders = () => ({
+    "Authorization": "token " + ghConfig.token,
+    "Accept": "application/vnd.github.v3+json",
+    "Content-Type": "application/json"
+  });
+  const ghPull = async () => {
+    if (!ghReady) return;
+    setGhSyncStatus((s) => __spreadProps(__spreadValues({}, s), { state: "syncing", error: null }));
+    try {
+      const res = await fetch(ghApiUrl(), { headers: ghHeaders() });
+      if (!res.ok) throw new Error("GitHub fetch failed: " + res.status);
+      const data = await res.json();
+      ghSha.current = data.sha;
+      const content = JSON.parse(atob(data.content.replace(/\n/g, "")));
+      if (content && content._journey && Array.isArray(content.trips)) {
+        const pulled = migrateCostFields(content.trips);
+        setTrips(pulled);
+        try {
+          localStorage.setItem("journey_trips_v1", JSON.stringify(pulled));
+        } catch (e) {
+        }
+      }
+      setGhSyncStatus({ state: "ok", lastSync: (/* @__PURE__ */ new Date()).toISOString(), error: null });
+    } catch (e) {
+      setGhSyncStatus({ state: "error", lastSync: null, error: e.message });
+    }
+  };
+  const ghPush = async (tripsToSave) => {
+    if (!ghReady) return;
+    setGhSyncStatus((s) => __spreadProps(__spreadValues({}, s), { state: "syncing", error: null }));
+    try {
+      if (!ghSha.current) {
+        const res2 = await fetch(ghApiUrl(), { headers: ghHeaders() });
+        if (res2.ok) {
+          const d = await res2.json();
+          ghSha.current = d.sha;
+        }
+      }
+      const payload = { _journey: true, trips: tripsToSave };
+      const body = { message: "Journey sync " + (/* @__PURE__ */ new Date()).toISOString(), content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))) };
+      if (ghSha.current) body.sha = ghSha.current;
+      const res = await fetch(ghApiUrl(), { method: "PUT", headers: ghHeaders(), body: JSON.stringify(body) });
+      if (!res.ok) throw new Error("GitHub push failed: " + res.status);
+      const data = await res.json();
+      ghSha.current = data.content && data.content.sha;
+      setGhSyncStatus({ state: "ok", lastSync: (/* @__PURE__ */ new Date()).toISOString(), error: null });
+    } catch (e) {
+      setGhSyncStatus({ state: "error", lastSync: null, error: e.message });
+    }
+  };
+  useEffect(() => {
+    if (ghReady) {
+      ghPull();
+    }
+  }, []);
   const showToast = (msg, undoFn, duration = 5e3) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ msg, undo: undoFn });
@@ -6021,6 +6119,11 @@ function App() {
       pwaPrompt,
       travelProfile,
       onSaveTravelProfile: setTravelProfile,
+      ghReady,
+      ghSyncStatus,
+      onGhPull: ghPull,
+      onGhPush: () => ghPush(trips),
+      onOpenSync: () => setModal({ type: "syncSettings" }),
       onInstall: (e) => {
         if (!e) {
           setPwaPrompt(null);
@@ -6086,7 +6189,17 @@ function App() {
         setView("day");
       }
     }
-  ), modal && modal.type === "templates" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null), maxWidth: 700 }, /* @__PURE__ */ React.createElement(
+  ), modal && modal.type === "syncSettings" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null), maxWidth: 480 }, /* @__PURE__ */ React.createElement(
+    GhSyncModal,
+    {
+      ghConfig,
+      onSaveGhConfig: setGhConfig,
+      ghSyncStatus,
+      onGhPull: ghPull,
+      onGhPush: () => ghPush(trips),
+      onClose: () => setModal(null)
+    }
+  )), modal && modal.type === "templates" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null), maxWidth: 700 }, /* @__PURE__ */ React.createElement(
     TemplatesModal,
     {
       trip: modal.tripId ? trips.find((t) => t.id === modal.tripId) : null,
