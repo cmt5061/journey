@@ -977,7 +977,7 @@ const validateImport = (parsed) => {
   parsed.trips.forEach((t) => {
     if (!t.id || !t.title) throw new Error("Trip data is malformed (missing id or title).");
   });
-  return migrateCostFields(parsed.trips);
+  return fixCorruptedEmoji(migrateCostFields(parsed.trips));
 };
 const restampIds = (trip) => {
   const idMap = {};
@@ -6034,7 +6034,7 @@ function App() {
       const jsonStr = new TextDecoder("utf-8").decode(bytes);
       const content = JSON.parse(jsonStr);
       if (content && content._journey && Array.isArray(content.trips)) {
-        const pulled = migrateCostFields(content.trips);
+        const pulled = fixCorruptedEmoji(migrateCostFields(content.trips));
         setTrips(pulled);
         try {
           localStorage.setItem("journey_trips_v1", JSON.stringify(pulled));
