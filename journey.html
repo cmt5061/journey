@@ -482,6 +482,7 @@ const newCity = (name, nights, startStr) => ({
   name,
   nights,
   notes: "",
+  cityType: "",
   thingsToDo: [],
   researchThemes: [],
   days: makeCityDays(nights, startStr)
@@ -494,6 +495,87 @@ const newBudgetItem = (o = {}) => __spreadValues({
   paidBy: "split",
   notes: ""
 }, o);
+const TRANSIT_TEMPLATES = [
+  {
+    label: "\u2708 Airport \u2192 Hotel",
+    icon: "\u2708",
+    text: "1. Exit arrivals hall \u2014 follow signs to [Train/Metro/Bus]\n2. Take [Line/Service] toward [Direction] \u2014 [X] stops (~[X] min, [price])\n3. Exit at [Station] \u2014 [exit number/direction]\n4. [Walk X min / Take taxi] to hotel \u2014 address: [address]\nTip: Have hotel address ready on phone for taxi driver"
+  },
+  {
+    label: "\u{1F687} Metro/Subway",
+    icon: "\u{1F687}",
+    text: "1. Enter [Station Name] \u2014 use [Card/Ticket type]\n2. Take [Line Name/Color/Number] toward [Direction/Terminal]\n3. Transfer at [Transfer Station] \u2192 [New Line] toward [Direction]\n4. Exit at [Destination Station] \u2014 take [Exit A/B/North/South]\n5. Walk [X min] \u2014 [landmark or street directions]"
+  },
+  {
+    label: "\u{1F685} Train Transfer",
+    icon: "\u{1F685}",
+    text: "1. Arrive [Origin Station] \u2014 [Platform X]\n2. Transfer to [Connecting Train/Service] \u2014 allow [X min] connection time\n3. [Platform X] \u2014 depart [time], arrive [destination] [time]\n4. Ticket type: [Reserved/Unreserved] \u2014 [pass or purchase info]\nNote: [Any important warnings \u2014 busy platforms, luggage rules, etc.]"
+  },
+  {
+    label: "\u{1F6A2} Cruise Port \u2192 City",
+    icon: "\u{1F6A2}",
+    text: "1. Exit ship via [gangway/terminal] \u2014 passport/ID ready for port check\n2. From terminal: [Taxi rank / Shuttle bus / Public transport]\n   - Taxi: ~[X min], ~[price], ask for [landmark or address]\n   - Shuttle: [frequency], drops at [location], [price]\n   - Bus [#]: [stop location], toward [direction], [price]\n3. Return: last tender/shuttle back by [time] \u2014 ship departs [time]"
+  }
+];
+const CITY_TYPES = [
+  { id: "beach", label: "Beach / Resort", icon: "\u{1F3D6}" },
+  { id: "urban", label: "Major City", icon: "\u{1F3D9}" },
+  { id: "mountain", label: "Mountain / Hiking", icon: "\u26F0" },
+  { id: "onsen", label: "Onsen / Spa", icon: "\u2668\uFE0F" },
+  { id: "cultural", label: "Historic / Cultural", icon: "\u{1F3DB}" }
+];
+const CITY_TYPE_ACTIVITIES = {
+  beach: [
+    { title: "Beach day", type: "activity", time: "10:00", icon: "\u{1F3D6}", block: "morning" },
+    { title: "Snorkeling", type: "activity", time: "09:00", icon: "\u{1F93F}", block: "morning" },
+    { title: "Sunset walk", type: "activity", time: "18:00", icon: "\u{1F305}", block: "evening" },
+    { title: "Beachside lunch", type: "restaurant", time: "12:30", icon: "\u{1F37D}", block: "afternoon" },
+    { title: "Water sports", type: "activity", time: "11:00", icon: "\u{1F6A3}", block: "morning" },
+    { title: "Seafood dinner", type: "restaurant", time: "19:00", icon: "\u{1F99E}", block: "evening" },
+    { title: "Beach bar / drinks", type: "activity", time: "17:00", icon: "\u{1F379}", block: "afternoon" },
+    { title: "Stand-up paddleboard", type: "activity", time: "08:30", icon: "\u{1F3C4}", block: "morning" }
+  ],
+  urban: [
+    { title: "Museum / gallery", type: "attraction", time: "10:00", icon: "\u{1F3A8}", block: "morning" },
+    { title: "Walking tour", type: "activity", time: "09:30", icon: "\u{1F97E}", block: "morning" },
+    { title: "Local market", type: "activity", time: "09:00", icon: "\u{1F6D2}", block: "morning" },
+    { title: "Lunch \u2014 local cuisine", type: "restaurant", time: "13:00", icon: "\u{1F37D}", block: "afternoon" },
+    { title: "Landmark visit", type: "attraction", time: "15:00", icon: "\u{1F5FF}", block: "afternoon" },
+    { title: "Neighborhood explore", type: "activity", time: "16:00", icon: "\u{1F4CD}", block: "afternoon" },
+    { title: "Rooftop bar / views", type: "activity", time: "18:30", icon: "\u{1F306}", block: "evening" },
+    { title: "Dinner reservation", type: "restaurant", time: "19:30", icon: "\u{1F377}", block: "evening" }
+  ],
+  mountain: [
+    { title: "Summit hike", type: "activity", time: "07:00", icon: "\u26F0", block: "morning" },
+    { title: "Trail walk", type: "activity", time: "09:00", icon: "\u{1F97E}", block: "morning" },
+    { title: "Scenic viewpoint", type: "attraction", time: "11:00", icon: "\u{1F52D}", block: "morning" },
+    { title: "Picnic lunch", type: "restaurant", time: "12:30", icon: "\u{1F9FA}", block: "afternoon" },
+    { title: "Cable car / gondola", type: "activity", time: "14:00", icon: "\u{1F6A0}", block: "afternoon" },
+    { title: "Wildlife spotting", type: "activity", time: "06:30", icon: "\u{1F98C}", block: "morning" },
+    { title: "Mountain hut dinner", type: "restaurant", time: "18:00", icon: "\u{1F3D4}", block: "evening" },
+    { title: "Stargazing", type: "activity", time: "21:00", icon: "\u{1F320}", block: "evening" }
+  ],
+  onsen: [
+    { title: "Morning onsen bath", type: "activity", time: "07:00", icon: "\u2668\uFE0F", block: "morning" },
+    { title: "Ryokan breakfast", type: "restaurant", time: "08:00", icon: "\u{1F371}", block: "morning" },
+    { title: "Town walk in yukata", type: "activity", time: "15:00", icon: "\u{1F458}", block: "afternoon" },
+    { title: "Outdoor rotenburo", type: "activity", time: "16:00", icon: "\u{1F33F}", block: "afternoon" },
+    { title: "Kaiseki dinner", type: "restaurant", time: "18:30", icon: "\u{1F962}", block: "evening" },
+    { title: "Evening onsen crawl", type: "activity", time: "20:00", icon: "\u2668\uFE0F", block: "evening" },
+    { title: "Ropeway / temple", type: "attraction", time: "10:00", icon: "\u26E9", block: "morning" },
+    { title: "Spa treatment", type: "activity", time: "14:00", icon: "\u{1F486}", block: "afternoon" }
+  ],
+  cultural: [
+    { title: "Historic district walk", type: "activity", time: "09:00", icon: "\u{1F3DB}", block: "morning" },
+    { title: "Temple / shrine visit", type: "attraction", time: "08:00", icon: "\u26E9", block: "morning" },
+    { title: "Museum", type: "attraction", time: "10:00", icon: "\u{1F3A8}", block: "morning" },
+    { title: "Traditional lunch", type: "restaurant", time: "12:30", icon: "\u{1F37D}", block: "afternoon" },
+    { title: "Guided tour", type: "activity", time: "14:00", icon: "\u{1F399}", block: "afternoon" },
+    { title: "Local craft workshop", type: "activity", time: "15:00", icon: "\u{1F3FA}", block: "afternoon" },
+    { title: "Sunset at landmark", type: "attraction", time: "17:30", icon: "\u{1F305}", block: "evening" },
+    { title: "Traditional dinner", type: "restaurant", time: "19:00", icon: "\u{1F377}", block: "evening" }
+  ]
+};
 const newTrip = ({ title, startDate, endDate, currency = "USD", ptoDays = "" }) => ({
   id: uid(),
   title,
@@ -3363,7 +3445,7 @@ function TripStructureEditor({ trip, mutateTrip, mobile }) {
       borderRadius: 12,
       padding: mobile ? "12px 14px" : "14px 18px",
       borderLeft: `3px solid ${cityColor}`
-    } }, !isPending ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.text } }, city.name), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 2 } }, fmtDate(city.days[0] ? city.days[0].date : ""), " \u2192 ", fmtDate(city.days[city.days.length - 1] ? city.days[city.days.length - 1].date : ""))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 0, background: C.surface2, borderRadius: 8, border: `1px solid ${C.border}`, flexShrink: 0 } }, /* @__PURE__ */ React.createElement(
+    } }, !isPending ? /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.text } }, city.cityType && CITY_TYPES.find((ct) => ct.id === city.cityType) && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, marginRight: 6 } }, CITY_TYPES.find((ct) => ct.id === city.cityType).icon), city.name), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 2 } }, fmtDate(city.days[0] ? city.days[0].date : ""), " \u2192 ", fmtDate(city.days[city.days.length - 1] ? city.days[city.days.length - 1].date : ""))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 0, background: C.surface2, borderRadius: 8, border: `1px solid ${C.border}`, flexShrink: 0 } }, /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => adjustNights(city.id, -1),
@@ -3404,7 +3486,17 @@ function TripStructureEditor({ trip, mutateTrip, mobile }) {
         title: "Remove city"
       },
       "\u2715"
-    )) : (
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 } }, CITY_TYPES.map((ct) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: ct.id,
+        onClick: () => mutateTrip((tr) => __spreadProps(__spreadValues({}, tr), { cities: tr.cities.map((c) => c.id === city.id ? __spreadProps(__spreadValues({}, c), { cityType: c.cityType === ct.id ? "" : ct.id }) : c) })),
+        style: { padding: "3px 10px", borderRadius: 20, border: "1px solid " + (city.cityType === ct.id ? C.accent : C.border), background: city.cityType === ct.id ? C.accentBg : "none", color: city.cityType === ct.id ? C.accent : C.dim, fontSize: 11, cursor: "pointer", fontWeight: city.cityType === ct.id ? 600 : 400 }
+      },
+      ct.icon,
+      " ",
+      ct.label
+    )))) : (
       /* Delete confirmation inline */
       /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, color: C.text } }, "Remove ", /* @__PURE__ */ React.createElement("strong", null, city.name), "?", actCount > 0 ? /* @__PURE__ */ React.createElement("span", { style: { color: C.warn } }, " This will permanently delete ", actCount, " ", actCount === 1 ? "activity" : "activities", ".") : /* @__PURE__ */ React.createElement("span", { style: { color: C.mid } }, " No activities will be lost.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setDeleteConfirm(null) }, "Keep it"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: () => deleteCity(city.id) }, actCount > 0 ? `Delete city + ${actCount} activities` : "Delete city")))
     ));
@@ -4576,7 +4668,31 @@ function DayView({ trip, city, day, onBack, addActivity, updateActivity, deleteA
     },
     /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right", minWidth: 0, flex: 1, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1, marginBottom: 2 } }, "Next"), nextDay && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, nextDay.label || fmtDate(nextDay.date))),
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, color: C.accent, fontWeight: 700, lineHeight: 1, flexShrink: 0 } }, "\u2192")
-  )))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflow: "auto", padding: mobile ? "14px" : "28px" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1280, margin: "0 auto" } }, /* @__PURE__ */ React.createElement(DayPlanningNotes, { day, mutateDay, mobile }), !mobile && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22, marginBottom: 28 } }, BLOCKS.map((block) => /* @__PURE__ */ React.createElement(DayBlock, { key: block, block, day, open, reorderActivity: (bl, fi, ti) => reorderActivity(bl, fi, ti) }))), mobile && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement(MobileAccordion, { day, isToday, open, reorderActivity: (bl, fi, ti) => reorderActivity(bl, fi, ti) })), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement(
+  )))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflow: "auto", padding: mobile ? "14px" : "28px" } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1280, margin: "0 auto" } }, /* @__PURE__ */ React.createElement(DayPlanningNotes, { day, mutateDay, mobile }), city.cityType && CITY_TYPE_ACTIVITIES[city.cityType] && (() => {
+    const suggestions = CITY_TYPE_ACTIVITIES[city.cityType];
+    const cityTypeInfo = CITY_TYPES.find((ct) => ct.id === city.cityType);
+    return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16, background: C.surface2, borderRadius: 12, padding: "12px 14px", border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, cityTypeInfo ? cityTypeInfo.icon : "\u{1F4A1}"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 600, color: C.mid } }, "Suggested for ", cityTypeInfo ? cityTypeInfo.label : city.cityType), /* @__PURE__ */ React.createElement("span", { style: { color: C.dim } }, "\u2014 tap to add")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, suggestions.map((s, i) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: i,
+        onClick: () => open(s.block, __spreadProps(__spreadValues({}, newActivity({ addedOnTrip: trip.status === "active" })), { title: s.title, type: s.type, time: s.time })),
+        style: { background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: C.mid, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" },
+        onMouseEnter: (e) => {
+          e.currentTarget.style.borderColor = C.accent;
+          e.currentTarget.style.color = C.accent;
+          e.currentTarget.style.background = C.accentBg;
+        },
+        onMouseLeave: (e) => {
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.color = C.mid;
+          e.currentTarget.style.background = C.surface3;
+        }
+      },
+      s.icon,
+      " ",
+      s.title
+    ))));
+  })(), !mobile && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22, marginBottom: 28 } }, BLOCKS.map((block) => /* @__PURE__ */ React.createElement(DayBlock, { key: block, block, day, open, reorderActivity: (bl, fi, ti) => reorderActivity(bl, fi, ti) }))), mobile && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement(MobileAccordion, { day, isToday, open, reorderActivity: (bl, fi, ti) => reorderActivity(bl, fi, ti) })), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement(
     Textarea,
     {
       label: "\u{1F4D6} Day reflection \u2014 saved in Look Back view",
@@ -4987,7 +5103,23 @@ function ActivityModal({ activity, block, isNew, currency, trip, onSave, onDelet
       onDelete: (id) => setForm((f) => __spreadProps(__spreadValues({}, f), { photos: (f.photos || []).filter((p) => p.id !== id) })),
       onCaption: (id, caption) => setForm((f) => __spreadProps(__spreadValues({}, f), { photos: (f.photos || []).map((p) => p.id === id ? __spreadProps(__spreadValues({}, p), { caption }) : p) }))
     }
-  ), tab === "transit" && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 14 } }, /* @__PURE__ */ React.createElement(
+  ), tab === "transit" && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 14 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 8 } }, "Quick-fill from template:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, TRANSIT_TEMPLATES.map((tpl) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: tpl.label,
+      onClick: () => upd("transitSteps", form.transitSteps ? form.transitSteps + "\n\n" + tpl.text : tpl.text),
+      style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: C.mid, cursor: "pointer", fontWeight: 500, whiteSpace: "nowrap" },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.borderColor = C.accent;
+        e.currentTarget.style.color = C.accent;
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.borderColor = C.border;
+        e.currentTarget.style.color = C.mid;
+      }
+    },
+    tpl.label
+  )))), /* @__PURE__ */ React.createElement(
     Textarea,
     {
       label: "Step-by-step transit directions",
@@ -4996,7 +5128,7 @@ function ActivityModal({ activity, block, isNew, currency, trip, onSave, onDelet
       placeholder: "1. Take Metro Line 5 (Bobigny) from R\xE9publique\n2. Transfer at Ch\xE2telet \u2192 Line 1 (La D\xE9fense)\n3. Exit at Palais Royal \u2014 Mus\xE9e du Louvre\n4. Follow signs to Richelieu Wing entrance",
       rows: mobile ? 7 : 9
     }
-  ), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim } }, "These directions appear in Travel Mode when this is the current or next activity."))), mobile ? (
+  ), form.transitSteps && /* @__PURE__ */ React.createElement("button", { onClick: () => upd("transitSteps", ""), style: { alignSelf: "flex-start", background: "none", border: "none", color: C.dim, fontSize: 12, cursor: "pointer", padding: 0 } }, "Clear"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim } }, "These directions appear in Travel Mode when this is the current or next activity."))), mobile ? (
     /* Mobile: stacked layout */
     /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 16px", borderTop: `1px solid ${C.border}`, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose, style: { flex: 1 } }, "Cancel"), !isNew && moveActivity && /* @__PURE__ */ React.createElement("button", { onClick: () => setShowMoveSheet(true), style: {
       flex: 1,
@@ -5233,14 +5365,37 @@ function CityMgmtModal({ trip, mutateTrip, onClose, setModal }) {
     const last = existingCities[existingCities.length - 1];
     return last.days.length ? last.days[last.days.length - 1].date : "";
   })();
-  const [addForm, setAddForm] = useState({ name: "", nights: 3, startDate: nextStart });
+  const [addForm, setAddForm] = useState({ name: "", nights: 3, startDate: nextStart, cityType: "" });
   const updAdd = (k, v) => setAddForm((f) => __spreadProps(__spreadValues({}, f), { [k]: v }));
   const addValid = addForm.name.trim() && addForm.nights > 0 && addForm.startDate;
+  const [detecting, setDetecting] = useState(false);
+  const autoDetectCityType = async (name) => {
+    if (!name.trim()) return;
+    setDetecting(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 20,
+          messages: [{ role: "user", content: "What type of travel destination is " + name + "? Reply with ONLY one word from: beach, urban, mountain, onsen, cultural" }]
+        })
+      });
+      const data = await res.json();
+      const guess = (data.content && data.content[0] && data.content[0].text || "").trim().toLowerCase();
+      if (["beach", "urban", "mountain", "onsen", "cultural"].includes(guess)) {
+        setAddForm((f) => __spreadProps(__spreadValues({}, f), { cityType: guess }));
+      }
+    } catch (e) {
+    }
+    setDetecting(false);
+  };
   const saveCity = () => {
     if (!addValid) return;
-    const c = newCity(addForm.name.trim(), parseInt(addForm.nights), addForm.startDate);
+    const c = __spreadProps(__spreadValues({}, newCity(addForm.name.trim(), parseInt(addForm.nights), addForm.startDate)), { cityType: addForm.cityType });
     mutateTrip((t) => __spreadProps(__spreadValues({}, t), { cities: [...t.cities, c] }));
-    setAddForm({ name: "", nights: 3, startDate: "" });
+    setAddForm({ name: "", nights: 3, startDate: "", cityType: "" });
     setAddOpen(false);
   };
   const chevron = (open) => /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, transition: "transform 0.2s", display: "inline-block", transform: open ? "rotate(180deg)" : "rotate(0deg)" } }, "\u25BE");
@@ -5254,7 +5409,28 @@ function CityMgmtModal({ trip, mutateTrip, onClose, setModal }) {
     border: "none",
     cursor: "pointer",
     textAlign: "left"
-  } }, /* @__PURE__ */ React.createElement("h3", { style: { fontSize: 15, fontWeight: 600, color: C.text, margin: 0 } }, "Add City / Segment"), chevron(addOpen)), addOpen && /* @__PURE__ */ React.createElement("div", { style: { padding: "4px 18px 18px", borderTop: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, margin: "12px 0 16px" } }, "Days are auto-generated from the start date."), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 14 } }, /* @__PURE__ */ React.createElement(Input, { label: "City name", value: addForm.name, onChange: (v) => updAdd("name", v), placeholder: "e.g., Kyoto, Paris, Lisbon..." }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, minWidth: 0 } }, /* @__PURE__ */ React.createElement(Input, { label: "Nights", type: "number", value: addForm.nights, onChange: (v) => updAdd("nights", Math.max(1, parseInt(v) || 1)) }), /* @__PURE__ */ React.createElement(Input, { label: "Arrival", type: "date", value: addForm.startDate, onChange: (v) => updAdd("startDate", v) })), existingCities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.mid } }, "Will follow ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.text } }, existingCities[existingCities.length - 1].name), " in the city ribbon."), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !addValid, onClick: saveCity }, "Add City")))), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: 0, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setEditOpen((o) => !o), style: {
+  } }, /* @__PURE__ */ React.createElement("h3", { style: { fontSize: 15, fontWeight: 600, color: C.text, margin: 0 } }, "Add City / Segment"), chevron(addOpen)), addOpen && /* @__PURE__ */ React.createElement("div", { style: { padding: "4px 18px 18px", borderTop: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, margin: "12px 0 16px" } }, "Days are auto-generated from the start date."), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 14 } }, /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      label: "City name",
+      value: addForm.name,
+      onChange: (v) => updAdd("name", v),
+      onBlur: () => {
+        if (addForm.name.trim() && !addForm.cityType) autoDetectCityType(addForm.name);
+      },
+      placeholder: "e.g., Kyoto, Paris, Lisbon..."
+    }
+  ), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, minWidth: 0 } }, /* @__PURE__ */ React.createElement(Input, { label: "Nights", type: "number", value: addForm.nights, onChange: (v) => updAdd("nights", Math.max(1, parseInt(v) || 1)) }), /* @__PURE__ */ React.createElement(Input, { label: "Arrival", type: "date", value: addForm.startDate, onChange: (v) => updAdd("startDate", v) })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginBottom: 6 } }, "City type ", detecting && /* @__PURE__ */ React.createElement("span", { style: { color: C.accent } }, "\u2014 detecting\u2026"), !detecting && addForm.cityType && /* @__PURE__ */ React.createElement("span", { style: { color: C.ok } }, " \u2014 auto-detected (override below)")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, CITY_TYPES.map((ct) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: ct.id,
+      onClick: () => updAdd("cityType", addForm.cityType === ct.id ? "" : ct.id),
+      style: { padding: "5px 12px", borderRadius: 20, border: "1px solid " + (addForm.cityType === ct.id ? C.accent : C.border), background: addForm.cityType === ct.id ? C.accentBg : C.surface2, color: addForm.cityType === ct.id ? C.accent : C.mid, fontSize: 12, cursor: "pointer", fontWeight: addForm.cityType === ct.id ? 600 : 400 }
+    },
+    ct.icon,
+    " ",
+    ct.label
+  )))), existingCities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.mid } }, "Will follow ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.text } }, existingCities[existingCities.length - 1].name), " in the city ribbon."), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !addValid, onClick: saveCity }, "Add City")))), /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: 0, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setEditOpen((o) => !o), style: {
     width: "100%",
     display: "flex",
     alignItems: "center",
