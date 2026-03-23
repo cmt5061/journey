@@ -52,6 +52,20 @@ const ACT_TYPES = [
   { id: "other", label: "Other", icon: "\u{1F4CC}" }
 ];
 const COST_CATS = ["Food", "Transport", "Lodging", "Activities", "Shopping", "Other"];
+const CAT_COLORS = {
+  "Food": "#e8884a",
+  // warm orange
+  "Transport": "#4a9ae8",
+  // sky blue
+  "Lodging": "#8e7dcf",
+  // purple
+  "Activities": "#4ab87a",
+  // green
+  "Shopping": "#e86fa0",
+  // pink
+  "Other": "#8a9ab0"
+  // muted blue-grey
+};
 const VAULT_CATS = ["All", "\u2708\uFE0F Flight", "\u{1F3E8} Hotel", "\u{1F685} Train / Bus", "\u{1F37D}\uFE0F Restaurant", "\u{1F3A8} Attraction", "\u{1F97E} Activity", "\u{1F4CC} Other"];
 const BLOCKS = ["morning", "afternoon", "evening"];
 const BLOCK_META = {
@@ -5475,7 +5489,7 @@ function BudgetView({ activities, currency, travelers, trip, mutateTrip }) {
     } }, "Cancel")))
   ) : (
     /* ── Normal row ── */
-    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, row.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 1 } }, row.category, row.cityName ? " \xB7 " + row.cityName : "", row.source === "budget" ? " \xB7 standalone" : "")), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 500, color: C.text, flexShrink: 0 } }, fmtAmt(row.amount)), /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, row.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 1 } }, /* @__PURE__ */ React.createElement("span", { style: { color: CAT_COLORS[row.category] || C.dim, fontWeight: 600 } }, row.category), row.cityName ? " \xB7 " + row.cityName : "", row.source === "budget" ? " \xB7 standalone" : "")), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 500, color: C.text, flexShrink: 0 } }, fmtAmt(row.amount)), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => row.source === "budget" ? startEditExpense(budgetItems.find((b) => b.id === row.id)) : startEditActivity(row),
@@ -5486,7 +5500,7 @@ function BudgetView({ activities, currency, travelers, trip, mutateTrip }) {
     ))
   ))))))), (byCategory.length > 0 || Object.keys(byCity).length > 0) && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 16 } }, byCategory.length > 0 && /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, marginBottom: 14, fontSize: 14, fontWeight: 600 } }, "By Category"), byCategory.map(({ cat, total }) => {
     const pct = totals.total > 0 ? total / totals.total * 100 : 0;
-    return /* @__PURE__ */ React.createElement("div", { key: cat, style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text } }, cat), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, fmtAmt(total), " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, "(", Math.round(pct), "%)"))), /* @__PURE__ */ React.createElement("div", { style: { height: 5, background: C.surface3, borderRadius: 3 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: pct + "%", background: C.accent, borderRadius: 3, transition: "width 0.4s ease" } })));
+    return /* @__PURE__ */ React.createElement("div", { key: cat, style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: CAT_COLORS[cat] || C.text, fontWeight: 600 } }, cat), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, fmtAmt(total), " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, "(", Math.round(pct), "%)"))), /* @__PURE__ */ React.createElement("div", { style: { height: 5, background: C.surface3, borderRadius: 3 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: pct + "%", background: CAT_COLORS[cat] || C.accent, borderRadius: 3, transition: "width 0.4s ease" } })));
   })), Object.keys(byCity).length > 0 && /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, marginBottom: 14, fontSize: 14, fontWeight: 600 } }, "By City"), Object.entries(byCity).sort((a, b) => b[1] - a[1]).map(([city, total], i) => /* @__PURE__ */ React.createElement("div", { key: city, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: CITY_PALETTE[i % CITY_PALETTE.length], flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text } }, city)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid } }, fmtAmt(total)))))), totals.total === 0 && budgetItems.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 20px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\u{1F4B0}"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, marginBottom: 6, color: C.mid } }, "No costs tracked yet"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13 } }, "Add costs to activities in the Itinerary, or use the button above for standalone expenses.")));
 }
 function NewTripModal({ onSave, onClose }) {
