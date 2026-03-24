@@ -645,6 +645,169 @@ const getCurrentActivity = (allToday) => {
   return { current, next };
 };
 const JOURNEY_VERSION = "1.0";
+const CHANGELOG = [
+  {
+    version: "1.12",
+    date: "2026-03-23",
+    title: "Budget Tab Enhancements",
+    emoji: "\u{1F4B0}",
+    changes: [
+      "Color-coded budget categories across the ledger and charts (Food, Transport, Lodging, Activities, Shopping)",
+      "Filter expenses by category and payer \u2014 All, Split, individual travelers, or Comp'd",
+      "Sort expenses by order added, highest/lowest amount, or category",
+      "Comp / Free option now available in all Paid By dropdowns consistently",
+      "Items marked Comp'd with a dollar value show the amount as savings reference in a dedicated section",
+      "Free / Comp'd section separated from paid expenses with a total saved summary",
+      "Edit any expense inline from the ledger \u2014 both standalone items and activity costs",
+      "Budget tab moves to third position when a trip is On Trip"
+    ]
+  },
+  {
+    version: "1.11",
+    date: "2026-03-22",
+    title: "Transit Templates & City Type Suggestions",
+    emoji: "\u{1F687}",
+    changes: [
+      "Transit step templates in activity modal \u2014 Airport \u2192 Hotel, Metro/Subway, Train Transfer, Cruise Port",
+      "City type system \u2014 Beach, Major City, Mountain, Onsen/Spa, Historic/Cultural",
+      "Auto-detect city type using AI when adding a new city (overridable)",
+      "Day view shows activity suggestions based on city type \u2014 tap to add",
+      "City type icons appear on city cards in trip structure editor"
+    ]
+  },
+  {
+    version: "1.10",
+    date: "2026-03-22",
+    title: "GitHub Sync & Offline Support",
+    emoji: "\u21C5",
+    changes: [
+      "GitHub sync \u2014 push/pull all trips to a private GitHub repo for cross-device access",
+      "Shared token model \u2014 one token, multiple devices, including travel companions",
+      "Auto-pull on app load when sync is configured",
+      "Last synced timestamp on home screen for quick veracity check",
+      "Sync settings saved in all-trips JSON export and restored on import",
+      "Offline support via Service Worker \u2014 app works without internet after first load",
+      "GitHub sync config accessible from \u21C5 Sync button in home screen header"
+    ]
+  },
+  {
+    version: "1.9",
+    date: "2026-03-21",
+    title: "Flight Status & Travel Mode Improvements",
+    emoji: "\u2708\uFE0F",
+    changes: [
+      "Flight Number field on flight activities \u2014 separate from Confirmation # for live tracking",
+      "Auto-check flight status in Travel Mode using AviationStack API (optional, free tier)",
+      "Status badges on flight rows \u2014 On Time, Delayed Xm, In Air, Landed, Cancelled, Diverted",
+      "Track \u2197 link to FlightAware when no API key is configured",
+      "Flight status now shown on Today, Next 3 Days, and Full Timeline tabs",
+      "Edit activities directly from Travel Mode \u2014 full activity modal inline",
+      "Activity edits in Travel Mode correctly save back to the itinerary"
+    ]
+  },
+  {
+    version: "1.8",
+    date: "2026-03-21",
+    title: "Research Board & Activity Suggestions",
+    emoji: "\u2728",
+    changes: [
+      "\u2728 Suggest button on Research Board \u2014 AI generates 5 city-specific ideas, avoids duplicates",
+      "\u{1F5FA} Offline Map button \u2014 opens Google Maps for the city for offline area download",
+      "Research Board header restructured to wrap gracefully on mobile",
+      "Trip timeline on home screen \u2014 proportional color bars with city name and night labels"
+    ]
+  },
+  {
+    version: "1.7",
+    date: "2026-03-20",
+    title: "Budget Category Sync & Activity Enhancements",
+    emoji: "\u{1F3F7}",
+    changes: [
+      "Budget category auto-syncs to activity type (Flight \u2192 Transport, Hotel \u2192 Lodging, etc.)",
+      "Category sync respects manual overrides \u2014 only updates if still at default",
+      "Migration runs on load, import, and GitHub pull to fix existing uncategorized items",
+      "Quick add presets updated \u2014 Beach Day, Ride Share, Groceries, Snack, Landmark added",
+      "Train arrival/departure consolidated to single Train preset",
+      "Lunch/Dinner consolidated to Meal preset",
+      "Day trip removed from quick add presets"
+    ]
+  },
+  {
+    version: "1.6",
+    date: "2026-03-20",
+    title: "Apple Vision Pro Support",
+    emoji: "\u{1F97D}",
+    changes: [
+      "Detects Apple Vision Pro via user agent and xr-headset media query",
+      "Eye-tracking optimised UI \u2014 all tap targets enlarged to minimum 44\xD744pt",
+      "Visible amber glow on hover (gaze = hover on visionOS)",
+      "Inputs and selects enlarged to 48px height for easier eye-gaze tapping",
+      "\u{1F97D} VISION PRO MODE badge on home screen when detected",
+      "Zero impact on non-VP devices \u2014 detection is inert if not on visionOS"
+    ]
+  },
+  {
+    version: "1.5",
+    date: "2026-03-19",
+    title: "Character Encoding Fix",
+    emoji: "\u{1F524}",
+    changes: [
+      "Fixed emoji and special characters (\u2192, \u2014, emoji icons) corrupted after GitHub sync",
+      "Full UTF-8 repair runs on load, import, and GitHub pull \u2014 heals existing data automatically",
+      "Root cause: atob() returns binary string; now correctly decoded via TextDecoder before JSON.parse"
+    ]
+  },
+  {
+    version: "1.4",
+    date: "2026-03-19",
+    title: "Home Screen & Sync Status",
+    emoji: "\u{1F3E0}",
+    changes: [
+      "Last synced timestamp above search bar when GitHub sync is configured",
+      "Configure sync link opens sync modal directly from home screen",
+      "Trip timeline on home cards shows city name labels below color bar"
+    ]
+  },
+  {
+    version: "1.3",
+    date: "2026-03-18",
+    title: "Budget Tab Inline Editing",
+    emoji: "\u270F\uFE0F",
+    changes: [
+      "Edit any expense inline in the ledger \u2014 no modal needed",
+      "Standalone budget items: edit description, category, amount, paid by, notes",
+      "Activity costs: edit amount, local amount, category, paid by directly from budget tab",
+      "Delete button available inside the edit form for standalone items"
+    ]
+  },
+  {
+    version: "1.2",
+    date: "2026-03-18",
+    title: "Offline Maps & Research Board",
+    emoji: "\u{1F5FA}",
+    changes: [
+      "Offline Map button on Research Board opens Google Maps for the current city",
+      "Research Board header buttons wrap to second row on mobile \u2014 no more overflow"
+    ]
+  },
+  {
+    version: "1.1",
+    date: "2026-03-17",
+    title: "Core App Launch",
+    emoji: "\u{1F680}",
+    changes: [
+      "Multi-city trip planning with Morning / Afternoon / Evening day blocks",
+      "Research Board with themed sections, drag-to-reorder, AI suggest",
+      "Travel Mode \u2014 Today, Next 3 Days, Full Timeline with weather integration",
+      "Budget tracking with settlement math, category charts, and CSV export",
+      "To Do / Prep checklist with city and trip scoping",
+      "Vault \u2014 all confirmations in one place",
+      "Look Back view for completed trips with cover photo",
+      "GitHub Pages hosting with offline Service Worker"
+    ]
+  }
+];
+const LATEST_CHANGELOG_DATE = CHANGELOG[0].date;
 const downloadFile = (filename, content, mime = "application/json") => {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -735,10 +898,13 @@ const exportTripJSON = (trip) => {
   const payload = { _journey: JOURNEY_VERSION, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), trips: [trip] };
   downloadFile(`journey-${slugify(trip.title)}.json`, JSON.stringify(payload, null, 2));
 };
-const exportAllJSON = (trips, ghConfig) => {
+const exportAllJSON = (trips, ghConfig, travelProfile) => {
   const payload = { _journey: JOURNEY_VERSION, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), trips };
   if (ghConfig && (ghConfig.token || ghConfig.owner || ghConfig.repo)) {
     payload.ghConfig = ghConfig;
+  }
+  if (travelProfile && Object.keys(travelProfile).length > 0) {
+    payload.travelProfile = travelProfile;
   }
   downloadFile(`journey-all-trips-${today()}.json`, JSON.stringify(payload, null, 2));
 };
@@ -2306,7 +2472,7 @@ function TravelProfileCard({ profile, onSave, mobile }) {
     "+ Add program"
   ))), /* @__PURE__ */ React.createElement(Textarea, { label: "Other notes", value: draft.notes || "", onChange: (v) => updDraft("notes", v), placeholder: "NEXUS card, travel insurance policy, emergency contacts, preferred seats\u2026", rows: 2 }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: save }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: cancel }, "Cancel"))) : /* @__PURE__ */ React.createElement("div", null, hasData ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, TRAVEL_PROFILE_FIELDS.filter((f) => profile[f.key] && profile[f.key].trim()).map((f) => /* @__PURE__ */ React.createElement("div", { key: f.key, style: { display: "flex", gap: 12, alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, minWidth: 140 } }, f.label.split("(")[0].trim()), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text, fontFamily: "monospace" } }, profile[f.key]))), (profile.programs || []).filter((p) => p.name || p.number).map((p) => /* @__PURE__ */ React.createElement("div", { key: p.id, style: { display: "flex", gap: 12, alignItems: "baseline" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, minWidth: 140 } }, p.name || "Loyalty"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text, fontFamily: "monospace" } }, p.number || "\u2014"))), profile.notes && profile.notes.trim() && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid, lineHeight: 1.6, borderTop: "1px solid " + C.border, paddingTop: 10, marginTop: 4, whiteSpace: "pre-wrap" } }, profile.notes)) : /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, fontStyle: "italic", marginBottom: 10 } }, "No travel info saved yet."), /* @__PURE__ */ React.createElement("button", { onClick: startEdit, style: { marginTop: 14, background: "none", border: "1px solid " + C.border, borderRadius: 8, color: C.mid, cursor: "pointer", fontSize: 12, padding: "6px 14px", display: "flex", alignItems: "center", gap: 5 } }, "\u270F\uFE0F ", hasData ? "Edit" : "Add travel info"))));
 }
-function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, ghReady, ghSyncStatus, onGhPull, onGhPush, onOpenSync, isVP }) {
+function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, ghReady, ghSyncStatus, onGhPull, onGhPush, onOpenSync, isVP, hasUnseenChangelog, onOpenChangelog }) {
   const mobile = useMobile();
   const visibleTrips = search.trim() ? trips.filter((t) => {
     const q = search.toLowerCase();
@@ -2321,7 +2487,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     letterSpacing: "-0.01em"
   } }, "Journey"), isVP && /* @__PURE__ */ React.createElement("div", { style: { display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, background: "rgba(212,168,83,0.12)", border: "1px solid rgba(212,168,83,0.3)", borderRadius: 20, padding: "3px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, "\u{1F97D}"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent, fontWeight: 600, letterSpacing: "0.04em" } }, "VISION PRO MODE"))))), mobile ? (
     /* Mobile: big primary button + overflow menu */
-    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, width: "100%" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew, style: { flex: 1 } }, "+ New Trip"), ghReady && /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, title: "Sync with GitHub", style: { background: C.surface2, border: `1px solid ${ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.okBdr : C.border}`, borderRadius: 10, padding: "0 14px", fontSize: 16, cursor: "pointer", color: ghSyncStatus.state === "syncing" ? C.accent : C.text } }, ghSyncStatus.state === "syncing" ? "\u2026" : "\u21C5"), !ghReady && /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, title: "Set up GitHub Sync", style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "0 14px", fontSize: 16, cursor: "pointer", color: C.dim } }, "\u21C5"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "lg", onClick: onImportExport }, "\u21C5"), /* @__PURE__ */ React.createElement("button", { onClick: onToggleTheme, title: isDark ? "Switch to light mode" : "Switch to dark mode", style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "0 14px", fontSize: 18, cursor: "pointer" } }, isDark ? "\u2600\uFE0F" : "\u{1F319}"))
+    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, width: "100%" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew, style: { flex: 1 } }, "+ New Trip"), ghReady && /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, title: "Sync with GitHub", style: { background: C.surface2, border: `1px solid ${ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.okBdr : C.border}`, borderRadius: 10, padding: "0 14px", fontSize: 16, cursor: "pointer", color: ghSyncStatus.state === "syncing" ? C.accent : C.text } }, ghSyncStatus.state === "syncing" ? "\u2026" : "\u21C5"), !ghReady && /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, title: "Set up GitHub Sync", style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "0 14px", fontSize: 16, cursor: "pointer", color: C.dim } }, "\u21C5"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "lg", onClick: onImportExport }, "\u21C5"), /* @__PURE__ */ React.createElement("button", { onClick: onToggleTheme, title: isDark ? "Switch to light mode" : "Switch to dark mode", style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "0 14px", fontSize: 18, cursor: "pointer" } }, isDark ? "\u2600\uFE0F" : "\u{1F319}"), /* @__PURE__ */ React.createElement("button", { onClick: onOpenChangelog, title: "What's New", style: { position: "relative", background: C.surface2, border: `1px solid ${hasUnseenChangelog ? C.accentBdr : C.border}`, borderRadius: 10, padding: "0 12px", fontSize: 16, cursor: "pointer", color: hasUnseenChangelog ? C.accent : C.dim } }, "\u2726", hasUnseenChangelog && /* @__PURE__ */ React.createElement("span", { style: { position: "absolute", top: 6, right: 6, width: 6, height: 6, borderRadius: "50%", background: C.accent } })))
   ) : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "center" } }, /* @__PURE__ */ React.createElement("button", { onClick: onToggleTheme, title: isDark ? "Light mode" : "Dark mode", style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 14px", fontSize: 16, cursor: "pointer" } }, isDark ? "\u2600\uFE0F" : "\u{1F319}"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "lg", onClick: onImportExport }, "\u21C5 Import / Export"), ghReady && /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -2338,6 +2504,16 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
       style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", color: C.dim, display: "flex", alignItems: "center", gap: 6 }
     },
     "\u21C5 Sync"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: onOpenChangelog,
+      title: "What's New",
+      style: { position: "relative", background: hasUnseenChangelog ? C.accentBg : C.surface2, border: `1px solid ${hasUnseenChangelog ? C.accentBdr : C.border}`, borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: hasUnseenChangelog ? 600 : 400, cursor: "pointer", color: hasUnseenChangelog ? C.accent : C.dim, display: "flex", alignItems: "center", gap: 6 }
+    },
+    "\u2726 ",
+    hasUnseenChangelog ? "What's New" : "Changelog",
+    hasUnseenChangelog && /* @__PURE__ */ React.createElement("span", { style: { width: 7, height: 7, borderRadius: "50%", background: C.accent, flexShrink: 0 } })
   ), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew }, "+ New Trip")))), ghReady && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.ok : C.dim } }, ghSyncStatus.state === "syncing" && "\u21C5 Syncing\u2026", ghSyncStatus.state === "ok" && ghSyncStatus.lastSync && "\u2713 Last synced " + new Date(ghSyncStatus.lastSync).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), ghSyncStatus.state === "error" && "\u2715 Sync error \u2014 " + ghSyncStatus.error, ghSyncStatus.state === "idle" && "\u21C5 Not yet synced"), /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 } }, "Configure")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(
     "input",
     {
@@ -2456,9 +2632,10 @@ function TripView({ trip, city, cityTab, setCityTab, tripTab, setTripTab, onBack
     ...trip.status === "complete" ? [{ id: "lookback", label: "\u{1F4D6} Look Back" }] : [],
     ...isActive ? [{ id: "travel", label: "\u{1F9ED} Travel" }] : [],
     { id: "itinerary", label: "\u{1F5D3} Itinerary" },
+    ...isActive ? [{ id: "budget", label: "\u{1F4B0} Budget" }] : [],
     { id: "prep", label: "\u{1F4CB} To Do" + ((trip.prepChecklist || []).length > 0 ? " (" + (trip.prepChecklist || []).filter((i) => !i.completed).length + ")" : "") },
     { id: "vault", label: "\u{1F511} Vault" },
-    { id: "budget", label: "\u{1F4B0} Budget" },
+    ...!isActive ? [{ id: "budget", label: "\u{1F4B0} Budget" }] : [],
     { id: "settings", label: "\u2699\uFE0F Settings" }
   ];
   return /* @__PURE__ */ React.createElement("div", { className: "view-enter", style: { height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { className: "safe-top", style: { background: C.surface, borderBottom: `1px solid ${C.border}`, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1280, margin: "0 auto", padding: mobile ? "0 14px" : "0 28px" } }, !mobile && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 14, paddingTop: 16, paddingBottom: 12, borderBottom: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("button", { onClick: onBack, style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 20, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "5px 14px 5px 10px", display: "flex", alignItems: "center", gap: 5 } }, "\u2190 Home"), /* @__PURE__ */ React.createElement("span", { style: { color: C.dim } }, "\xB7"), isActive && /* @__PURE__ */ React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: C.ok, animation: "pulse 2s infinite" } }), /* @__PURE__ */ React.createElement("h1", { title: trip.title, style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 400, color: C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, trip.title), /* @__PURE__ */ React.createElement("span", { style: { color: C.accent, fontSize: 13, opacity: 0.85 } }, fmtDateRange(trip.startDate, trip.endDate)), trip.ptoDays && /* @__PURE__ */ React.createElement(Tag, { color: C.purple, style: { background: "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.3)" } }, trip.ptoDays, " PTO"), /* @__PURE__ */ React.createElement(StatusCycleBtn, { status: trip.status, onChange: (s) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { status: s })) }), isActive && /* @__PURE__ */ React.createElement(Btn, { variant: "travel", size: "sm", onClick: () => setTripTab("travel") }, "\u{1F9ED} Travel Mode"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setModal({ type: "importExport", trip }) }, "\u21C5 Export")), mobile && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, paddingTop: 10, paddingBottom: 10, borderBottom: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("button", { onClick: onBack, style: { background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 20, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "6px 14px 6px 10px", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16, lineHeight: 1 } }, "\u2039"), " Home"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, isActive && /* @__PURE__ */ React.createElement("div", { style: { width: 7, height: 7, borderRadius: "50%", background: C.ok, animation: "pulse 2s infinite", flexShrink: 0 } }), /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 400, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, trip.title)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, marginTop: 2, display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.accent, opacity: 0.85 } }, fmtDateRange(trip.startDate, trip.endDate)), trip.ptoDays && /* @__PURE__ */ React.createElement("span", { style: { color: C.purple, opacity: 0.9, fontWeight: 600 } }, trip.ptoDays, " PTO"))), /* @__PURE__ */ React.createElement(StatusCycleBtn, { status: trip.status, onChange: (s) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { status: s })), size: "sm" })), /* @__PURE__ */ React.createElement("div", { className: "tab-bar" }, topTabs.map((t) => /* @__PURE__ */ React.createElement("button", { key: t.id, onClick: () => setTripTab(t.id), style: {
@@ -5423,10 +5600,32 @@ function BudgetView({ activities, currency, travelers, trip, mutateTrip }) {
     acc[a.cityName] = (acc[a.cityName] || 0) + actVal(a);
     return acc;
   }, {});
-  const ledgerRows = [
-    ...withCost.map((a) => ({ id: a.id, title: a.title || "Untitled", category: a.cost.category || "Other", amount: actVal(a), paidBy: a.cost.paidBy, source: "activity", cityName: a.cityName })),
-    ...budgetItems.map((b) => ({ id: b.id, title: b.title, category: b.category, amount: budgVal(b), paidBy: b.paidBy, source: "budget", notes: b.notes }))
-  ].filter((r) => r.amount > 0);
+  const [filterCat, setFilterCat] = useState("All");
+  const [filterPayer, setFilterPayer] = useState("All");
+  const [sortBy, setSortBy] = useState("date");
+  const COMPED_KEYWORDS = /\b(comp'?d|comped|complimentary|included|free|gratis|on\s*us|on\s*the\s*house)\b/i;
+  const isComped = (a) => a.cost.paidBy === "comp" || COMPED_KEYWORDS.test(a.title || "") || COMPED_KEYWORDS.test(a.cost && a.cost.notes || "");
+  const freeActs = activities.filter((a) => a.cost && (a.cost.amount === "0" || a.cost.amount === 0) && a.title);
+  const compedActs = activities.filter((a) => a.cost && actVal(a) > 0 && isComped(a));
+  const compedIds = new Set(compedActs.map((a) => a.id));
+  const allLedgerRows = [
+    // Exclude comped activities from the paid list
+    ...withCost.filter((a) => !compedIds.has(a.id)).map((a) => ({ id: a.id, title: a.title || "Untitled", category: a.cost.category || "Other", amount: actVal(a), paidBy: a.cost.paidBy, source: "activity", cityName: a.cityName })),
+    ...budgetItems.filter((b) => b.paidBy !== "comp").map((b) => ({ id: b.id, title: b.title, category: b.category, amount: budgVal(b), paidBy: b.paidBy, source: "budget", notes: b.notes })),
+    ...freeActs.map((a) => ({ id: a.id + "_free", title: a.title, category: a.cost.category || "Other", amount: 0, paidBy: a.cost.paidBy, source: "activity", cityName: a.cityName, free: true })),
+    // Comped with value — show saved amount for reference
+    ...compedActs.map((a) => ({ id: a.id + "_comped", title: a.title, category: a.cost.category || "Other", amount: actVal(a), paidBy: a.cost.paidBy, source: "activity", cityName: a.cityName, free: true, comped: true, savedAmount: actVal(a) })),
+    // Budget items marked as comp
+    ...budgetItems.filter((b) => b.paidBy === "comp").map((b) => ({ id: b.id + "_comp", title: b.title, category: b.category, amount: budgVal(b), paidBy: b.paidBy, source: "budget", notes: b.notes, free: true, comped: budgVal(b) > 0, savedAmount: budgVal(b) }))
+  ].filter((r) => r.amount > 0 || r.free);
+  const ledgerRows = allLedgerRows.filter((r) => filterCat === "All" || r.category === filterCat).filter((r) => filterPayer === "All" || r.paidBy === filterPayer).sort((a, b) => {
+    if (a.free && !b.free) return 1;
+    if (!a.free && b.free) return -1;
+    if (sortBy === "amount-desc") return b.amount - a.amount;
+    if (sortBy === "amount-asc") return a.amount - b.amount;
+    if (sortBy === "category") return (a.category || "").localeCompare(b.category || "");
+    return 0;
+  });
   const fmtAmt = (v) => currency + " " + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const StatCard = ({ label, value, color, sub }) => /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 14, padding: mobile ? "16px 14px" : "20px 18px", border: "1px solid " + C.border, textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 600 } }, label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 22 : 26, fontWeight: 400, color: color || C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1, marginBottom: sub ? 4 : 0 } }, value === "\u2014" ? "\u2014" : fmtAmt(value)), sub && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, sub));
   return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 860, margin: "0 auto", padding: mobile ? "20px 14px" : "36px 28px" } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 26 : 32, color: C.text, marginBottom: mobile ? 18 : 24 } }, "\u{1F4B0} Budget"), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "14px 18px", marginBottom: 18, display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: "1 1 140px", minWidth: 120 } }, /* @__PURE__ */ React.createElement(CurrencySel, { label: "Base Currency", value: trip.currency || "USD", onChange: (v) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { currency: v })) })), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.mid, flex: "0 0 auto" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: !!trip.multiCurrency, onChange: async (e) => {
@@ -5445,7 +5644,7 @@ function BudgetView({ activities, currency, travelers, trip, mutateTrip }) {
   } })), /* @__PURE__ */ React.createElement("div", { style: { flex: "1 1 130px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, color: C.dim, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" } }, (trip.localCurrency || "Local") + " per 1 " + (trip.currency || "USD")), /* @__PURE__ */ React.createElement("button", { onClick: async () => {
     const r = await fetchExchangeRate(trip.currency, trip.localCurrency);
     if (r) mutateTrip((t) => __spreadProps(__spreadValues({}, t), { exchangeRate: r }));
-  }, style: { background: "none", border: "none", fontSize: 10, color: C.accent, cursor: "pointer", padding: 0 } }, "\u21BB Live rate")), /* @__PURE__ */ React.createElement("input", { type: "number", value: trip.exchangeRate || "", onChange: (e) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { exchangeRate: e.target.value })), placeholder: "e.g. 1.08", style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 14 } })))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: mobile ? 8 : 12, marginBottom: 16 } }, /* @__PURE__ */ React.createElement(StatCard, { label: "Total", value: totals.total, color: C.text }), /* @__PURE__ */ React.createElement(StatCard, { label: t1 + " fronted", value: totals.byT1, color: C.accent, sub: "+ " + fmtAmt(totals.eachOwes) + " split" }), /* @__PURE__ */ React.createElement(StatCard, { label: t2 + " fronted", value: totals.byT2, color: "#7a8fcc", sub: "+ " + fmtAmt(totals.eachOwes) + " split" }), /* @__PURE__ */ React.createElement(StatCard, { label: "Settlement", value: settlement === 0 ? "\u2014" : Math.abs(settlement), color: settlement === 0 ? C.ok : C.accent, sub: settlement === 0 ? "all square" : (settlement > 0 ? t2 : t1) + " owes " + (settlement > 0 ? t1 : t2) })), totals.total > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20, padding: "14px 18px", borderRadius: 12, border: "1px solid " + (trip.debtSettled ? C.okBdr : settlement === 0 ? C.okBdr : C.accentBdr), background: trip.debtSettled ? C.okBg : settlement === 0 ? C.okBg : C.accentBg, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("div", null, settlement === 0 ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15, color: C.ok, fontWeight: 600 } }, "\u2713 All square \u2014 expenses are evenly split!") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15, color: trip.debtSettled ? C.ok : C.accent, fontWeight: 600 } }, trip.debtSettled ? "\u2713 Settled \u2014 " : "", /* @__PURE__ */ React.createElement("strong", null, settlement > 0 ? t2 : t1), " owes ", /* @__PURE__ */ React.createElement("strong", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 18 } }, fmtAmt(Math.abs(settlement))), " to even out"), settlement !== 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 4 } }, t1, " total share: ", fmtAmt(t1Total), " \xB7 ", t2, " total share: ", fmtAmt(t2Total))), settlement !== 0 && /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.mid, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: trip.debtSettled || false, onChange: (e) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { debtSettled: e.target.checked })) }), "Mark settled")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, addingExpense ? /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: 18, border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: C.accent, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 } }, "Add Expense"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: "Description", value: expDraft.title, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { title: v })), placeholder: "e.g., Gas, Tolls, Snacks, Pet sitter" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Sel, { label: "Category", value: expDraft.category, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { category: v })), options: COST_CATS }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Paid by"), /* @__PURE__ */ React.createElement("select", { value: expDraft.paidBy, onChange: (e) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { paidBy: e.target.value })), style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 } }, /* @__PURE__ */ React.createElement("option", { value: "split" }, "Split equally"), /* @__PURE__ */ React.createElement("option", { value: "you" }, t1), /* @__PURE__ */ React.createElement("option", { value: "partner" }, t2))), /* @__PURE__ */ React.createElement(Input, { label: "Amount (" + (trip.currency || "USD") + ")", type: "number", value: expDraft.amount, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { amount: v })), placeholder: "0.00" })), /* @__PURE__ */ React.createElement(Input, { label: "Notes (optional)", value: expDraft.notes, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { notes: v })), placeholder: "Any details..." }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: saveExpense }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setAddingExpense(false) }, "Cancel")))) : /* @__PURE__ */ React.createElement(
+  }, style: { background: "none", border: "none", fontSize: 10, color: C.accent, cursor: "pointer", padding: 0 } }, "\u21BB Live rate")), /* @__PURE__ */ React.createElement("input", { type: "number", value: trip.exchangeRate || "", onChange: (e) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { exchangeRate: e.target.value })), placeholder: "e.g. 1.08", style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 14 } })))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: mobile ? 8 : 12, marginBottom: 16 } }, /* @__PURE__ */ React.createElement(StatCard, { label: "Total", value: totals.total, color: C.text }), /* @__PURE__ */ React.createElement(StatCard, { label: t1 + " fronted", value: totals.byT1, color: C.accent, sub: "+ " + fmtAmt(totals.eachOwes) + " split" }), /* @__PURE__ */ React.createElement(StatCard, { label: t2 + " fronted", value: totals.byT2, color: "#7a8fcc", sub: "+ " + fmtAmt(totals.eachOwes) + " split" }), /* @__PURE__ */ React.createElement(StatCard, { label: "Settlement", value: settlement === 0 ? "\u2014" : Math.abs(settlement), color: settlement === 0 ? C.ok : C.accent, sub: settlement === 0 ? "all square" : (settlement > 0 ? t2 : t1) + " owes " + (settlement > 0 ? t1 : t2) })), totals.total > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20, padding: "14px 18px", borderRadius: 12, border: "1px solid " + (trip.debtSettled ? C.okBdr : settlement === 0 ? C.okBdr : C.accentBdr), background: trip.debtSettled ? C.okBg : settlement === 0 ? C.okBg : C.accentBg, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("div", null, settlement === 0 ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15, color: C.ok, fontWeight: 600 } }, "\u2713 All square \u2014 expenses are evenly split!") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15, color: trip.debtSettled ? C.ok : C.accent, fontWeight: 600 } }, trip.debtSettled ? "\u2713 Settled \u2014 " : "", /* @__PURE__ */ React.createElement("strong", null, settlement > 0 ? t2 : t1), " owes ", /* @__PURE__ */ React.createElement("strong", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 18 } }, fmtAmt(Math.abs(settlement))), " to even out"), settlement !== 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 4 } }, t1, " total share: ", fmtAmt(t1Total), " \xB7 ", t2, " total share: ", fmtAmt(t2Total))), settlement !== 0 && /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.mid, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: trip.debtSettled || false, onChange: (e) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { debtSettled: e.target.checked })) }), "Mark settled")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, addingExpense ? /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: 18, border: "1px solid " + C.accentBdr } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: C.accent, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 } }, "Add Expense"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: "Description", value: expDraft.title, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { title: v })), placeholder: "e.g., Gas, Tolls, Snacks, Pet sitter" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Sel, { label: "Category", value: expDraft.category, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { category: v })), options: COST_CATS }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Paid by"), /* @__PURE__ */ React.createElement("select", { value: expDraft.paidBy, onChange: (e) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { paidBy: e.target.value })), style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 } }, /* @__PURE__ */ React.createElement("option", { value: "split" }, "Split equally"), /* @__PURE__ */ React.createElement("option", { value: "you" }, t1), /* @__PURE__ */ React.createElement("option", { value: "partner" }, t2), /* @__PURE__ */ React.createElement("option", { value: "comp" }, "Comp / Free"))), /* @__PURE__ */ React.createElement(Input, { label: "Amount (" + (trip.currency || "USD") + ")", type: "number", value: expDraft.amount, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { amount: v })), placeholder: "0.00" })), /* @__PURE__ */ React.createElement(Input, { label: "Notes (optional)", value: expDraft.notes, onChange: (v) => setExpDraft((d) => __spreadProps(__spreadValues({}, d), { notes: v })), placeholder: "Any details..." }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: saveExpense }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setAddingExpense(false) }, "Cancel")))) : /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setAddingExpense(true),
@@ -5471,34 +5670,77 @@ function BudgetView({ activities, currency, travelers, trip, mutateTrip }) {
       }
     },
     "+ Add standalone expense"
-  )), ledgerRows.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowLedger((s) => !s), style: { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface2, border: "1px solid " + C.border, borderRadius: showLedger ? "12px 12px 0 0" : 12, padding: "12px 18px", cursor: "pointer", textAlign: "left" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "All Expenses ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 400, color: C.mid } }, "(", ledgerRows.length, " items \xB7 ", fmtAmt(totals.total), ")")), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, transform: showLedger ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "inline-block" } }, "\u25BE")), showLedger && /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid " + C.border, borderTop: "none", borderRadius: "0 0 12px 12px", overflow: "hidden" } }, [
-    { key: "you", label: "\u{1F4B3} " + t1, rows: ledgerRows.filter((r) => r.paidBy === "you") },
-    { key: "partner", label: "\u{1F4B3} " + t2, rows: ledgerRows.filter((r) => r.paidBy === "partner") },
-    { key: "split", label: "\u{1F91D} Split equally", rows: ledgerRows.filter((r) => r.paidBy === "split" || !r.paidBy) }
-  ].filter((g) => g.rows.length > 0).map((group, gi) => /* @__PURE__ */ React.createElement("div", { key: group.key }, gi > 0 && /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border } }), /* @__PURE__ */ React.createElement("div", { style: { padding: "8px 18px 4px", background: C.surface3, fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", display: "flex", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", null, group.label), /* @__PURE__ */ React.createElement("span", null, fmtAmt(group.rows.reduce((s, r) => s + r.amount, 0)))), group.rows.map((row, ri) => /* @__PURE__ */ React.createElement("div", { key: row.id, style: { borderTop: ri === 0 ? "none" : "1px solid " + C.border, background: ri % 2 === 0 ? "transparent" : C.surface2 } }, row.source === "budget" && editingExpense === row.id && editDraft ? /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 18px", display: "grid", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Description", value: editDraft.title, onChange: (v) => setEditDraft((d) => __spreadProps(__spreadValues({}, d), { title: v })) }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 } }, /* @__PURE__ */ React.createElement(Sel, { label: "Category", value: editDraft.category, onChange: (v) => setEditDraft((d) => __spreadProps(__spreadValues({}, d), { category: v })), options: COST_CATS }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Paid by"), /* @__PURE__ */ React.createElement("select", { value: editDraft.paidBy, onChange: (e) => setEditDraft((d) => __spreadProps(__spreadValues({}, d), { paidBy: e.target.value })), style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 } }, /* @__PURE__ */ React.createElement("option", { value: "split" }, "Split"), /* @__PURE__ */ React.createElement("option", { value: "you" }, t1), /* @__PURE__ */ React.createElement("option", { value: "partner" }, t2))), /* @__PURE__ */ React.createElement(Input, { label: "Amount (" + (trip.currency || "USD") + ")", type: "number", value: editDraft.amount, onChange: (v) => setEditDraft((d) => __spreadProps(__spreadValues({}, d), { amount: v })) })), /* @__PURE__ */ React.createElement(Input, { label: "Notes", value: editDraft.notes || "", onChange: (v) => setEditDraft((d) => __spreadProps(__spreadValues({}, d), { notes: v })) }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: saveEditExpense }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => {
-    setEditingExpense(null);
-    setEditDraft(null);
-  } }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: () => {
-    deleteExpense(row.id);
-    setEditingExpense(null);
-  } }, "Delete"))) : row.source === "activity" && editingActivity === row.id && actEditDraft ? (
-    /* ── Activity inline cost edit ── */
-    /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 18px", display: "grid", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: C.text, marginBottom: 2 } }, row.title), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: useLocal ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: 8 } }, /* @__PURE__ */ React.createElement(Input, { label: "Amount (" + (trip.currency || "USD") + ")", type: "number", value: actEditDraft.amount, onChange: (v) => setActEditDraft((d) => __spreadProps(__spreadValues({}, d), { amount: v })) }), useLocal && /* @__PURE__ */ React.createElement(Input, { label: "Local (" + trip.localCurrency + ")", type: "number", value: actEditDraft.localAmount, onChange: (v) => setActEditDraft((d) => __spreadProps(__spreadValues({}, d), { localAmount: v })) }), /* @__PURE__ */ React.createElement(Sel, { label: "Category", value: actEditDraft.category, onChange: (v) => setActEditDraft((d) => __spreadProps(__spreadValues({}, d), { category: v })), options: COST_CATS }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Paid by"), /* @__PURE__ */ React.createElement("select", { value: actEditDraft.paidBy, onChange: (e) => setActEditDraft((d) => __spreadProps(__spreadValues({}, d), { paidBy: e.target.value })), style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 } }, /* @__PURE__ */ React.createElement("option", { value: "split" }, "Split"), /* @__PURE__ */ React.createElement("option", { value: "you" }, t1), /* @__PURE__ */ React.createElement("option", { value: "partner" }, t2)))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => saveEditActivity(row.id) }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => {
-      setEditingActivity(null);
-      setActEditDraft(null);
-    } }, "Cancel")))
-  ) : (
-    /* ── Normal row ── */
-    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, row.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 1 } }, /* @__PURE__ */ React.createElement("span", { style: { color: CAT_COLORS[row.category] || C.dim, fontWeight: 600 } }, row.category), row.cityName ? " \xB7 " + row.cityName : "", row.source === "budget" ? " \xB7 standalone" : "")), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 500, color: C.text, flexShrink: 0 } }, fmtAmt(row.amount)), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => row.source === "budget" ? startEditExpense(budgetItems.find((b) => b.id === row.id)) : startEditActivity(row),
-        style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 13, padding: "0 0 0 4px", flexShrink: 0 },
-        title: "Edit"
+  )), allLedgerRows.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" } }, ["All", ...COST_CATS].map((cat) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: cat,
+      onClick: () => setFilterCat(cat),
+      style: { padding: "4px 11px", borderRadius: 20, border: "1px solid " + (filterCat === cat ? CAT_COLORS[cat] || C.accent : C.border), background: filterCat === cat ? (CAT_COLORS[cat] || C.accent) + "22" : "none", color: filterCat === cat ? CAT_COLORS[cat] || C.accent : C.dim, fontSize: 12, fontWeight: filterCat === cat ? 700 : 400, cursor: "pointer", whiteSpace: "nowrap" }
+    },
+    cat
+  ))), /* @__PURE__ */ React.createElement("div", { style: { height: 18, width: 1, background: C.border, flexShrink: 0 } }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4 } }, [{ id: "All", label: "All" }, { id: "split", label: "\u{1F91D} Split" }, { id: "you", label: "\u{1F4B3} " + t1 }, { id: "partner", label: "\u{1F4B3} " + t2 }, { id: "comp", label: "\u2713 Comp'd" }].map((p) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: p.id,
+      onClick: () => setFilterPayer(p.id),
+      style: { padding: "4px 11px", borderRadius: 20, border: "1px solid " + (filterPayer === p.id ? C.accent : C.border), background: filterPayer === p.id ? C.accentBg : "none", color: filterPayer === p.id ? C.accent : C.dim, fontSize: 12, fontWeight: filterPayer === p.id ? 700 : 400, cursor: "pointer", whiteSpace: "nowrap" }
+    },
+    p.label
+  ))), /* @__PURE__ */ React.createElement("div", { style: { height: 18, width: 1, background: C.border, flexShrink: 0 } }), /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: sortBy,
+      onChange: (e) => setSortBy(e.target.value),
+      style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, padding: "4px 10px", fontSize: 12, color: C.mid, cursor: "pointer" }
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "date" }, "Sort: Order added"),
+    /* @__PURE__ */ React.createElement("option", { value: "amount-desc" }, "Sort: Highest first"),
+    /* @__PURE__ */ React.createElement("option", { value: "amount-asc" }, "Sort: Lowest first"),
+    /* @__PURE__ */ React.createElement("option", { value: "category" }, "Sort: Category")
+  ), (filterCat !== "All" || filterPayer !== "All") && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => {
+        setFilterCat("All");
+        setFilterPayer("All");
       },
-      "\u270F\uFE0F"
-    ))
-  ))))))), (byCategory.length > 0 || Object.keys(byCity).length > 0) && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 16 } }, byCategory.length > 0 && /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, marginBottom: 14, fontSize: 14, fontWeight: 600 } }, "By Category"), byCategory.map(({ cat, total }) => {
+      style: { background: "none", border: "none", color: C.dim, fontSize: 12, cursor: "pointer", padding: "4px 0" }
+    },
+    "\u2715 Clear filters"
+  )), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowLedger((s) => !s), style: { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface2, border: "1px solid " + C.border, borderRadius: showLedger ? "12px 12px 0 0" : 12, padding: "12px 18px", cursor: "pointer", textAlign: "left" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "All Expenses", " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 400, color: C.mid } }, "(", ledgerRows.length, ledgerRows.length !== allLedgerRows.length ? " of " + allLedgerRows.length : "", " items \xB7 ", fmtAmt(ledgerRows.reduce((s, r) => s + r.amount, 0)), ")")), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, transform: showLedger ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "inline-block" } }, "\u25BE")), showLedger && /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid " + C.border, borderTop: "none", borderRadius: "0 0 12px 12px", overflow: "hidden" } }, [
+    { key: "you", label: "\u{1F4B3} " + t1, rows: ledgerRows.filter((r) => r.paidBy === "you" && !r.free) },
+    { key: "partner", label: "\u{1F4B3} " + t2, rows: ledgerRows.filter((r) => r.paidBy === "partner" && !r.free) },
+    { key: "split", label: "\u{1F91D} Split equally", rows: ledgerRows.filter((r) => (r.paidBy === "split" || !r.paidBy) && !r.free) },
+    { key: "comp", label: "\u2713 Comp'd / Free", rows: ledgerRows.filter((r) => r.free) }
+  ].filter((g) => g.rows.length > 0).map((group, gi) => /* @__PURE__ */ React.createElement("div", { key: group.key }, gi > 0 && /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border } }), /* @__PURE__ */ React.createElement("div", { style: { padding: "8px 18px 4px", background: group.key === "comp" ? C.okBg : C.surface3, fontSize: 11, fontWeight: 700, color: group.key === "comp" ? C.ok : C.dim, textTransform: "uppercase", letterSpacing: "0.07em", display: "flex", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", null, group.label), /* @__PURE__ */ React.createElement("span", { style: { color: group.key === "comp" ? C.ok : C.dim } }, group.key === "comp" ? group.rows.filter((r) => r.amount > 0).reduce((s, r) => s + r.amount, 0) > 0 ? "saved " + fmtAmt(group.rows.reduce((s, r) => s + r.amount, 0)) : "" : fmtAmt(group.rows.filter((r) => !r.free).reduce((s, r) => s + r.amount, 0)))), group.rows.map((row, ri) => {
+    const prevRow = group.rows[ri - 1];
+    const showFreeHeader = group.key !== "comp" && row.free && (!prevRow || !prevRow.free);
+    const totalSaved = group.key !== "comp" ? group.rows.filter((r) => r.comped).reduce((s, r) => s + (r.savedAmount || 0), 0) : 0;
+    return /* @__PURE__ */ React.createElement(React.Fragment, { key: row.id }, showFreeHeader && /* @__PURE__ */ React.createElement("div", { style: { padding: "6px 18px 4px", background: C.okBg, borderTop: "1px solid " + C.border, display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: C.ok, textTransform: "uppercase", letterSpacing: "0.08em" } }, "\u2713 Free / Comp'd \u2014 not counted in total"), totalSaved > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.ok, fontWeight: 600 } }, "saved ", fmtAmt(totalSaved))), /* @__PURE__ */ React.createElement("div", { style: { borderTop: ri === 0 && !showFreeHeader ? "none" : "1px solid " + C.border, background: row.free ? "transparent" : ri % 2 === 0 ? "transparent" : C.surface2 } }, row.source === "budget" && editingExpense === row.id && editDraft ? /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 18px", display: "grid", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Description", value: editDraft.title, onChange: (v) => setEditDraft((d) => __spreadProps(__spreadValues({}, d), { title: v })) }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 } }, /* @__PURE__ */ React.createElement(Sel, { label: "Category", value: editDraft.category, onChange: (v) => setEditDraft((d) => __spreadProps(__spreadValues({}, d), { category: v })), options: COST_CATS }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Paid by"), /* @__PURE__ */ React.createElement("select", { value: editDraft.paidBy, onChange: (e) => setEditDraft((d) => __spreadProps(__spreadValues({}, d), { paidBy: e.target.value })), style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 } }, /* @__PURE__ */ React.createElement("option", { value: "split" }, "Split"), /* @__PURE__ */ React.createElement("option", { value: "you" }, t1), /* @__PURE__ */ React.createElement("option", { value: "partner" }, t2), /* @__PURE__ */ React.createElement("option", { value: "comp" }, "Comp / Free"))), /* @__PURE__ */ React.createElement(Input, { label: "Amount (" + (trip.currency || "USD") + ")", type: "number", value: editDraft.amount, onChange: (v) => setEditDraft((d) => __spreadProps(__spreadValues({}, d), { amount: v })) })), /* @__PURE__ */ React.createElement(Input, { label: "Notes", value: editDraft.notes || "", onChange: (v) => setEditDraft((d) => __spreadProps(__spreadValues({}, d), { notes: v })) }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: saveEditExpense }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => {
+      setEditingExpense(null);
+      setEditDraft(null);
+    } }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: () => {
+      deleteExpense(row.id);
+      setEditingExpense(null);
+    } }, "Delete"))) : row.source === "activity" && editingActivity === row.id && actEditDraft ? (
+      /* ── Activity inline cost edit ── */
+      /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 18px", display: "grid", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: C.text, marginBottom: 2 } }, row.title), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: useLocal ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: 8 } }, /* @__PURE__ */ React.createElement(Input, { label: "Amount (" + (trip.currency || "USD") + ")", type: "number", value: actEditDraft.amount, onChange: (v) => setActEditDraft((d) => __spreadProps(__spreadValues({}, d), { amount: v })) }), useLocal && /* @__PURE__ */ React.createElement(Input, { label: "Local (" + trip.localCurrency + ")", type: "number", value: actEditDraft.localAmount, onChange: (v) => setActEditDraft((d) => __spreadProps(__spreadValues({}, d), { localAmount: v })) }), /* @__PURE__ */ React.createElement(Sel, { label: "Category", value: actEditDraft.category, onChange: (v) => setActEditDraft((d) => __spreadProps(__spreadValues({}, d), { category: v })), options: COST_CATS }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Paid by"), /* @__PURE__ */ React.createElement("select", { value: actEditDraft.paidBy, onChange: (e) => setActEditDraft((d) => __spreadProps(__spreadValues({}, d), { paidBy: e.target.value })), style: { width: "100%", background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13 } }, /* @__PURE__ */ React.createElement("option", { value: "split" }, "Split"), /* @__PURE__ */ React.createElement("option", { value: "you" }, t1), /* @__PURE__ */ React.createElement("option", { value: "partner" }, t2), /* @__PURE__ */ React.createElement("option", { value: "comp" }, "Comp / Free")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => saveEditActivity(row.id) }, "Save"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => {
+        setEditingActivity(null);
+        setActEditDraft(null);
+      } }, "Cancel")))
+    ) : (
+      /* ── Normal row ── */
+      /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 18px" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, row.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 1 } }, /* @__PURE__ */ React.createElement("span", { style: { color: CAT_COLORS[row.category] || C.dim, fontWeight: 600 } }, row.category), row.cityName ? " \xB7 " + row.cityName : "", row.source === "budget" ? " \xB7 standalone" : "")), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 500, flexShrink: 0, textAlign: "right" } }, row.free && row.amount === 0 ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: C.ok } }, "\u2713 Free") : /* @__PURE__ */ React.createElement("span", { style: { color: C.ok } }, fmtAmt(row.amount))), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: () => row.source === "budget" ? startEditExpense(budgetItems.find((b) => b.id === row.id)) : startEditActivity(row),
+          style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 13, padding: "0 0 0 4px", flexShrink: 0 },
+          title: "Edit"
+        },
+        "\u270F\uFE0F"
+      ))
+    )));
+  }))))), (byCategory.length > 0 || Object.keys(byCity).length > 0) && /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 16 } }, byCategory.length > 0 && /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, marginBottom: 14, fontSize: 14, fontWeight: 600 } }, "By Category"), byCategory.map(({ cat, total }) => {
     const pct = totals.total > 0 ? total / totals.total * 100 : 0;
     return /* @__PURE__ */ React.createElement("div", { key: cat, style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: CAT_COLORS[cat] || C.text, fontWeight: 600 } }, cat), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, fmtAmt(total), " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, "(", Math.round(pct), "%)"))), /* @__PURE__ */ React.createElement("div", { style: { height: 5, background: C.surface3, borderRadius: 3 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: pct + "%", background: CAT_COLORS[cat] || C.accent, borderRadius: 3, transition: "width 0.4s ease" } })));
   })), Object.keys(byCity).length > 0 && /* @__PURE__ */ React.createElement(SectionCard, { style: { padding: "18px 20px" } }, /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, marginBottom: 14, fontSize: 14, fontWeight: 600 } }, "By City"), Object.entries(byCity).sort((a, b) => b[1] - a[1]).map(([city, total], i) => /* @__PURE__ */ React.createElement("div", { key: city, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: CITY_PALETTE[i % CITY_PALETTE.length], flexShrink: 0 } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.text } }, city)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid } }, fmtAmt(total)))))), totals.total === 0 && budgetItems.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 20px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\u{1F4B0}"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, marginBottom: 6, color: C.mid } }, "No costs tracked yet"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13 } }, "Add costs to activities in the Itinerary, or use the button above for standalone expenses.")));
@@ -5698,7 +5940,20 @@ function GhSyncModal({ ghConfig, onSaveGhConfig, ghSyncStatus, onGhPull, onGhPus
     onGhPush();
   }, style: { flex: 1 }, disabled: ghSyncStatus.state === "syncing" }, "\u2B06 Push \u2014 Save all trips")) : /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "12px 14px", fontSize: 13, color: C.dim, textAlign: "center" } }, "Fill in all fields above to enable sync"));
 }
-function ImportExportModal({ trips, currentTrip, onImport, onClose, ghConfig, onImportGhConfig }) {
+function ChangelogModal({ onClose, lastSeenDate, onMarkSeen }) {
+  const mobile = useMobile();
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", maxHeight: mobile ? "90vh" : "85vh", width: "100%" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "18px 18px 14px" : "24px 28px 18px", borderBottom: "1px solid " + C.border, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 24 : 30, fontWeight: 400, color: C.text } }, "What's New"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginTop: 3 } }, "Journey release notes & feature updates")), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+    onMarkSeen();
+    onClose();
+  }, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", lineHeight: 1, flexShrink: 0 } }, "\u2715"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "16px 18px" : "20px 28px" } }, CHANGELOG.map((entry, i) => {
+    const isNew = lastSeenDate && entry.date > lastSeenDate;
+    return /* @__PURE__ */ React.createElement("div", { key: entry.version, style: { marginBottom: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22 } }, entry.emoji), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 20, color: C.text, fontWeight: 400 } }, entry.title), isNew && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: "#0c0e16", background: C.accent, borderRadius: 10, padding: "2px 8px", letterSpacing: "0.05em" } }, "NEW")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 1 } }, "v", entry.version, " \xB7 ", (/* @__PURE__ */ new Date(entry.date + "T12:00:00Z")).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })))), /* @__PURE__ */ React.createElement("div", { style: { paddingLeft: 14, borderLeft: "2px solid " + (isNew ? C.accentBdr : C.border) } }, entry.changes.map((change, ci) => /* @__PURE__ */ React.createElement("div", { key: ci, style: { fontSize: 13, color: isNew ? C.mid : C.dim, lineHeight: 1.6, marginBottom: 4, display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { color: isNew ? C.accent : C.border, flexShrink: 0, marginTop: 1 } }, "\xB7"), /* @__PURE__ */ React.createElement("span", null, change)))), i < CHANGELOG.length - 1 && /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border, marginTop: 20 } }));
+  })), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "12px 18px" : "14px 28px", borderTop: "1px solid " + C.border, flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, CHANGELOG.length, " updates \xB7 most recent ", CHANGELOG[0].date), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: () => {
+    onMarkSeen();
+    onClose();
+  } }, "Got it")));
+}
+function ImportExportModal({ trips, currentTrip, onImport, onClose, ghConfig, onImportGhConfig, travelProfile, onImportTravelProfile }) {
   const [tab, setTab] = useState(currentTrip ? "export" : "import");
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -5715,6 +5970,9 @@ function ImportExportModal({ trips, currentTrip, onImport, onClose, ghConfig, on
       const imported = validateImport(parsed);
       if (parsed.ghConfig && onImportGhConfig) {
         onImportGhConfig(parsed.ghConfig);
+      }
+      if (parsed.travelProfile && onImportTravelProfile) {
+        onImportTravelProfile(parsed.travelProfile);
       }
       setPreview(imported);
     } catch (err) {
@@ -5800,9 +6058,9 @@ function ImportExportModal({ trips, currentTrip, onImport, onClose, ghConfig, on
     () => exportItineraryMD(currentTrip)
   ), /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border, margin: "8px 0" } })), exportRow(
     `Export All Trips as JSON (${trips.length})`,
-    "Complete backup of every trip in Journey. Restore everything in one import." + (ghConfig && ghConfig.token ? " GitHub sync settings included." : ""),
+    "Complete backup of every trip in Journey. Restore everything in one import." + (ghConfig && ghConfig.token ? " GitHub sync settings included." : "") + (travelProfile && Object.keys(travelProfile).length > 0 ? " Travel profile included." : ""),
     "\u{1F5C2}\uFE0F",
-    () => exportAllJSON(trips, ghConfig)
+    () => exportAllJSON(trips, ghConfig, travelProfile)
   ), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "12px 16px", fontSize: 12, color: C.dim, lineHeight: 1.7, marginTop: 4 } }, /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "JSON"), " files are fully re-importable and preserve all data.", " ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "CSV"), " is for spreadsheet analysis only \u2014 it cannot be re-imported.", " ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "Markdown"), " is a portable text format \u2014 great for sharing or printing.")), summaryOpen && currentTrip && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setSummaryOpen(false), maxWidth: 560 }, /* @__PURE__ */ React.createElement(TripExportModal, { trip: currentTrip, onClose: () => setSummaryOpen(false) })), tab === "import" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } }, !preview && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
     "div",
     {
@@ -6332,6 +6590,21 @@ function App() {
     } catch (e) {
     }
   }, [flightApiKey]);
+  const [lastSeenChangelog, setLastSeenChangelog] = useState(() => {
+    try {
+      return localStorage.getItem("journey_changelog_seen") || "";
+    } catch (e) {
+      return "";
+    }
+  });
+  const markChangelogSeen = () => {
+    setLastSeenChangelog(LATEST_CHANGELOG_DATE);
+    try {
+      localStorage.setItem("journey_changelog_seen", LATEST_CHANGELOG_DATE);
+    } catch (e) {
+    }
+  };
+  const hasUnseenChangelog = lastSeenChangelog < LATEST_CHANGELOG_DATE;
   const [ghConfig, setGhConfig] = useState(() => {
     try {
       const s = localStorage.getItem("journey_gh_config");
@@ -6376,12 +6649,19 @@ function App() {
         } catch (e) {
         }
       }
+      if (content && content.travelProfile) {
+        setTravelProfile(content.travelProfile);
+        try {
+          localStorage.setItem("journey_travel_profile", JSON.stringify(content.travelProfile));
+        } catch (e) {
+        }
+      }
       setGhSyncStatus({ state: "ok", lastSync: (/* @__PURE__ */ new Date()).toISOString(), error: null });
     } catch (e) {
       setGhSyncStatus({ state: "error", lastSync: null, error: e.message });
     }
   };
-  const ghPush = async (tripsToSave) => {
+  const ghPush = async (tripsToSave, profile) => {
     if (!ghReady) return;
     setGhSyncStatus((s) => __spreadProps(__spreadValues({}, s), { state: "syncing", error: null }));
     try {
@@ -6393,6 +6673,7 @@ function App() {
         }
       }
       const payload = { _journey: true, trips: tripsToSave };
+      if (profile && Object.keys(profile).length > 0) payload.travelProfile = profile;
       const body = { message: "Journey sync " + (/* @__PURE__ */ new Date()).toISOString(), content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))) };
       if (ghSha.current) body.sha = ghSha.current;
       const res = await fetch(ghApiUrl(), { method: "PUT", headers: ghHeaders(), body: JSON.stringify(body) });
@@ -6628,8 +6909,10 @@ function App() {
       ghReady,
       ghSyncStatus,
       onGhPull: ghPull,
-      onGhPush: () => ghPush(trips),
+      onGhPush: () => ghPush(trips, travelProfile),
       onOpenSync: () => setModal({ type: "syncSettings" }),
+      hasUnseenChangelog,
+      onOpenChangelog: () => setModal({ type: "changelog" }),
       isVP,
       onInstall: (e) => {
         if (!e) {
@@ -6703,7 +6986,17 @@ function App() {
       onSaveGhConfig: setGhConfig,
       ghSyncStatus,
       onGhPull: ghPull,
-      onGhPush: () => ghPush(trips),
+      onGhPush: () => ghPush(trips, travelProfile),
+      onClose: () => setModal(null)
+    }
+  )), modal && modal.type === "changelog" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => {
+    markChangelogSeen();
+    setModal(null);
+  }, maxWidth: 580 }, /* @__PURE__ */ React.createElement(
+    ChangelogModal,
+    {
+      lastSeenDate: lastSeenChangelog,
+      onMarkSeen: markChangelogSeen,
       onClose: () => setModal(null)
     }
   )), modal && modal.type === "templates" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null), maxWidth: 700 }, /* @__PURE__ */ React.createElement(
@@ -6735,6 +7028,8 @@ function App() {
       },
       ghConfig,
       onImportGhConfig: setGhConfig,
+      travelProfile,
+      onImportTravelProfile: setTravelProfile,
       onClose: () => setModal(null)
     }
   )), modal && modal.type === "cityMgmt" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null), maxWidth: 640 }, /* @__PURE__ */ React.createElement(CityMgmtModal, { trip: trips.find((t) => t.id === modal.tripId), mutateTrip: (fn) => {
