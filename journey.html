@@ -1169,13 +1169,17 @@ const exportTripSummaryHTML = (trip, opts) => {
   const suffix = level === "highlights" ? "highlights" : level === "journal" ? "journal" : "itinerary";
   const htmlStr = generateTripHTML(trip, opts);
   if (opts.format === "pdf") {
-    const win = window.open("", "_blank", "noopener");
+    const blob = new Blob([htmlStr], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
     if (win) {
-      win.document.write(htmlStr);
-      win.document.close();
-      win.onload = function() {
-        win.print();
-      };
+      win.addEventListener("load", function() {
+        setTimeout(function() {
+          win.print();
+        }, 400);
+      });
+    } else {
+      downloadFile("journey-" + slugify(trip.title) + "-" + suffix + ".html", htmlStr, "text/html");
     }
   } else {
     downloadFile("journey-" + slugify(trip.title) + "-" + suffix + ".html", htmlStr, "text/html");
