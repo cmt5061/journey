@@ -9,13 +9,6 @@
 </head><body><div id="root"></div>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-  
-  <script>
-    (function() {
-      if (!('caches' in window)) return;
-      caches.open('journey-shell-v4').then(function(cache) { cache.add(location.href).catch(function() {}); });
-    })();
-  </script>
   <script>const {useState,useEffect,useRef}=React;
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -839,13 +832,25 @@ const CHANGELOG = [
 ];
 const LATEST_CHANGELOG_DATE = CHANGELOG[0].date;
 const downloadFile = (filename, content, mime = "application/json") => {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1e3);
+  try {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1e3);
+  } catch (e) {
+    try {
+      const b64 = btoa(unescape(encodeURIComponent(content)));
+      const dataUrl = "data:" + mime + ";base64," + b64;
+      window.open(dataUrl, "_blank");
+    } catch (e2) {
+      console.error("Download failed:", e2);
+    }
+  }
 };
 const fetchExchangeRate = async (baseCur, localCur) => {
   if (!baseCur || !localCur || baseCur === localCur) return null;
@@ -2133,6 +2138,88 @@ function OnboardingModal({ onStart, onImport }) {
     cursor: "pointer"
   } }, "Next \u2192")));
 }
+const newWishItem = (o = {}) => __spreadValues({
+  id: uid(),
+  location: "",
+  year: "",
+  targetMonth: "",
+  ptoDays: "",
+  notes: ""
+}, o);
+const WISH_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function WishForm({ d, setD, onSave, onCancel, saveLabel, onDelete }) {
+  return /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: "14px 16px", border: "1px solid " + C.accentBdr, display: "grid", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Location / Destination", value: d.location, onChange: (v) => setD((x) => __spreadProps(__spreadValues({}, x), { location: v })), placeholder: "e.g., Japan, Patagonia, Iceland" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 } }, /* @__PURE__ */ React.createElement(Input, { label: "Year", value: d.year, onChange: (v) => setD((x) => __spreadProps(__spreadValues({}, x), { year: v })), placeholder: (/* @__PURE__ */ new Date()).getFullYear() + 1 + "" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Target Month"), /* @__PURE__ */ React.createElement("select", { value: d.targetMonth, onChange: (e) => setD((x) => __spreadProps(__spreadValues({}, x), { targetMonth: e.target.value })), style: { width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Any"), WISH_MONTHS.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m)))), /* @__PURE__ */ React.createElement(Input, { label: "Est. PTO Days", type: "number", value: d.ptoDays, onChange: (v) => setD((x) => __spreadProps(__spreadValues({}, x), { ptoDays: v })), placeholder: "e.g., 7" })), /* @__PURE__ */ React.createElement(Input, { label: "Notes", value: d.notes, onChange: (v) => setD((x) => __spreadProps(__spreadValues({}, x), { notes: v })), placeholder: "Ideas, must-dos, travel style\u2026" }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onSave, disabled: !d.location.trim() }, saveLabel || "Add"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: onCancel }, "Cancel"), onDelete && /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: onDelete }, "Delete")));
+}
+function WishlistSection({ title, items, mobile, onAdd, onUpdate, onDelete, onConvert, defaultCollapsed }) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const [addingNew, setAddingNew] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editDraft, setEditDraft] = useState(null);
+  const startAdd = () => {
+    setDraft(newWishItem());
+    setAddingNew(true);
+    setCollapsed(false);
+  };
+  const saveAdd = () => {
+    if (!draft || !draft.location.trim()) return;
+    onAdd(draft);
+    setDraft(null);
+    setAddingNew(false);
+  };
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setEditDraft(__spreadValues({}, item));
+  };
+  const saveEdit = () => {
+    if (!editDraft || !editDraft.location.trim()) return;
+    onUpdate(editDraft);
+    setEditingId(null);
+    setEditDraft(null);
+  };
+  return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setCollapsed((c) => !c), style: { display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", textAlign: "left", flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 20 : 24, fontWeight: 300, color: C.dim, letterSpacing: "0.02em" } }, title), /* @__PURE__ */ React.createElement("span", { style: { height: 1, flex: 1, background: C.border } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, fontWeight: 500, display: "inline-block", transition: "transform 0.2s", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", flexShrink: 0 } }, "\u25BE")), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: startAdd,
+      style: { background: "none", border: "1px solid " + C.border, borderRadius: 8, color: C.dim, cursor: "pointer", fontSize: 12, padding: "4px 10px", flexShrink: 0, fontWeight: 500 },
+      onMouseEnter: (e) => {
+        e.currentTarget.style.borderColor = C.accent;
+        e.currentTarget.style.color = C.accent;
+      },
+      onMouseLeave: (e) => {
+        e.currentTarget.style.borderColor = C.border;
+        e.currentTarget.style.color = C.dim;
+      }
+    },
+    "+ Add"
+  )), !collapsed && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, addingNew && draft && /* @__PURE__ */ React.createElement(WishForm, { d: draft, setD: setDraft, onSave: saveAdd, onCancel: () => {
+    setAddingNew(false);
+    setDraft(null);
+  }, saveLabel: "Add to Wishlist" }), items.length === 0 && !addingNew && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, paddingLeft: 2, fontStyle: "italic" } }, "No wishlist items yet \u2014 tap + Add to dream up a trip."), items.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id }, editingId === item.id && editDraft ? /* @__PURE__ */ React.createElement(WishForm, { d: editDraft, setD: setEditDraft, onSave: saveEdit, onCancel: () => {
+    setEditingId(null);
+    setEditDraft(null);
+  }, saveLabel: "Save", onDelete: () => {
+    onDelete(editDraft.id);
+    setEditingId(null);
+    setEditDraft(null);
+  } }) : /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: "12px 16px", border: "1px solid " + C.border, display: "flex", gap: 12, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, fontWeight: 500, color: C.text, marginBottom: 4 } }, item.location), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, item.targetMonth && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent, fontWeight: 600 } }, item.targetMonth, item.year ? " " + item.year : ""), !item.targetMonth && item.year && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent, fontWeight: 600 } }, item.year), item.ptoDays && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, "~", item.ptoDays, " PTO"), item.notes && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 } }, item.notes))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexShrink: 0 } }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => onConvert(item),
+      title: "Start planning this trip",
+      style: { background: C.accentBg, border: "1px solid " + C.accentBdr, borderRadius: 8, color: C.accent, cursor: "pointer", fontSize: 11, padding: "5px 10px", fontWeight: 600, whiteSpace: "nowrap" }
+    },
+    "Plan \u2192"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => startEdit(item),
+      title: "Edit",
+      style: { background: "none", border: "1px solid " + C.border, borderRadius: 8, color: C.dim, cursor: "pointer", fontSize: 13, padding: "5px 8px" }
+    },
+    "\u270F\uFE0F"
+  )))))));
+}
 function YearSection({ year, trips, currentYear, mobile, onOpen, onDuplicate, forceOpen }) {
   const isCurrent = year === currentYear;
   const [collapsed, setCollapsed] = useState(!isCurrent);
@@ -2576,7 +2663,7 @@ function TravelProfileModal({ profile, onSave, onClose, travelers: tripTravelers
       } }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: () => {
         deleteItem(item.id);
         setEditingId(null);
-      } }, "Delete"))) : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, background: C.surface2, borderRadius: 10, padding: "10px 14px", border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 600, marginBottom: 2 } }, item.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, color: C.text, fontFamily: "monospace", letterSpacing: "0.03em" } }, item.value || "\u2014")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, flexShrink: 0 } }, /* @__PURE__ */ React.createElement(
+      } }, "Delete"))) : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, background: C.surface2, borderRadius: 10, padding: "10px 14px", border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 600, marginBottom: 2 } }, item.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, color: C.text, fontFamily: "monospace", letterSpacing: "0.02em", wordBreak: "break-all" } }, item.value || "\u2014")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4, flexShrink: 0 } }, /* @__PURE__ */ React.createElement(
         "button",
         {
           onClick: () => copyValue(item.id, item.value),
@@ -2642,7 +2729,7 @@ function TravelProfileCard({ profile, onOpen }) {
   if (!hasData) {
     return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24, padding: "16px 18px", background: C.surface2, borderRadius: 12, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "\u{1FAAA} Travel Profile"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 2 } }, "Add KTN, passport, loyalty numbers\u2026")), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: onOpen }, "Set up"));
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em" } }, "\u{1FAAA} Travel Profile"), /* @__PURE__ */ React.createElement("button", { onClick: onOpen, style: { background: "none", border: "none", color: C.accent, fontSize: 12, cursor: "pointer", fontWeight: 600 } }, "Edit \u270F\uFE0F")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 12 } }, normalized.travelers.filter((t) => t.items.length > 0).map((t, ti) => /* @__PURE__ */ React.createElement("div", { key: ti, style: { background: C.surface2, borderRadius: 12, border: "1px solid " + C.border, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 14px", background: C.surface3, borderBottom: "1px solid " + C.border, fontSize: 12, fontWeight: 600, color: C.text } }, t.name), t.items.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, style: { display: "flex", alignItems: "center", padding: "9px 14px", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" } }, item.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, color: C.text, fontFamily: "monospace", marginTop: 1 } }, item.value || "\u2014")), /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em" } }, "\u{1FAAA} Travel Profile"), /* @__PURE__ */ React.createElement("button", { onClick: onOpen, style: { background: "none", border: "none", color: C.accent, fontSize: 12, cursor: "pointer", fontWeight: 600 } }, "Edit \u270F\uFE0F")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 12 } }, normalized.travelers.filter((t) => t.items.length > 0).map((t, ti) => /* @__PURE__ */ React.createElement("div", { key: ti, style: { background: C.surface2, borderRadius: 12, border: "1px solid " + C.border, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 14px", background: C.surface3, borderBottom: "1px solid " + C.border, fontSize: 12, fontWeight: 600, color: C.text } }, t.name), t.items.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, style: { display: "flex", alignItems: "center", padding: "9px 14px", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" } }, item.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 12 : 14, color: C.text, fontFamily: "monospace", marginTop: 1, wordBreak: "break-all" } }, item.value || "\u2014")), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => copyValue(item.id + ti, item.value),
@@ -2652,7 +2739,7 @@ function TravelProfileCard({ profile, onOpen }) {
     copied === item.id + ti ? "\u2713" : "\u{1F4CB}"
   )))))));
 }
-function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, ghReady, ghSyncStatus, onGhPull, onGhPush, onOpenSync, isVP, hasUnseenChangelog, onOpenChangelog, flightApiKey: flightApiKey2, onSaveFlightApiKey, onOpenTravelProfile }) {
+function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, ghReady, ghSyncStatus, onGhPull, onGhPush, onOpenSync, isVP, hasUnseenChangelog, onOpenChangelog, flightApiKey: flightApiKey2, onSaveFlightApiKey, onOpenTravelProfile, wishlist, onAddWish, onUpdateWish, onDeleteWish, onConvertWish }) {
   const mobile = useMobile();
   const [showMenu, setShowMenu] = React.useState(false);
   const menuRef = useRef(null);
@@ -2784,7 +2871,19 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
       placeholder: "\u{1F50D}  Search trips, destinations...",
       style: { width: "100%", padding: "10px 16px", fontSize: 15, borderRadius: 10 }
     }
-  )), pwaPrompt && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4F2}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Install Journey"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Add to your home screen for offline access and a native app feel.")), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onInstall }, "Install"), /* @__PURE__ */ React.createElement("button", { onClick: () => onInstall(null), style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 18, padding: "0 4px" } }, "\xD7"))), visibleTrips.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "80px 0", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, search ? "\u{1F50D}" : "\u{1F5FA}\uFE0F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 18, marginBottom: 8 } }, search ? `No trips match "${search}"` : "No trips yet."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14 } }, search ? "Try a different search term." : "Create your first trip to get started.")) : (() => {
+  )), pwaPrompt && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4F2}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Install Journey"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Add to your home screen for offline access and a native app feel.")), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onInstall }, "Install"), /* @__PURE__ */ React.createElement("button", { onClick: () => onInstall(null), style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 18, padding: "0 4px" } }, "\xD7"))), visibleTrips.length === 0 ? /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0 32px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, search ? "\u{1F50D}" : "\u{1F5FA}\uFE0F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 18, marginBottom: 8 } }, search ? `No trips match "${search}"` : "No trips yet."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14 } }, search ? "Try a different search term." : "Create your first trip to get started.")), /* @__PURE__ */ React.createElement(
+    WishlistSection,
+    {
+      title: "\u2728 Trip Wishlist",
+      items: wishlist || [],
+      mobile,
+      defaultCollapsed: false,
+      onAdd: onAddWish,
+      onUpdate: onUpdateWish,
+      onDelete: onDeleteWish,
+      onConvert: onConvertWish
+    }
+  )) : (() => {
     const currentYear = (/* @__PURE__ */ new Date()).getFullYear().toString();
     const sorted = visibleTrips.slice().sort((a, b) => {
       if (a.status === "active" && b.status !== "active") return -1;
@@ -2797,8 +2896,40 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
       if (!yearMap[yr]) yearMap[yr] = [];
       yearMap[yr].push(trip);
     });
-    const yearOrder = Object.keys(yearMap).sort((a, b) => b.localeCompare(a));
-    return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 32 } }, yearOrder.map((yr) => /* @__PURE__ */ React.createElement(YearSection, { key: yr, year: yr, trips: yearMap[yr], currentYear, mobile, onOpen, onDuplicate, forceOpen: !!search })));
+    const wishByYear = {};
+    (wishlist || []).forEach((w) => {
+      const yr = w.year && w.year.trim() ? w.year.trim() : "__general__";
+      if (!wishByYear[yr]) wishByYear[yr] = [];
+      wishByYear[yr].push(w);
+    });
+    const allYears = /* @__PURE__ */ new Set([...Object.keys(yearMap), ...Object.keys(wishByYear).filter((y) => y !== "__general__")]);
+    const yearOrder = Array.from(allYears).sort((a, b) => b.localeCompare(a));
+    const generalWishItems = wishByYear["__general__"] || [];
+    return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 32 } }, yearOrder.map((yr) => /* @__PURE__ */ React.createElement("div", { key: yr }, wishByYear[yr] && wishByYear[yr].length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: yearMap[yr] ? 16 : 0 } }, /* @__PURE__ */ React.createElement(
+      WishlistSection,
+      {
+        title: yr + " Wishlist",
+        items: wishByYear[yr],
+        mobile,
+        defaultCollapsed: true,
+        onAdd: onAddWish,
+        onUpdate: onUpdateWish,
+        onDelete: onDeleteWish,
+        onConvert: onConvertWish
+      }
+    )), yearMap[yr] && /* @__PURE__ */ React.createElement(YearSection, { year: yr, trips: yearMap[yr], currentYear, mobile, onOpen, onDuplicate, forceOpen: !!search }))), /* @__PURE__ */ React.createElement(
+      WishlistSection,
+      {
+        title: "\u2728 Trip Wishlist",
+        items: generalWishItems,
+        mobile,
+        defaultCollapsed: true,
+        onAdd: onAddWish,
+        onUpdate: onUpdateWish,
+        onDelete: onDeleteWish,
+        onConvert: onConvertWish
+      }
+    ));
   })());
 }
 const STATUS_FLOW = [
@@ -5935,12 +6066,14 @@ function BudgetView({ activities, currency, travelers, trip, mutateTrip }) {
     { label: t2 + " fronted", val: totals.byT2, sub: "+ " + fmtAmt(totals.eachOwes) + " split share", color: "#7a8fcc" }
   ].map((s) => /* @__PURE__ */ React.createElement("div", { key: s.label, style: { background: C.surface2, borderRadius: 12, padding: "14px 16px", border: "1px solid " + C.border, textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 } }, s.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 20 : 24, fontWeight: 400, color: s.color, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 } }, fmtAmt(s.val)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, s.sub)))), /* @__PURE__ */ React.createElement("div", { style: { padding: "14px 18px", borderRadius: 12, border: "1px solid " + (trip.debtSettled ? C.okBdr : settlement === 0 ? C.okBdr : C.accentBdr), background: trip.debtSettled ? C.okBg : settlement === 0 ? C.okBg : C.accentBg, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 } }, /* @__PURE__ */ React.createElement("div", null, settlement === 0 ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: C.ok, fontWeight: 600 } }, "\u2713 All square \u2014 expenses are evenly split!") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: trip.debtSettled ? C.ok : C.accent, fontWeight: 600 } }, trip.debtSettled ? "\u2713 Settled \u2014 " : "", /* @__PURE__ */ React.createElement("strong", null, settlement > 0 ? t2 : t1), " owes ", /* @__PURE__ */ React.createElement("strong", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 18 } }, fmtAmt(Math.abs(settlement))), " to even out"), settlement !== 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 3 } }, t1, ": ", fmtAmt(t1Total), " \xB7 ", t2, ": ", fmtAmt(t2Total))), settlement !== 0 && /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: C.mid, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: trip.debtSettled || false, onChange: (e) => mutateTrip((t) => __spreadProps(__spreadValues({}, t), { debtSettled: e.target.checked })) }), "Mark settled"))), totals.total === 0 && budgetItems.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 20px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\u{1F4B0}"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, marginBottom: 6, color: C.mid } }, "No costs tracked yet"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13 } }, "Add costs to activities in the Itinerary, or use the button above for standalone expenses.")));
 }
-function NewTripModal({ onSave, onClose }) {
-  const [form, setForm] = useState({ title: "", startDate: "", endDate: "", currency: "USD", ptoDays: "" });
+function NewTripModal({ onSave, onClose, wishItem }) {
+  const initTitle = wishItem ? wishItem.location : "";
+  const initPTO = wishItem ? wishItem.ptoDays || "" : "";
+  const [form, setForm] = useState({ title: initTitle, startDate: "", endDate: "", currency: "USD", ptoDays: initPTO });
   const upd = (k, v) => setForm((f) => __spreadProps(__spreadValues({}, f), { [k]: v }));
   const auto = getPTODays(form.startDate, form.endDate);
   const valid = form.title.trim() && form.startDate && form.endDate;
-  return /* @__PURE__ */ React.createElement("div", { style: { padding: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 30, color: C.text } }, "New Trip"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 4 } }, "Cities and activities can be added after creating.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22 } }, "\xD7")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ React.createElement(Input, { label: "Trip title", value: form.title, onChange: (v) => upd("title", v), placeholder: "e.g., Japan Spring 2025, Portugal Anniversary..." }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: "Start date", type: "date", value: form.startDate, onChange: (v) => upd("startDate", v) }), /* @__PURE__ */ React.createElement(Input, { label: "End date", type: "date", value: form.endDate, onChange: (v) => upd("endDate", v) })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(CurrencySel, { label: "Currency", value: form.currency, onChange: (v) => upd("currency", v) }), /* @__PURE__ */ React.createElement(Field, { label: "PTO days used" }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("input", { type: "number", inputMode: "decimal", value: form.ptoDays, onChange: (e) => upd("ptoDays", e.target.value), placeholder: auto || "e.g., 9", style: { flex: 1 } }), auto > 0 && /* @__PURE__ */ React.createElement(Btn, { size: "sm", variant: "ghost", onClick: () => upd("ptoDays", auto) }, "Use ", auto)), auto > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, "Auto-calculated: ", auto, " weekdays")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 24 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid, onClick: () => onSave(newTrip(form)) }, "Create Trip")));
+  return /* @__PURE__ */ React.createElement("div", { style: { padding: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 30, color: C.text } }, wishItem ? "Start Planning" : "New Trip"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 4 } }, wishItem ? "Converting wishlist item \u2014 fill in dates to begin." : "Cities and activities can be added after creating."), wishItem && wishItem.targetMonth && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.accent, marginTop: 6 } }, "\u{1F5D3} Target: ", wishItem.targetMonth, wishItem.year ? " " + wishItem.year : "", wishItem.notes ? " \xB7 " + wishItem.notes : "")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22 } }, "\xD7")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ React.createElement(Input, { label: "Trip title", value: form.title, onChange: (v) => upd("title", v), placeholder: "e.g., Japan Spring 2025, Portugal Anniversary..." }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(Input, { label: "Start date", type: "date", value: form.startDate, onChange: (v) => upd("startDate", v) }), /* @__PURE__ */ React.createElement(Input, { label: "End date", type: "date", value: form.endDate, onChange: (v) => upd("endDate", v) })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement(CurrencySel, { label: "Currency", value: form.currency, onChange: (v) => upd("currency", v) }), /* @__PURE__ */ React.createElement(Field, { label: "PTO days used" }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("input", { type: "number", inputMode: "decimal", value: form.ptoDays, onChange: (e) => upd("ptoDays", e.target.value), placeholder: auto || "e.g., 9", style: { flex: 1 } }), auto > 0 && /* @__PURE__ */ React.createElement(Btn, { size: "sm", variant: "ghost", onClick: () => upd("ptoDays", auto) }, "Use ", auto)), auto > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, marginTop: 4 } }, "Auto-calculated: ", auto, " weekdays")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 24 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid, onClick: () => onSave(newTrip(form)) }, "Create Trip")));
 }
 function CityMgmtModal({ trip, mutateTrip, onClose, setModal }) {
   const mobile = useMobile();
@@ -6724,7 +6857,7 @@ function TemplatesModal({ trip, templates, onSave, onDelete, onImport, onClose }
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", maxHeight: "90vh" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "18px 18px 0" : "22px 24px 0", borderBottom: "1px solid " + C.border, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: C.text } }, "Checklist Templates"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 2 } }, "Reusable packing lists and checklists for any trip.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", flexShrink: 0 } }, "x")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, marginTop: 8 } }, trip && onImport && tabBtn("browse", "Browse & Import"), tabBtn("edit", "My Templates"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "16px 18px" : "20px 24px" } }, tab === "browse" && renderBrowse(), tab === "edit" && renderEdit()), tab === "browse" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, borderTop: "1px solid " + C.border, padding: mobile ? "12px 18px" : "14px 24px", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" } }, tpl && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid, flex: 1 } }, tpl.items.length, " items selected"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !canImport, onClick: doImport }, canImport ? "Import to Trip" : "Select a template")), tab === "edit" && editView === "list" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, borderTop: "1px solid " + C.border, padding: mobile ? "12px 18px" : "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.dim } }, templates.length, " custom template", templates.length !== 1 ? "s" : ""), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Close"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: startNew }, "+ New Template"))), tab === "edit" && editView === "form" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, height: 1, background: C.border } }));
 }
 function App() {
-  const [trips, setTrips] = useState(function() { try { var s = localStorage.getItem("journey_trips_v1"); if (s) return migrateCostCategories(fixCorruptedEmoji(migrateCostFields(JSON.parse(s)))); } catch(e) { console.error("localStorage load error:", e); } return SAMPLE_TRIPS; });
+  const [trips, setTrips] = useState(function() { try { var s = localStorage.getItem("journey_trips_v1"); if (s) return migrateCostCategories(fixCorruptedEmoji(migrateCostFields(JSON.parse(s)))); } catch(e) {} return SAMPLE_TRIPS; });
   const [templates, setTemplates] = useState(function() { try { var s = localStorage.getItem("journey_templates_v1"); if (s) return JSON.parse(s); } catch(e) {} return []; });
   const [view, setView] = useState("home");
   const [tripId, setTripId] = useState(null);
@@ -6737,6 +6870,20 @@ function App() {
   useEffect(function() { try { localStorage.setItem("journey_templates_v1", JSON.stringify(templates)); } catch(e) {} }, [templates]);
   const [toast, setToast] = useState(null);
   const [pwaPrompt, setPwaPrompt] = useState(null);
+  const [wishlist, setWishlist] = useState(() => {
+    try {
+      const s = localStorage.getItem("journey_wishlist_v1");
+      return s ? JSON.parse(s) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("journey_wishlist_v1", JSON.stringify(wishlist));
+    } catch (e) {
+    }
+  }, [wishlist]);
   const toastTimer = useRef(null);
   const [isDark, setIsDark] = useState(() => {
     try {
@@ -7118,6 +7265,14 @@ function App() {
       onOpenTravelProfile: () => setModal({ type: "travelProfile" }),
       flightApiKey: flightApiKey2,
       onSaveFlightApiKey: setFlightApiKey,
+      wishlist,
+      onAddWish: (item) => setWishlist((ws) => [...ws, item]),
+      onUpdateWish: (item) => setWishlist((ws) => ws.map((w) => w.id === item.id ? item : w)),
+      onDeleteWish: (id) => setWishlist((ws) => ws.filter((w) => w.id !== id)),
+      onConvertWish: (item) => {
+        setWishlist((ws) => ws.filter((w) => w.id !== item.id));
+        setModal({ type: "newTrip", wishItem: item });
+      },
       isVP,
       onInstall: (e) => {
         if (!e) {
@@ -7298,7 +7453,7 @@ function App() {
     setTrips((ts) => [...ts, t]);
     setModal(null);
     goTrip(t.id);
-  }, onClose: () => setModal(null) })), modal && modal.type === "newCity" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null) }, /* @__PURE__ */ React.createElement(
+  }, onClose: () => setModal(null), wishItem: modal.wishItem || null })), modal && modal.type === "newCity" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null) }, /* @__PURE__ */ React.createElement(
     NewCityModal,
     {
       existingCities: modal.cities,
