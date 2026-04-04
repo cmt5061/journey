@@ -110,11 +110,6 @@ const RESEARCH_EMOJI_MAP = {
   "\u{1F6CD}": "Shopping",
   "\u{1F4A1}": "Ideas"
 };
-const COLOR_SWATCHES = ["#4e7fa6", "#6b5da6", "#4e9478", "#a66040", "#7a5a8a", "#4a7a6a", "#9a7040", "#c05a5a", "#4a8a9a", "#8a7a40", "#5a9a5a", "#9a5a7a", "#5a6a9a", "#7a8a4a"];
-const getCityColor = (trip, cityIdx, cityId) => {
-  if (trip && trip.cityColors && trip.cityColors[cityId]) return trip.cityColors[cityId];
-  return CITY_PALETTE[cityIdx % CITY_PALETTE.length];
-};
 const ACTIVITY_PRESETS = [
   { label: "Hotel check-in", type: "hotel", time: "15:00", title: "Hotel check-in", icon: "\u{1F3E8}" },
   { label: "Hotel check-out", type: "hotel", time: "11:00", title: "Hotel check-out", icon: "\u{1F3E8}" },
@@ -351,57 +346,57 @@ const C = __spreadValues({}, DARK_PALETTE);
 })();
 function makeGlobalCSS() {
   return `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: ${C.bg}; }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: ${C.surface3}; border-radius: 2px; }
-  input, textarea, select {
-    background: ${C.surface2}; color: ${C.text}; border: 1px solid ${C.border};
-    border-radius: 7px; padding: 8px 12px; font-family: 'DM Sans', sans-serif;
-    font-size: 16px; outline: none; width: 100%; transition: border-color 0.15s;
-  }
-  input:focus, textarea:focus, select:focus { border-color: ${C.accentBdr}; }
-  input[type=checkbox], input[type=radio] { width: auto; accent-color: ${C.accent}; }
-  input[type=time] {
-    box-sizing: border-box; width: 100%; min-width: 0;
-    -webkit-appearance: none; appearance: none;
-    padding: 8px 12px;
-  }
-  input[type=time]::-webkit-date-and-time-value { text-align: left; }
-  input[type=time]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; flex-shrink: 0; }
-  textarea { resize: vertical; line-height: 1.6; }
-  select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a4f6a'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
-  }
-  button { cursor: pointer; font-family: 'DM Sans', sans-serif; }
-  a { color: ${C.accent}; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  @keyframes fadeSlideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.55; } }
-  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-  .tab-bar {
-    display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; scroll-snap-type: x proximity;
-    position: relative;
-  }
-  .tab-bar::-webkit-scrollbar { display: none; }
-  .tab-bar button { scroll-snap-align: start; white-space: nowrap; flex-shrink: 0; }
-  .tab-bar-wrap { position: relative; }
-  .tab-bar-wrap::after {
-    content: ''; pointer-events: none;
-    position: absolute; top: 0; right: 0; bottom: 0; width: 40px;
-    background: linear-gradient(to right, transparent, ${C.surface});
-    border-radius: 0 8px 8px 0;
-  }
-  .safe-top { padding-top: env(safe-area-inset-top, 0px); }
-  @keyframes viewIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes slideUp { from { opacity:0; transform:translateY(100%); } to { opacity:1; transform:translateY(0); } }
-  .view-enter { animation: viewIn 0.22s ease both; }
-  .sheet-enter { animation: slideUp 0.25s cubic-bezier(0.22,1,0.36,1) both; }
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: ${C.bg}; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: ${C.surface3}; border-radius: 2px; }
+input, textarea, select {
+  background: ${C.surface2}; color: ${C.text}; border: 1px solid ${C.border};
+  border-radius: 7px; padding: 8px 12px; font-family: 'DM Sans', sans-serif;
+  font-size: 16px; outline: none; width: 100%; transition: border-color 0.15s;
+}
+input:focus, textarea:focus, select:focus { border-color: ${C.accentBdr}; }
+input[type=checkbox], input[type=radio] { width: auto; accent-color: ${C.accent}; }
+input[type=time] {
+  box-sizing: border-box; width: 100%; min-width: 0;
+  -webkit-appearance: none; appearance: none;
+  padding: 8px 12px;
+}
+input[type=time]::-webkit-date-and-time-value { text-align: left; }
+input[type=time]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; flex-shrink: 0; }
+textarea { resize: vertical; line-height: 1.6; }
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a4f6a'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
+}
+button { cursor: pointer; font-family: 'DM Sans', sans-serif; }
+a { color: ${C.accent}; text-decoration: none; }
+a:hover { text-decoration: underline; }
+@keyframes fadeSlideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.55; } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.tab-bar {
+  display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; scroll-snap-type: x proximity;
+  position: relative;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-bar button { scroll-snap-align: start; white-space: nowrap; flex-shrink: 0; }
+.tab-bar-wrap { position: relative; }
+.tab-bar-wrap::after {
+  content: ''; pointer-events: none;
+  position: absolute; top: 0; right: 0; bottom: 0; width: 40px;
+  background: linear-gradient(to right, transparent, ${C.surface});
+  border-radius: 0 8px 8px 0;
+}
+.safe-top { padding-top: env(safe-area-inset-top, 0px); }
+@keyframes viewIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideUp { from { opacity:0; transform:translateY(100%); } to { opacity:1; transform:translateY(0); } }
+.view-enter { animation: viewIn 0.22s ease both; }
+.sheet-enter { animation: slideUp 0.25s cubic-bezier(0.22,1,0.36,1) both; }
 `;
 }
 function useMobile(breakpoint = 640) {
@@ -436,7 +431,6 @@ function useIsVisionPro() {
   });
   return vp;
 }
-const makeVp = (isVP) => (normal, enlarged) => isVP ? enlarged !== void 0 ? enlarged : normal : normal;
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (n, cur) => n > 0 ? `${cur} ${Number(n).toFixed(2)}` : "\u2014";
 const today = () => {
@@ -1216,7 +1210,7 @@ const generateTripHTML = (trip, opts) => {
     });
   }
   if (opts.includeBudget) body += buildBudgetSection();
-  const doc = "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + esc(trip.title) + " \u2014 " + esc(levelLabel[opts.level]) + "</title><link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@400;500;600&display=swap' rel='stylesheet'><style>*{box-sizing:border-box;margin:0;padding:0}body{background:" + esc(bg) + ";color:" + esc(text) + ";font-family:" + esc(bodyFont) + ";line-height:1.5;-webkit-font-smoothing:antialiased}@media print{body{background:#fff}@page{margin:20mm}}<\/style></head><body><div style='max-width:800px;margin:0 auto;padding:40px 24px'>" + body + "<div style='margin-top:60px;padding-top:24px;border-top:1px solid " + esc(border) + ";text-align:center;font-size:11px;color:" + esc(dim) + "'>Generated by Journey \xB7 " + (/* @__PURE__ */ new Date()).toLocaleDateString() + "</div></div></body></html>";
+  const doc = "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + esc(trip.title) + " \u2014 " + esc(levelLabel[opts.level]) + "</title><link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@400;500;600&display=swap' rel='stylesheet'><style>*{box-sizing:border-box;margin:0;padding:0}body{background:" + esc(bg) + ";color:" + esc(text) + ";font-family:" + esc(bodyFont) + ";line-height:1.5;-webkit-font-smoothing:antialiased}@media print{body{background:#fff}@page{margin:20mm}}</style></head><body><div style='max-width:800px;margin:0 auto;padding:40px 24px'>" + body + "<div style='margin-top:60px;padding-top:24px;border-top:1px solid " + esc(border) + ";text-align:center;font-size:11px;color:" + esc(dim) + "'>Generated by Journey \xB7 " + (/* @__PURE__ */ new Date()).toLocaleDateString() + "</div></div></body></html>";
   return doc;
 };
 const exportTripSummaryHTML = (trip, opts) => {
@@ -2284,7 +2278,7 @@ function YearSection({ year, trips, currentYear, mobile, onOpen, onDuplicate, fo
       title: year + " Wishlist",
       items: wishItems,
       mobile,
-      defaultCollapsed: false,
+      defaultCollapsed: true,
       onAdd: onAddWish,
       onUpdate: onUpdateWish,
       onDelete: onDeleteWish,
@@ -2325,8 +2319,8 @@ function TripCard({ trip, mobile, onOpen, onDuplicate }) {
   const spColor = isActive ? C.ok : isPlanning ? C.accent : "#8a95b0";
   const spBg = isActive ? "rgba(92,184,122,0.15)" : isPlanning ? "rgba(212,168,83,0.15)" : "rgba(107,122,154,0.15)";
   const spBdr = isActive ? "rgba(92,184,122,0.4)" : isPlanning ? "rgba(212,168,83,0.4)" : "rgba(107,122,154,0.3)";
-  const heroQuery = encodeURIComponent((trip.cities.length > 0 ? trip.cities[0].name : trip.title) + " travel landscape");
-  const heroSrc = "https://source.unsplash.com/600x400/?" + heroQuery;
+  const heroCity = trip.cities.length > 0 ? trip.cities[0].name.split(",")[0].trim() : trip.title;
+  const heroSrc = "https://loremflickr.com/600/400/" + encodeURIComponent(heroCity) + ",travel/all";
   const col0 = CITY_PALETTE[0];
   const col1 = trip.cities.length > 1 ? CITY_PALETTE[1] : CITY_PALETTE[3];
   const heroFallback = "linear-gradient(150deg, " + col0 + "66 0%, " + col1 + "99 55%, " + col0 + "44 100%)";
@@ -2851,6 +2845,7 @@ function TravelProfileCard({ profile, onOpen }) {
 function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, ghReady, ghSyncStatus, onGhPull, onGhPush, onOpenSync, isVP, hasUnseenChangelog, onOpenChangelog, flightApiKey, onSaveFlightApiKey, onOpenTravelProfile, wishlist: wishlist2, onAddWish, onUpdateWish, onDeleteWish, onConvertWish, onOpenAddWish }) {
   const mobile = useMobile();
   const [showMenu, setShowMenu] = React.useState(false);
+  const [homeFilter, setHomeFilter] = React.useState("year");
   const menuRef = useRef(null);
   useEffect(() => {
     if (!showMenu) return;
@@ -2972,7 +2967,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     },
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, isDark ? "\u2600\uFE0F" : "\u{1F319}"),
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 500, color: C.text } }, isDark ? "Switch to Light Mode" : "Switch to Dark Mode")
-  )))))), ghReady && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.ok : C.dim } }, ghSyncStatus.state === "syncing" && "\u21C5 Syncing\u2026", ghSyncStatus.state === "ok" && ghSyncStatus.lastSync && "\u2713 Last synced " + new Date(ghSyncStatus.lastSync).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), ghSyncStatus.state === "error" && "\u2715 Sync error \u2014 " + ghSyncStatus.error, ghSyncStatus.state === "idle" && "\u21C5 Not yet synced"), /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 } }, "Configure")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(
+  )))))), ghReady && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.ok : C.dim } }, ghSyncStatus.state === "syncing" && "\u21C5 Syncing\u2026", ghSyncStatus.state === "ok" && ghSyncStatus.lastSync && "\u2713 Last synced " + new Date(ghSyncStatus.lastSync).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), ghSyncStatus.state === "error" && "\u2715 Sync error \u2014 " + ghSyncStatus.error, ghSyncStatus.state === "idle" && "\u21C5 Not yet synced"), /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 } }, "Configure")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement(
     "input",
     {
       value: search,
@@ -2980,53 +2975,95 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
       placeholder: "\u{1F50D}  Search trips, destinations...",
       style: { width: "100%", padding: "10px 16px", fontSize: 15, borderRadius: 10 }
     }
-  )), pwaPrompt && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4F2}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Install Journey"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Add to your home screen for offline access and a native app feel.")), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onInstall }, "Install"), /* @__PURE__ */ React.createElement("button", { onClick: () => onInstall(null), style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 18, padding: "0 4px" } }, "\xD7"))), visibleTrips.length === 0 ? /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0 32px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, search ? "\u{1F50D}" : "\u{1F5FA}\uFE0F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 18, marginBottom: 8 } }, search ? `No trips match "${search}"` : "No trips yet."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14 } }, search ? "Try a different search term." : "Create your first trip to get started.")), (wishlist2 || []).length > 0 && /* @__PURE__ */ React.createElement(
-    WishlistSection,
-    {
-      title: "\u2728 Trip Wishlist",
-      items: wishlist2,
-      mobile,
-      defaultCollapsed: false,
-      onAdd: onAddWish,
-      onUpdate: onUpdateWish,
-      onDelete: onDeleteWish,
-      onConvert: onConvertWish
-    }
-  )) : (() => {
+  )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 } }, [
+    { id: "year", label: "\u{1F4C5} Current Year" },
+    { id: "all", label: "\u{1F5FA}\uFE0F All" },
+    { id: "planning", label: "\u{1F5D3} Planning" },
+    { id: "complete", label: "\u2705 Completed" },
+    { id: "wishlist", label: "\u2728 Wishlists" }
+  ].map((f) => /* @__PURE__ */ React.createElement("button", { key: f.id, onClick: () => setHomeFilter(f.id), style: {
+    background: homeFilter === f.id ? C.accentBg : C.surface2,
+    border: `1px solid ${homeFilter === f.id ? C.accentBdr : C.border}`,
+    borderRadius: 20,
+    padding: "6px 14px",
+    fontSize: 13,
+    fontWeight: homeFilter === f.id ? 600 : 400,
+    color: homeFilter === f.id ? C.accent : C.mid,
+    cursor: "pointer",
+    whiteSpace: "nowrap"
+  } }, f.label))), pwaPrompt && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4F2}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Install Journey"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Add to your home screen for offline access and a native app feel.")), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onInstall }, "Install"), /* @__PURE__ */ React.createElement("button", { onClick: () => onInstall(null), style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 18, padding: "0 4px" } }, "\xD7"))), (() => {
     const currentYear = (/* @__PURE__ */ new Date()).getFullYear().toString();
-    const sorted = visibleTrips.slice().sort((a, b) => {
-      if (a.status === "active" && b.status !== "active") return -1;
-      if (b.status === "active" && a.status !== "active") return 1;
-      return (b.startDate || "").localeCompare(a.startDate || "");
-    });
-    const yearMap = {};
-    sorted.forEach((trip) => {
-      const yr = trip.startDate ? trip.startDate.slice(0, 4) : "Unknown";
-      if (!yearMap[yr]) yearMap[yr] = [];
-      yearMap[yr].push(trip);
-    });
     const wishByYear = {};
     (wishlist2 || []).forEach((w) => {
       const yr = w.year && w.year.trim() ? w.year.trim() : "__general__";
       if (!wishByYear[yr]) wishByYear[yr] = [];
       wishByYear[yr].push(w);
     });
-    const allYears = /* @__PURE__ */ new Set([...Object.keys(yearMap), ...Object.keys(wishByYear).filter((y) => y !== "__general__")]);
-    const yearOrder = Array.from(allYears).sort((a, b) => b.localeCompare(a));
     const generalWishItems = wishByYear["__general__"] || [];
-    return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 32 } }, generalWishItems.length > 0 && /* @__PURE__ */ React.createElement(
+    const allWishItems = wishlist2 || [];
+    if (homeFilter === "wishlist") {
+      if (allWishItems.length === 0) return /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, "\u2728"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 18, marginBottom: 8 } }, "No wishlist items yet."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14 } }, 'Tap "\u2728 Wishlist" to add a dream destination.'));
+      const wishYears = Object.keys(wishByYear).filter((y) => y !== "__general__").sort((a, b) => b.localeCompare(a));
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } }, wishYears.map((yr) => /* @__PURE__ */ React.createElement(
+        WishlistSection,
+        {
+          key: yr,
+          title: yr + " Wishlist",
+          items: wishByYear[yr],
+          mobile,
+          defaultCollapsed: false,
+          onAdd: onAddWish,
+          onUpdate: onUpdateWish,
+          onDelete: onDeleteWish,
+          onConvert: onConvertWish
+        }
+      )), generalWishItems.length > 0 && /* @__PURE__ */ React.createElement(
+        WishlistSection,
+        {
+          title: "\u2728 Trip Wishlist",
+          items: generalWishItems,
+          mobile,
+          defaultCollapsed: false,
+          onAdd: onAddWish,
+          onUpdate: onUpdateWish,
+          onDelete: onDeleteWish,
+          onConvert: onConvertWish
+        }
+      ));
+    }
+    const allSorted = visibleTrips.slice().sort((a, b) => {
+      if (a.status === "active" && b.status !== "active") return -1;
+      if (b.status === "active" && a.status !== "active") return 1;
+      return (b.startDate || "").localeCompare(a.startDate || "");
+    });
+    if (homeFilter === "planning" || homeFilter === "complete") {
+      const filtered = allSorted.filter((t) => t.status === homeFilter);
+      if (filtered.length === 0) return /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, homeFilter === "planning" ? "\u{1F5D3}" : "\u2705"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 18 } }, "No ", homeFilter === "planning" ? "planning" : "completed", " trips yet."));
+      return /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(auto-fill, minmax(320px, 1fr))", gap: mobile ? 14 : 20 } }, filtered.map((trip) => /* @__PURE__ */ React.createElement(TripCard, { key: trip.id, trip, mobile, onOpen, onDuplicate })));
+    }
+    const yearMap = {};
+    allSorted.forEach((trip) => {
+      const yr = trip.startDate ? trip.startDate.slice(0, 4) : "Unknown";
+      if (!yearMap[yr]) yearMap[yr] = [];
+      yearMap[yr].push(trip);
+    });
+    const allYears = /* @__PURE__ */ new Set([...Object.keys(yearMap), ...Object.keys(wishByYear).filter((y) => y !== "__general__")]);
+    let yearOrder = Array.from(allYears).sort((a, b) => b.localeCompare(a));
+    if (homeFilter === "year") yearOrder = yearOrder.filter((yr) => yr === currentYear);
+    if (yearOrder.length === 0 && (homeFilter === "year" || generalWishItems.length === 0)) return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0 32px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, search ? "\u{1F50D}" : "\u{1F5FA}\uFE0F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 18, marginBottom: 8 } }, search ? `No trips match "${search}"` : homeFilter === "year" ? `No trips in ${currentYear}.` : "No trips yet."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14 } }, search ? "Try a different search term." : homeFilter === "year" ? "Switch to All Years or create a new trip." : "Create your first trip to get started.")), allWishItems.length > 0 && homeFilter !== "year" && /* @__PURE__ */ React.createElement(
       WishlistSection,
       {
         title: "\u2728 Trip Wishlist",
-        items: generalWishItems,
+        items: allWishItems,
         mobile,
-        defaultCollapsed: false,
+        defaultCollapsed: true,
         onAdd: onAddWish,
         onUpdate: onUpdateWish,
         onDelete: onDeleteWish,
         onConvert: onConvertWish
       }
-    ), yearOrder.map((yr) => /* @__PURE__ */ React.createElement("div", { key: yr }, yearMap[yr] ? /* @__PURE__ */ React.createElement(
+    ));
+    return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 32 } }, yearOrder.map((yr) => /* @__PURE__ */ React.createElement("div", { key: yr }, yearMap[yr] ? /* @__PURE__ */ React.createElement(
       YearSection,
       {
         year: yr,
@@ -3035,7 +3072,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
         mobile,
         onOpen,
         onDuplicate,
-        forceOpen: !!search,
+        forceOpen: !!search || homeFilter === "year",
         wishItems: wishByYear[yr] || [],
         onAddWish,
         onUpdateWish,
@@ -3048,13 +3085,25 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
         title: yr + " Wishlist",
         items: wishByYear[yr],
         mobile,
-        defaultCollapsed: false,
+        defaultCollapsed: true,
         onAdd: onAddWish,
         onUpdate: onUpdateWish,
         onDelete: onDeleteWish,
         onConvert: onConvertWish
       }
-    )))));
+    )))), generalWishItems.length > 0 && homeFilter !== "year" && /* @__PURE__ */ React.createElement(
+      WishlistSection,
+      {
+        title: "\u2728 Trip Wishlist",
+        items: generalWishItems,
+        mobile,
+        defaultCollapsed: true,
+        onAdd: onAddWish,
+        onUpdate: onUpdateWish,
+        onDelete: onDeleteWish,
+        onConvert: onConvertWish
+      }
+    ));
   })());
 }
 const STATUS_FLOW = [
@@ -4929,96 +4978,6 @@ function ResearchBoard({ city, trip, mutateCity, mutateAllCities, mutateTrip }) 
       return /* @__PURE__ */ React.createElement("div", { key: th.id, style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18 } }, th.icon), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: C.text, flex: 1 } }, th.name), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, thItems.length, " items")), /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 } }, thItems.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, style: { display: "flex", alignItems: "flex-start", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: item.status === "done" ? C.ok : item.status === "planned" ? "#4e9478" : C.accent, flexShrink: 0, marginTop: 1 } }, item.status === "done" ? "\u2705" : item.status === "planned" ? "\u{1F4C5}" : "\u{1F4A1}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text } }, item.title), item.url && /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noreferrer", style: { fontSize: 11, color: C.accent } }, "\u{1F517} ", item.urlLabel || item.url))))));
     })));
   }).filter(Boolean), totalAll === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.dim, fontSize: 14 } }, "No research items across any city yet.")));
-}
-function TripSearchModal({ trip, onClose, onOpenDay, onSelectCity, setTripTab }) {
-  const [q, setQ] = useState("");
-  const mobile = useMobile();
-  const inputRef = useRef(null);
-  useEffect(() => {
-    if (inputRef.current) inputRef.current.focus();
-  }, []);
-  const trimQ = q.trim().toLowerCase();
-  const actResults = trimQ.length < 2 ? [] : (() => {
-    const all = getAllActivities(trip);
-    return all.filter(
-      (a) => a.title && a.title.toLowerCase().includes(trimQ) || a.location && a.location.toLowerCase().includes(trimQ) || a.confirmation && a.confirmation.toLowerCase().includes(trimQ) || a.notes && a.notes.toLowerCase().includes(trimQ)
-    ).slice(0, 8);
-  })();
-  const todoResults = trimQ.length < 2 ? [] : (trip.prepChecklist || []).filter(
-    (i) => i.text && i.text.toLowerCase().includes(trimQ) || i.notes && i.notes.toLowerCase().includes(trimQ)
-  ).slice(0, 5);
-  const researchResults = trimQ.length < 2 ? [] : trip.cities.flatMap(
-    (c) => (c.thingsToDo || []).filter(
-      (t) => t.title && t.title.toLowerCase().includes(trimQ) || t.notes && t.notes.toLowerCase().includes(trimQ)
-    ).map((t) => __spreadProps(__spreadValues({}, t), { cityName: c.name, cityId: c.id }))
-  ).slice(0, 5);
-  const hasResults = actResults.length + todoResults.length + researchResults.length > 0;
-  const Section = ({ title, children }) => /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 } }, title), children);
-  return /* @__PURE__ */ React.createElement("div", { onClick: onClose, style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(8px)", zIndex: 1e3, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: mobile ? "14px" : "60px 20px 20px" } }, /* @__PURE__ */ React.createElement("div", { onClick: (e) => e.stopPropagation(), style: { background: C.surface, borderRadius: 16, width: "100%", maxWidth: 600, maxHeight: mobile ? "88vh" : "75vh", display: "flex", flexDirection: "column", border: "1px solid " + C.border, boxShadow: "0 32px 80px rgba(0,0,0,0.6)", animation: "fadeSlideIn 0.2s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "16px 18px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16, color: C.mid, flexShrink: 0 } }, "\u{1F50D}"), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      ref: inputRef,
-      value: q,
-      onChange: (e) => setQ(e.target.value),
-      placeholder: "Search activities, to-dos, research...",
-      style: { flex: 1, background: "none", border: "none", outline: "none", fontSize: 16, color: C.text, padding: 0 },
-      autoComplete: "off"
-    }
-  ), q && /* @__PURE__ */ React.createElement("button", { onClick: () => setQ(""), style: { background: "none", border: "none", color: C.dim, fontSize: 16, cursor: "pointer" } }, "\xD7"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, color: C.mid, fontSize: 12, padding: "4px 10px", cursor: "pointer" } }, "Esc")), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: "16px 18px" } }, trimQ.length < 2 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 32, marginBottom: 10 } }, "\u{1F50D}"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14 } }, "Type at least 2 characters to search"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, marginTop: 6, color: C.dim } }, "Activities, to-dos, research notes, confirmations")), trimQ.length >= 2 && !hasResults && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.dim } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 15 } }, 'No results for "', q, '"')), actResults.length > 0 && /* @__PURE__ */ React.createElement(Section, { title: "Activities (" + actResults.length + ")" }, actResults.map((a) => {
-    const ti = ACT_TYPES.find((x) => x.id === a.type) || ACT_TYPES[7];
-    return /* @__PURE__ */ React.createElement("button", { key: a.id + a.date, onClick: () => {
-      const c = trip.cities.find((x) => x.id === a.cityId);
-      const d = c ? c.days.find((x) => x.id === a.dayId) : null;
-      if (c && d) {
-        onSelectCity(c.id);
-        onOpenDay(d.id);
-      }
-      onClose();
-    }, style: {
-      display: "flex",
-      alignItems: "flex-start",
-      gap: 10,
-      width: "100%",
-      background: C.surface2,
-      border: "1px solid " + C.border,
-      borderRadius: 10,
-      padding: "10px 14px",
-      marginBottom: 6,
-      cursor: "pointer",
-      textAlign: "left"
-    } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16, flexShrink: 0 } }, ti.icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 500, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, a.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid, marginTop: 2 } }, a.cityName, " \xB7 ", a.date, a.time ? " \xB7 " + a.time : "")), a.confirmation && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.ok, fontWeight: 600, flexShrink: 0, marginTop: 2 } }, "\u2713"));
-  })), todoResults.length > 0 && /* @__PURE__ */ React.createElement(Section, { title: "To-Do Items (" + todoResults.length + ")" }, todoResults.map((i) => /* @__PURE__ */ React.createElement("button", { key: i.id, onClick: () => {
-    setTripTab("prep");
-    onClose();
-  }, style: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    width: "100%",
-    background: C.surface2,
-    border: "1px solid " + C.border,
-    borderRadius: 10,
-    padding: "10px 14px",
-    marginBottom: 6,
-    cursor: "pointer",
-    textAlign: "left"
-  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14 } }, i.completed ? "\u2705" : "\u{1F4CB}"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: i.completed ? C.dim : C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: i.completed ? "line-through" : "none" } }, i.text)))), researchResults.length > 0 && /* @__PURE__ */ React.createElement(Section, { title: "Research Board (" + researchResults.length + ")" }, researchResults.map((t) => /* @__PURE__ */ React.createElement("button", { key: t.id, onClick: () => {
-    onSelectCity(t.cityId);
-    setTripTab("itinerary");
-    onClose();
-  }, style: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    width: "100%",
-    background: C.surface2,
-    border: "1px solid " + C.border,
-    borderRadius: 10,
-    padding: "10px 14px",
-    marginBottom: 6,
-    cursor: "pointer",
-    textAlign: "left"
-  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14 } }, t.status === "done" ? "\u2705" : t.status === "planned" ? "\u{1F4C5}" : "\u{1F4A1}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, t.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.mid, marginTop: 1 } }, t.cityName))))))));
 }
 function getBlockDefaults(day, isToday) {
   var hour = isToday ? (/* @__PURE__ */ new Date()).getHours() : -1;
@@ -6986,8 +6945,8 @@ function TemplatesModal({ trip, templates, onSave, onDelete, onImport, onClose }
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", maxHeight: "90vh" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "18px 18px 0" : "22px 24px 0", borderBottom: "1px solid " + C.border, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: C.text } }, "Checklist Templates"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 2 } }, "Reusable packing lists and checklists for any trip.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", flexShrink: 0 } }, "x")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, marginTop: 8 } }, trip && onImport && tabBtn("browse", "Browse & Import"), tabBtn("edit", "My Templates"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "16px 18px" : "20px 24px" } }, tab === "browse" && renderBrowse(), tab === "edit" && renderEdit()), tab === "browse" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, borderTop: "1px solid " + C.border, padding: mobile ? "12px 18px" : "14px 24px", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" } }, tpl && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid, flex: 1 } }, tpl.items.length, " items selected"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !canImport, onClick: doImport }, canImport ? "Import to Trip" : "Select a template")), tab === "edit" && editView === "list" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, borderTop: "1px solid " + C.border, padding: mobile ? "12px 18px" : "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.dim } }, templates.length, " custom template", templates.length !== 1 ? "s" : ""), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Close"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: startNew }, "+ New Template"))), tab === "edit" && editView === "form" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, height: 1, background: C.border } }));
 }
 function App() {
-  const [trips, setTrips] = useState(function() { try { var s = localStorage.getItem("journey_trips_v1"); if (s) return JSON.parse(s); } catch(e) {} return SAMPLE_TRIPS; });
-  const [templates, setTemplates] = useState(function() { try { var s = localStorage.getItem("journey_templates_v1"); if (s) return JSON.parse(s); } catch(e) {} return []; });
+  const [trips, setTrips] = useState(SAMPLE_TRIPS);
+  const [templates, setTemplates] = useState([]);
   const [view, setView] = useState("home");
   const [tripId, setTripId] = useState(null);
   const [cityId, setCityId] = useState(null);
@@ -6995,8 +6954,6 @@ function App() {
   const [cityTab, setCityTab] = useState("days");
   const [tripTab, setTripTab] = useState("itinerary");
   const [modal, setModal] = useState(null);
-  useEffect(function() { try { localStorage.setItem("journey_trips_v1", JSON.stringify(trips)); } catch(e) {} }, [trips]);
-  useEffect(function() { try { localStorage.setItem("journey_templates_v1", JSON.stringify(templates)); } catch(e) {} }, [templates]);
   const [toast, setToast] = useState(null);
   const [pwaPrompt, setPwaPrompt] = useState(null);
   const [wishDraft, setWishDraft] = useState(null);
@@ -7182,62 +7139,62 @@ function App() {
     const style = document.createElement("style");
     style.id = "vp-styles";
     style.textContent = `
-      /* Apple Vision Pro \u2014 eye-tracking optimised touch targets */
+    /* Apple Vision Pro \u2014 eye-tracking optimised touch targets */
 
-      /* All buttons and links: minimum 44\xD744pt target */
-      button, a, [role="button"] {
-        min-height: 44px !important;
-        min-width: 44px !important;
-        padding-top: max(var(--btn-pt, 8px), 10px) !important;
-        padding-bottom: max(var(--btn-pb, 8px), 10px) !important;
-      }
+    /* All buttons and links: minimum 44\xD744pt target */
+    button, a, [role="button"] {
+      min-height: 44px !important;
+      min-width: 44px !important;
+      padding-top: max(var(--btn-pt, 8px), 10px) !important;
+      padding-bottom: max(var(--btn-pb, 8px), 10px) !important;
+    }
 
-      /* Inline icon-only buttons (reorder arrows, delete, etc): bigger hit area */
-      button[style*="width: 20px"], button[style*="width: 22px"],
-      button[style*="width: 24px"], button[style*="width: 34px"] {
-        min-width: 44px !important;
-        min-height: 44px !important;
-      }
+    /* Inline icon-only buttons (reorder arrows, delete, etc): bigger hit area */
+    button[style*="width: 20px"], button[style*="width: 22px"],
+    button[style*="width: 24px"], button[style*="width: 34px"] {
+      min-width: 44px !important;
+      min-height: 44px !important;
+    }
 
-      /* Checkboxes \u2014 larger for eye tracking */
-      input[type="checkbox"] {
-        width: 22px !important;
-        height: 22px !important;
-        cursor: pointer;
-      }
+    /* Checkboxes \u2014 larger for eye tracking */
+    input[type="checkbox"] {
+      width: 22px !important;
+      height: 22px !important;
+      cursor: pointer;
+    }
 
-      /* Gap between flex/grid button groups */
-      .tab-bar button {
-        padding-left: 20px !important;
-        padding-right: 20px !important;
-        min-height: 52px !important;
-      }
+    /* Gap between flex/grid button groups */
+    .tab-bar button {
+      padding-left: 20px !important;
+      padding-right: 20px !important;
+      min-height: 52px !important;
+    }
 
-      /* Hover state \u2014 visionOS highlights focused element; make it very visible */
-      button:hover, a:hover, [role="button"]:hover {
-        outline: 2px solid rgba(212, 168, 83, 0.6) !important;
-        outline-offset: 2px !important;
-      }
+    /* Hover state \u2014 visionOS highlights focused element; make it very visible */
+    button:hover, a:hover, [role="button"]:hover {
+      outline: 2px solid rgba(212, 168, 83, 0.6) !important;
+      outline-offset: 2px !important;
+    }
 
-      /* Activity cards \u2014 full card should be easy to hit */
-      .vp-card:hover {
-        outline: 2px solid rgba(212, 168, 83, 0.5) !important;
-        outline-offset: 3px !important;
-      }
+    /* Activity cards \u2014 full card should be easy to hit */
+    .vp-card:hover {
+      outline: 2px solid rgba(212, 168, 83, 0.5) !important;
+      outline-offset: 3px !important;
+    }
 
-      /* Increase base font slightly for readability */
-      body { font-size: 16px !important; }
+    /* Increase base font slightly for readability */
+    body { font-size: 16px !important; }
 
-      /* Nav prev/next pills \u2014 already large but ensure min height */
-      .day-nav-btn { min-height: 52px !important; }
+    /* Nav prev/next pills \u2014 already large but ensure min height */
+    .day-nav-btn { min-height: 52px !important; }
 
-      /* Inputs and textareas \u2014 taller for eye-gaze tap */
-      input[type="text"], input[type="number"], input[type="date"],
-      input[type="password"], select, textarea {
-        min-height: 48px !important;
-        font-size: 16px !important;
-      }
-    `;
+    /* Inputs and textareas \u2014 taller for eye-gaze tap */
+    input[type="text"], input[type="number"], input[type="date"],
+    input[type="password"], select, textarea {
+      min-height: 48px !important;
+      font-size: 16px !important;
+    }
+  `;
     document.head.appendChild(style);
     return () => {
       const el = document.getElementById("vp-styles");
@@ -7409,7 +7366,6 @@ function App() {
       onUpdateWish: (item) => setWishlist((ws) => ws.map((w) => w.id === item.id ? item : w)),
       onDeleteWish: (id) => setWishlist((ws) => ws.filter((w) => w.id !== id)),
       onConvertWish: (item) => {
-        setWishlist((ws) => ws.filter((w) => w.id !== item.id));
         setModal({ type: "newTrip", wishItem: item });
       },
       isVP,
@@ -7592,6 +7548,7 @@ function App() {
     )) : null;
   })(), modal && modal.type === "newTrip" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null) }, /* @__PURE__ */ React.createElement(NewTripModal, { onSave: (t) => {
     setTrips((ts) => [...ts, t]);
+    if (modal.wishItem) setWishlist((ws) => ws.filter((w) => w.id !== modal.wishItem.id));
     setModal(null);
     goTrip(t.id);
   }, onClose: () => setModal(null), wishItem: modal.wishItem || null })), wishDraft && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setWishDraft(null), maxWidth: 480 }, /* @__PURE__ */ React.createElement("div", { style: { padding: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 400, color: C.text } }, "Add to Wishlist"), /* @__PURE__ */ React.createElement("button", { onClick: () => setWishDraft(null), style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", lineHeight: 1 } }, "\xD7")), /* @__PURE__ */ React.createElement(
@@ -7654,7 +7611,6 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
-
     const root = ReactDOM.createRoot(document.getElementById("root"));
     root.render(React.createElement(App));
   </script>
