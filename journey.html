@@ -335,20 +335,20 @@ function makeGlobalCSS() {
   }
   input:focus, textarea:focus, select:focus { border-color: ${C.accentBdr}; }
   input[type=checkbox], input[type=radio] { width: auto; accent-color: ${C.accent}; }
-  input[type=time] {
-    box-sizing: border-box; width: 100%; min-width: 0;
-    -webkit-appearance: none; appearance: none;
-    padding: 8px 12px;
-  }
-  input[type=time]::-webkit-date-and-time-value { text-align: left; }
-  input[type=time]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; flex-shrink: 0; }
   input[type=date] {
     box-sizing: border-box; width: 100%; min-width: 0;
     -webkit-appearance: none; appearance: none;
-    padding: 8px 12px;
+    padding: 8px 12px; min-height: 42px; height: 42px; line-height: 1.4;
   }
-  input[type=date]::-webkit-date-and-time-value { text-align: left; }
-  input[type=date]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; flex-shrink: 0; }
+  input[type=time] {
+    box-sizing: border-box; width: 100%; min-width: 0;
+    -webkit-appearance: none; appearance: none;
+    padding: 8px 12px; min-height: 42px; height: 42px; line-height: 1.4;
+  }
+  input[type=date]::-webkit-date-and-time-value,
+  input[type=time]::-webkit-date-and-time-value { text-align: left; }
+  input[type=date]::-webkit-calendar-picker-indicator,
+  input[type=time]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; flex-shrink: 0; }
   textarea { resize: vertical; line-height: 1.6; }
   select {
     appearance: none;
@@ -2276,6 +2276,7 @@ function EventsSection({ events: events2, mobile, onAdd, onUpdate, onDelete, def
     const c = parseFloat((ev.cost || "").replace(/[^0-9.]/g, ""));
     if (!isNaN(c)) yearMap[yr].totalCost += c;
   });
+  const upcomingCount = events2.filter((ev) => !ev.date || ev.date >= today()).length;
   return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 28 } }, /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -2292,7 +2293,7 @@ function EventsSection({ events: events2, mobile, onAdd, onUpdate, onDelete, def
         textAlign: "left"
       }
     },
-    /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 20 : 24, fontWeight: 300, color: C.dim, letterSpacing: "0.02em" } }, "\u{1F39F} Events", events2.length > 0 ? " (" + events2.length + ")" : ""),
+    /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 20 : 24, fontWeight: 300, color: C.mid, letterSpacing: "0.02em" } }, "\u{1F39F} Events", upcomingCount > 0 ? " (" + upcomingCount + " Upcoming)" : events2.length > 0 ? " (All Past)" : ""),
     /* @__PURE__ */ React.createElement("span", { style: { height: 1, flex: 1, background: C.border } }),
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim, fontWeight: 500, display: "inline-block", transition: "transform 0.2s", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", flexShrink: 0 } }, "\u25BE")
   ), !collapsed && /* @__PURE__ */ React.createElement("div", null, events2.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" } }, [{ id: "all", label: "All", icon: "\u{1F39F}" }, ...EVENT_STATUSES].map((s) => /* @__PURE__ */ React.createElement("button", { key: s.id, onClick: () => setStatusFilter(s.id), style: {
@@ -2341,7 +2342,17 @@ function EventsSection({ events: events2, mobile, onAdd, onUpdate, onDelete, def
         }
       ));
     }
-    return /* @__PURE__ */ React.createElement("div", { key: ev.id, style: { background: C.surface2, borderRadius: 12, padding: "12px 16px", border: "1px solid " + C.border, display: "flex", gap: 12, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, flexShrink: 0, marginTop: 1 } }, cat.icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, fontWeight: 500, color: C.text, marginBottom: 3 } }, ev.title), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", background: st.color + "22", border: "1px solid " + st.color + "55", borderRadius: 8, padding: "2px 7px", color: st.color } }, st.icon, " ", st.label.toUpperCase()), ev.date && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent, fontWeight: 600 } }, fmtDate(ev.date)), ev.location && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "\u{1F4CD} ", ev.location), ev.cost && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "\u{1F4B0} ", ev.cost)), ev.notes && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, ev.notes)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexShrink: 0 } }, ev.url && /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { key: ev.id, style: { background: C.surface2, borderRadius: 12, padding: "12px 16px", border: "1px solid " + C.border, display: "flex", gap: 12, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, flexShrink: 0, marginTop: 1 } }, cat.icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, fontWeight: 500, color: C.text, marginBottom: 3 } }, ev.title), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", background: st.color + "22", border: "1px solid " + st.color + "55", borderRadius: 8, padding: "2px 7px", color: st.color } }, st.icon, " ", st.label.toUpperCase()), ev.date && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent, fontWeight: 600 } }, fmtDate(ev.date)), ev.date && stKey !== "past" && (() => {
+      const msUntil = /* @__PURE__ */ new Date(ev.date + "T12:00:00Z") - /* @__PURE__ */ new Date();
+      const daysUntil = Math.ceil(msUntil / 864e5);
+      if (daysUntil === 0) return /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.ok, background: C.okBg, border: "1px solid " + C.okBdr, borderRadius: 8, padding: "2px 7px" } }, "Today!");
+      if (daysUntil === 1) return /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.ok, background: C.okBg, border: "1px solid " + C.okBdr, borderRadius: 8, padding: "2px 7px" } }, "Tomorrow");
+      if (daysUntil <= 30) return /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.accent, background: C.accentBg, border: "1px solid " + C.accentBdr, borderRadius: 8, padding: "2px 7px" } }, "in ", daysUntil, "d");
+      const weeks = Math.round(daysUntil / 7);
+      if (daysUntil <= 90) return /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.text, background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "2px 7px" } }, "in ", weeks, "w");
+      const months = Math.round(daysUntil / 30);
+      return /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: C.mid, background: C.surface3, border: "1px solid " + C.border, borderRadius: 8, padding: "2px 7px" } }, "in ", months, "mo");
+    })(), ev.location && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "\u{1F4CD} ", ev.location), ev.cost && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "\u{1F4B0} ", ev.cost)), ev.notes && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, ev.notes)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexShrink: 0 } }, ev.url && /* @__PURE__ */ React.createElement(
       "a",
       {
         href: ev.url,
