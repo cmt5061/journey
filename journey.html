@@ -342,6 +342,13 @@ function makeGlobalCSS() {
   }
   input[type=time]::-webkit-date-and-time-value { text-align: left; }
   input[type=time]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; flex-shrink: 0; }
+  input[type=date] {
+    box-sizing: border-box; width: 100%; min-width: 0;
+    -webkit-appearance: none; appearance: none;
+    padding: 8px 12px;
+  }
+  input[type=date]::-webkit-date-and-time-value { text-align: left; }
+  input[type=date]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; flex-shrink: 0; }
   textarea { resize: vertical; line-height: 1.6; }
   select {
     appearance: none;
@@ -2469,7 +2476,7 @@ function WishlistSection({ title, items, mobile, onAdd, onUpdate, onDelete, onCo
     "\u270F\uFE0F"
   )))))));
 }
-function YearStatsModal({ year, trips, events: events2, onClose }) {
+function YearStatsModal({ year, trips, events: events2, onClose, inline }) {
   const mobile = useMobile();
   const todayStr = today();
   const allActs = trips.flatMap((t) => getAllActivities(t));
@@ -2518,7 +2525,7 @@ function YearStatsModal({ year, trips, events: events2, onClose }) {
   const CAT_COLORS_MAP = { Food: "#e07858", Transport: "#4e9478", Lodging: "#4e7fa6", Activities: "#d4a853", Shopping: "#a78bfa", Other: "#8c91ae" };
   const Section = ({ title, children }) => /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 12 } }, title), children);
   const StatRow = ({ icon, label, value, sub, color }) => /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid } }, label), sub && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim } }, sub)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 17 : 20, fontWeight: 400, color: color || C.text, fontFamily: "'Cormorant Garamond', serif" } }, value));
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", maxHeight: mobile ? "93vh" : "88vh" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "20px 20px 16px" : "26px 28px 18px", borderBottom: "1px solid " + C.border, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 32 : 42, fontWeight: 300, color: C.text, lineHeight: 1 } }, year), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.mid, marginTop: 4 } }, trips.length, " trip", trips.length !== 1 ? "s" : "", " \xB7 ", totalNights, " nights \xB7 ", uniqueCities.length, " cit", uniqueCities.length !== 1 ? "ies" : "y")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", padding: "2px 0 0 12px" } }, "\xD7"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "18px 20px" : "22px 28px" } }, /* @__PURE__ */ React.createElement(Section, { title: "Overview" }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 4 } }, [
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", ...inline ? {} : { maxHeight: mobile ? "93vh" : "88vh" } } }, !inline && /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "20px 20px 16px" : "26px 28px 18px", borderBottom: "1px solid " + C.border, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 32 : 42, fontWeight: 300, color: C.text, lineHeight: 1 } }, year), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.mid, marginTop: 4 } }, trips.length, " trip", trips.length !== 1 ? "s" : "", " \xB7 ", totalNights, " nights \xB7 ", uniqueCities.length, " cit", uniqueCities.length !== 1 ? "ies" : "y")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", padding: "2px 0 0 12px" } }, "\xD7"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: inline ? "visible" : "auto", padding: inline ? "16px 18px" : mobile ? "18px 20px" : "22px 28px" } }, /* @__PURE__ */ React.createElement(Section, { title: "Overview" }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 4 } }, [
     { icon: "\u{1F5FA}\uFE0F", label: "Trips", value: trips.length },
     { icon: "\u{1F319}", label: "Nights", value: totalNights },
     { icon: "\u{1F3D9}\uFE0F", label: "Cities", value: uniqueCities.length },
@@ -2604,37 +2611,44 @@ function YearSection({ year, trips, currentYear, mobile, onOpen, onDuplicate, fo
       ] : [],
       ...evCount > 0 ? [
         { label: "Events", value: evCount, icon: "\u{1F39F}" },
-        ...upcomingEvCount > 0 ? [{ label: "Upcoming", value: upcomingEvCount, icon: "\u{1F5D3}" }] : [],
+        // Upcoming events intentionally excluded from summary strip
         ...evCost > 0 ? [{ label: "Event spend", value: "$" + evCost.toLocaleString("en-US", { maximumFractionDigits: 0 }), icon: "\u{1F3AB}" }] : []
       ] : []
     ];
-    return /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16, borderRadius: 12, border: "1px solid " + C.border, overflow: "hidden" } }, /* @__PURE__ */ React.createElement(
       "button",
       {
-        onClick: () => setShowStats(true),
+        onClick: () => setShowStats((s) => !s),
         style: {
-          marginTop: 16,
-          padding: "14px 18px",
-          background: C.surface2,
-          borderRadius: 12,
-          border: "1px solid " + C.border,
+          display: "flex",
+          alignItems: "center",
           width: "100%",
           textAlign: "left",
+          padding: "14px 18px",
+          background: C.surface2,
+          border: "none",
           cursor: "pointer",
-          transition: "all 0.15s"
+          transition: "background 0.15s"
         },
         onMouseEnter: (e) => {
-          e.currentTarget.style.borderColor = C.accentBdr;
           e.currentTarget.style.background = C.surface3;
         },
         onMouseLeave: (e) => {
-          e.currentTarget.style.borderColor = C.border;
           e.currentTarget.style.background = C.surface2;
         }
       },
-      /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.08em" } }, year, " at a glance"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, "See full stats \u2192")),
-      /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: mobile ? 12 : 20 } }, statItems.map((s) => /* @__PURE__ */ React.createElement("div", { key: s.label, style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14 } }, s.icon), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 16 : 18, fontWeight: 400, color: C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 } }, s.value), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 1, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" } }, s.label)))))
-    );
+      /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 } }, year, " at a glance"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: mobile ? 12 : 20 } }, statItems.map((s) => /* @__PURE__ */ React.createElement("div", { key: s.label, style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14 } }, s.icon), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 16 : 18, fontWeight: 400, color: C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 } }, s.value), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 1, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" } }, s.label)))))),
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim, marginLeft: 12, flexShrink: 0, transition: "transform 0.2s", display: "inline-block", transform: showStats ? "rotate(0deg)" : "rotate(-90deg)" } }, "\u25BE")
+    ), showStats && /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, background: C.surface, animation: "fadeSlideIn 0.2s ease" } }, /* @__PURE__ */ React.createElement(
+      YearStatsModal,
+      {
+        year,
+        trips,
+        events: yearEvents || [],
+        onClose: () => setShowStats(false),
+        inline: true
+      }
+    )));
   })(), isOpen && (wishItems || []).length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16 } }, /* @__PURE__ */ React.createElement(
     WishlistSection,
     {
@@ -2646,14 +2660,6 @@ function YearSection({ year, trips, currentYear, mobile, onOpen, onDuplicate, fo
       onUpdate: onUpdateWish,
       onDelete: onDeleteWish,
       onConvert: onConvertWish
-    }
-  )), showStats && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setShowStats(false), maxWidth: 560 }, /* @__PURE__ */ React.createElement(
-    YearStatsModal,
-    {
-      year,
-      trips,
-      events: yearEvents || [],
-      onClose: () => setShowStats(false)
     }
   )));
 }
@@ -2764,7 +2770,15 @@ function TripCard({ trip, mobile, onOpen, onDuplicate }) {
       textOverflow: "ellipsis",
       lineHeight: 1.3
     } }, c.name), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, color: C.mid, whiteSpace: "nowrap" } }, cityNights, "n"));
-  }))), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, padding: "10px " + (mobile ? "18px" : "22px"), display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, isPlanning && daysUntil !== null && daysUntil > 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 300, color: C.text, lineHeight: 1 } }, daysUntil), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "days until departure")), isPlanning && daysUntil === 1 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.accent, fontWeight: 600 } }, "\u2708 Tomorrow!"), isPlanning && daysUntil !== null && daysUntil <= 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.accent, fontWeight: 600 } }, "\u2708 Safe travels!"), isActive && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.ok, fontWeight: 600 } }, "\u{1F30D} Currently Traveling"), tripDayInfo && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, "\xB7 Day ", tripDayInfo.dayOfTrip, " of ", tripDayInfo.totalDays)), isComplete && totalCostConfirmed > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 5, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "Total Spent"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15, fontWeight: 700, color: C.ok, fontFamily: "'Cormorant Garamond', serif" } }, trip.currency || "USD", " ", totalCostConfirmed.toLocaleString("en-US", { maximumFractionDigits: 0 }))), isComplete && totalCostConfirmed === 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, "Trip complete")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexShrink: 0 } })));
+  }))), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, padding: "10px " + (mobile ? "18px" : "22px"), display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, isPlanning && daysUntil !== null && daysUntil > 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 300, color: C.text, lineHeight: 1 } }, daysUntil), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "days until departure")), isPlanning && daysUntil === 1 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.accent, fontWeight: 600 } }, "\u2708 Tomorrow!"), isPlanning && daysUntil !== null && daysUntil <= 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.accent, fontWeight: 600 } }, "\u2708 Safe travels!"), isActive && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.ok, fontWeight: 600 } }, "\u{1F30D} Currently Traveling"), tripDayInfo && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, "\xB7 Day ", tripDayInfo.dayOfTrip, " of ", tripDayInfo.totalDays)), isComplete && totalCostConfirmed > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 5, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "Total Spent"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15, fontWeight: 700, color: C.ok, fontFamily: "'Cormorant Garamond', serif" } }, trip.currency || "USD", " ", totalCostConfirmed.toLocaleString("en-US", { maximumFractionDigits: 0 }))), isComplete && totalCostConfirmed === 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, "Trip complete")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexShrink: 0 } })), isActive && (() => {
+    const todayActs = getTodayActivities(trip);
+    const remaining = todayActs.filter((a) => !a.completed);
+    if (remaining.length === 0 && todayActs.length === 0) return null;
+    return /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, padding: mobile ? "10px 18px" : "10px 22px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 } }, "Today \u2014 ", remaining.length > 0 ? remaining.length + " upcoming" : "all done \u2713"), remaining.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.ok } }, "All activities complete for today \u{1F389}") : /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 5 } }, remaining.slice(0, 3).map((a) => {
+      const meta = ACT_TYPES.find((t) => t.id === a.type) || ACT_TYPES[ACT_TYPES.length - 1];
+      return /* @__PURE__ */ React.createElement("div", { key: a.id, style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, flexShrink: 0 } }, meta.icon), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 } }, a.title || "Untitled"), a.time && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent, fontWeight: 600, flexShrink: 0 } }, a.time));
+    }), remaining.length > 3 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2 } }, "+", remaining.length - 3, " more today")));
+  })());
 }
 function DuplicateTripModal({ trip, onConfirm, onClose }) {
   const [form, setForm] = useState({
@@ -3545,7 +3559,19 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
       const stKey = ev.status;
       const st = EVENT_STATUSES.find((s) => s.id === stKey) || EVENT_STATUSES[0];
       return /* @__PURE__ */ React.createElement("div", { key: ev.id, style: { background: C.surface2, borderRadius: 12, padding: "12px 16px", border: "1px solid " + C.border, display: "flex", gap: 12, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, flexShrink: 0 } }, cat.icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, fontWeight: 500, color: C.text, marginBottom: 3 } }, ev.title), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", background: st.color + "22", border: "1px solid " + st.color + "55", borderRadius: 8, padding: "2px 7px", color: st.color } }, st.icon, " ", st.label.toUpperCase()), ev.date && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent, fontWeight: 600 } }, ev.date), ev.location && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "\u{1F4CD} ", ev.location))));
-    }))), search.trim() && visibleEvents.length > 0 && visibleTrips.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border } }), search.trim() && visibleEvents.length > 0 && visibleTrips.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: -20 } }, '\u{1F5FA}\uFE0F Trips matching "', search, '" (', visibleTrips.length, ")"), yearOrder.map((yr) => /* @__PURE__ */ React.createElement("div", { key: yr }, yearMap[yr] ? /* @__PURE__ */ React.createElement(
+    }))), search.trim() && visibleEvents.length > 0 && visibleTrips.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border } }), search.trim() && visibleEvents.length > 0 && visibleTrips.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: -20 } }, '\u{1F5FA}\uFE0F Trips matching "', search, '" (', visibleTrips.length, ")"), homeFilter === "all" && !search.trim() && generalWishItems.length > 0 && /* @__PURE__ */ React.createElement(
+      WishlistSection,
+      {
+        title: "Tentative for Future",
+        items: generalWishItems,
+        mobile,
+        defaultCollapsed: true,
+        onAdd: onAddWish,
+        onUpdate: onUpdateWish,
+        onDelete: onDeleteWish,
+        onConvert: onConvertWish
+      }
+    ), yearOrder.map((yr) => /* @__PURE__ */ React.createElement("div", { key: yr }, yearMap[yr] ? /* @__PURE__ */ React.createElement(
       YearSection,
       {
         year: yr,
