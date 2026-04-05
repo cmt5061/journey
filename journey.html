@@ -418,6 +418,14 @@ const fmtDate = (iso) => {
   if (!y || !m || !d) return iso;
   return `${m}/${d}/${y.slice(2)}`;
 };
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const fmtCardDate = (iso) => {
+  if (!iso) return "";
+  const [, m, d] = iso.split("-");
+  if (!m || !d) return iso;
+  return `${MONTHS_SHORT[parseInt(m, 10) - 1]} ${parseInt(d, 10)}`;
+};
+const fmtCardDateRange = (s, e) => s && e ? `${fmtCardDate(s)} \u2013 ${fmtCardDate(e)}` : "";
 const fmtDateRange = (s, e) => s && e ? `${fmtDate(s)} \u2013 ${fmtDate(e)}` : "";
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const fmtDow = (iso) => {
@@ -637,6 +645,28 @@ const getCurrentActivity = (allToday) => {
 };
 const JOURNEY_VERSION = "1.0";
 const CHANGELOG = [
+  {
+    version: "1.14",
+    date: "2026-04-04",
+    title: "Home Screen & UI Polish",
+    emoji: "\u2728",
+    changes: [
+      "+ New button \u2014 one button in the header opens a type picker: Trip (\u{1F4CD}), Wishlist (\u2728), or Event (\u{1F39F}). Replaces separate + Trip and \u2728 Wishlist buttons",
+      "Wishlist sections renamed \u2014 year buckets labeled Tentative for {year}, undated bucket labeled Tentative for Future",
+      "Wishlist sections sorted by target month ascending within each year group",
+      "Events and Wishlist sections use a consistent full-width collapsible header with \u25BE chevron",
+      "Events section defaults to Upcoming filter and Date Ascending sort when opened",
+      "Events section + Add button removed \u2014 use + New from the header instead",
+      "Budget filter/sort redesigned \u2014 Expense type, Payer, and Sort are now labeled pill rows instead of a mixed dropdown + pill layout",
+      "City timeline on trip cards now shows correct night counts (was off by +1 per city)",
+      "Trip card dates now display as month abbreviation + day number in gold (e.g. Aug 8 \u2013 Aug 11), no year shown",
+      "Year at a Glance PTO stat shows a plain number with no 'd' suffix",
+      "Events filter pill added to home screen alongside Wishlists \u2014 tap to see all events full-screen",
+      "Event stats (count, upcoming, spend) now appear in the Year at a Glance strip when events exist for that year",
+      "Wishlist section now appears below Year at a Glance stats instead of above trip cards",
+      "Search now includes events \u2014 matched events appear at the top of results with a dedicated header"
+    ]
+  },
   {
     version: "1.13",
     date: "2026-03-30",
@@ -2193,7 +2223,7 @@ function EventsSection({ events: events2, mobile, onAdd, onUpdate, onDelete, def
   const [draft, setDraft] = React.useState(null);
   const [editingId, setEditingId] = React.useState(null);
   const [editDraft, setEditDraft] = React.useState(null);
-  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [statusFilter, setStatusFilter] = React.useState("planning");
   const [sortBy, setSortBy] = React.useState("date-asc");
   const SORT_OPTIONS = [
     { id: "date-asc", label: "Date \u2191" },
@@ -2249,7 +2279,26 @@ function EventsSection({ events: events2, mobile, onAdd, onUpdate, onDelete, def
     const c = parseFloat((ev.cost || "").replace(/[^0-9.]/g, ""));
     if (!isNaN(c)) yearMap[yr].totalCost += c;
   });
-  return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setCollapsed((c) => !c), style: { display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", textAlign: "left", flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 20 : 24, fontWeight: 300, color: C.dim, letterSpacing: "0.02em" } }, "\u{1F39F} Events", events2.length > 0 ? " (" + events2.length + ")" : ""), /* @__PURE__ */ React.createElement("span", { style: { height: 1, flex: 1, background: C.border } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, fontWeight: 500, display: "inline-block", transition: "transform 0.2s", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", flexShrink: 0 } }, "\u25BE"))), !collapsed && /* @__PURE__ */ React.createElement("div", null, events2.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" } }, [{ id: "all", label: "All", icon: "\u{1F39F}" }, ...EVENT_STATUSES].map((s) => /* @__PURE__ */ React.createElement("button", { key: s.id, onClick: () => setStatusFilter(s.id), style: {
+  return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 28 } }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setCollapsed((c) => !c),
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        padding: "0 0 12px 0",
+        width: "100%",
+        textAlign: "left"
+      }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 20 : 24, fontWeight: 300, color: C.dim, letterSpacing: "0.02em" } }, "\u{1F39F} Events", events2.length > 0 ? " (" + events2.length + ")" : ""),
+    /* @__PURE__ */ React.createElement("span", { style: { height: 1, flex: 1, background: C.border } }),
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim, fontWeight: 500, display: "inline-block", transition: "transform 0.2s", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", flexShrink: 0 } }, "\u25BE")
+  ), !collapsed && /* @__PURE__ */ React.createElement("div", null, events2.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" } }, [{ id: "all", label: "All", icon: "\u{1F39F}" }, ...EVENT_STATUSES].map((s) => /* @__PURE__ */ React.createElement("button", { key: s.id, onClick: () => setStatusFilter(s.id), style: {
     background: statusFilter === s.id ? C.accentBg : C.surface2,
     border: "1px solid " + (statusFilter === s.id ? C.accentBdr : C.border),
     borderRadius: 20,
@@ -2362,10 +2411,50 @@ function WishlistSection({ title, items, mobile, onAdd, onUpdate, onDelete, onCo
     setEditingId(null);
     setEditDraft(null);
   };
-  return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setCollapsed((c) => !c), style: { display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", textAlign: "left", flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 20 : 24, fontWeight: 300, color: C.dim, letterSpacing: "0.02em" } }, title, items.length > 0 ? " (" + items.length + ")" : ""), /* @__PURE__ */ React.createElement("span", { style: { height: 1, flex: 1, background: C.border } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, fontWeight: 500, display: "inline-block", transition: "transform 0.2s", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", flexShrink: 0 } }, "\u25BE"))), !collapsed && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, addingNew && draft && /* @__PURE__ */ React.createElement(WishForm, { d: draft, setD: setDraft, onSave: saveAdd, onCancel: () => {
+  const sortedItems = (items || []).slice().sort((a, b) => {
+    const ai = WISH_MONTHS.indexOf(a.targetMonth);
+    const bi = WISH_MONTHS.indexOf(b.targetMonth);
+    const aIdx = ai === -1 ? 99 : ai;
+    const bIdx = bi === -1 ? 99 : bi;
+    return aIdx - bIdx;
+  });
+  return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setCollapsed((c) => !c),
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        padding: "0 0 12px 0",
+        width: "100%",
+        textAlign: "left"
+      }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: {
+      fontFamily: "'Cormorant Garamond', serif",
+      fontSize: mobile ? 20 : 24,
+      fontWeight: 300,
+      color: C.dim,
+      letterSpacing: "0.02em"
+    } }, "\u2728 ", title, items.length > 0 ? " (" + items.length + ")" : ""),
+    /* @__PURE__ */ React.createElement("span", { style: { height: 1, flex: 1, background: C.border } }),
+    /* @__PURE__ */ React.createElement("span", { style: {
+      fontSize: 12,
+      color: C.dim,
+      fontWeight: 500,
+      display: "inline-block",
+      transition: "transform 0.2s",
+      transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
+      flexShrink: 0
+    } }, "\u25BE")
+  ), !collapsed && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, addingNew && draft && /* @__PURE__ */ React.createElement(WishForm, { d: draft, setD: setDraft, onSave: saveAdd, onCancel: () => {
     setAddingNew(false);
     setDraft(null);
-  }, saveLabel: "Add to Wishlist" }), items.length === 0 && !addingNew && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, paddingLeft: 2, fontStyle: "italic" } }, "No wishlist items yet \u2014 tap + Add to dream up a trip."), items.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id }, editingId === item.id && editDraft ? /* @__PURE__ */ React.createElement(WishForm, { d: editDraft, setD: setEditDraft, onSave: saveEdit, onCancel: () => {
+  }, saveLabel: "Add to Wishlist" }), items.length === 0 && !addingNew && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.dim, paddingLeft: 2, fontStyle: "italic" } }, "No wishlist items yet \u2014 tap + Add to dream up a trip."), sortedItems.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id }, editingId === item.id && editDraft ? /* @__PURE__ */ React.createElement(WishForm, { d: editDraft, setD: setEditDraft, onSave: saveEdit, onCancel: () => {
     setEditingId(null);
     setEditDraft(null);
   }, saveLabel: "Save", onDelete: () => {
@@ -2452,7 +2541,7 @@ function YearSection({ year, trips, currentYear, mobile, onOpen, onDuplicate, fo
         { label: "Trips", value: yearStats.tripCount, icon: "\u{1F5FA}\uFE0F" },
         { label: "Nights", value: yearStats.totalNights, icon: "\u{1F319}" },
         { label: "Cities", value: yearStats.uniqueCities, icon: "\u{1F3D9}\uFE0F" },
-        ...yearStats.totalPTO > 0 ? [{ label: "PTO used", value: yearStats.totalPTO + "d", icon: "\u{1F4C5}" }] : [],
+        ...yearStats.totalPTO > 0 ? [{ label: "PTO used", value: yearStats.totalPTO, icon: "\u{1F4C5}" }] : [],
         ...yearStats.totalSpent > 0 ? [{ label: "Travel spend", value: yearStats.currency + " " + yearStats.totalSpent.toLocaleString("en-US", { maximumFractionDigits: 0 }), icon: "\u{1F4B0}" }] : []
       ] : [],
       ...evCount > 0 ? [
@@ -2465,7 +2554,7 @@ function YearSection({ year, trips, currentYear, mobile, onOpen, onDuplicate, fo
   })(), isOpen && (wishItems || []).length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16 } }, /* @__PURE__ */ React.createElement(
     WishlistSection,
     {
-      title: year + " Wishlist",
+      title: "Tentative for " + year,
       items: wishItems,
       mobile,
       defaultCollapsed: true,
@@ -2539,7 +2628,7 @@ function TripCard({ trip, mobile, onOpen, onDuplicate }) {
     display: "-webkit-box",
     WebkitLineClamp: 2,
     WebkitBoxOrient: "vertical"
-  } }, trip.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid, marginTop: "auto", paddingTop: 4 } }, fmtDateRange(trip.startDate, trip.endDate))), !imgErr && /* @__PURE__ */ React.createElement("div", { style: { width: heroW, flexShrink: 0, position: "relative", overflow: "hidden" } }, !imgOk && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: heroFallback } }), /* @__PURE__ */ React.createElement(
+  } }, trip.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.accent, fontWeight: 600, marginTop: "auto", paddingTop: 4 } }, fmtCardDateRange(trip.startDate, trip.endDate))), !imgErr && /* @__PURE__ */ React.createElement("div", { style: { width: heroW, flexShrink: 0, position: "relative", overflow: "hidden" } }, !imgOk && /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: heroFallback } }), /* @__PURE__ */ React.createElement(
     "img",
     {
       src: heroSrc,
@@ -2549,7 +2638,7 @@ function TripCard({ trip, mobile, onOpen, onDuplicate }) {
       style: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", opacity: imgOk ? 0.82 : 0, transition: "opacity 0.5s", zIndex: 1 }
     }
   ), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: 0, left: 0, bottom: 0, width: 44, background: "linear-gradient(to right, " + C.surface + ", transparent)", zIndex: 4, pointerEvents: "none" } }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", padding: "0 " + (mobile ? "18px" : "22px") + " 10px" } }, totalNights > 0 && /* @__PURE__ */ React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 4, background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, padding: "3px 9px", fontSize: 11, color: C.mid } }, "\u{1F4C5} ", totalNights, " nights"), trip.ptoDays && /* @__PURE__ */ React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.22)", borderRadius: 8, padding: "3px 9px", fontSize: 11, color: C.purple } }, "\u{1F3E2} ", trip.ptoDays, " PTO days")), trip.cities.length > 0 && totalNights > 0 && /* @__PURE__ */ React.createElement("div", { style: { margin: "0 " + (mobile ? "18px" : "22px") + " 10px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", height: 6, borderRadius: 4, overflow: "hidden", gap: 1, marginBottom: 6 } }, trip.cities.map((c, i) => {
-    const cityNights = Math.max(1, c.nights || 1);
+    const cityNights = Math.max(1, (c.nights || 1) - 1);
     return /* @__PURE__ */ React.createElement("div", { key: c.id, style: {
       flex: cityNights,
       background: CITY_PALETTE[i % CITY_PALETTE.length],
@@ -2558,7 +2647,7 @@ function TripCard({ trip, mobile, onOpen, onDuplicate }) {
       minWidth: 4
     } });
   })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 1, overflow: "hidden" } }, trip.cities.map((c, i) => {
-    const cityNights = Math.max(1, c.nights || 1);
+    const cityNights = Math.max(1, (c.nights || 1) - 1);
     const color = CITY_PALETTE[i % CITY_PALETTE.length];
     return /* @__PURE__ */ React.createElement("div", { key: c.id, style: {
       flex: cityNights,
@@ -3261,7 +3350,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
         WishlistSection,
         {
           key: yr,
-          title: yr + " Wishlist",
+          title: "Tentative for " + yr,
           items: wishByYear[yr],
           mobile,
           defaultCollapsed: false,
@@ -3273,7 +3362,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
       )), generalWishItems.length > 0 && /* @__PURE__ */ React.createElement(
         WishlistSection,
         {
-          title: "\u2728 Trip Wishlist",
+          title: "Tentative for Future",
           items: generalWishItems,
           mobile,
           defaultCollapsed: false,
@@ -3330,7 +3419,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     if (yearOrder.length === 0 && visibleEvents.length === 0 && (homeFilter === "year" || generalWishItems.length === 0)) return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0 32px", color: C.dim } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, search ? "\u{1F50D}" : "\u{1F5FA}\uFE0F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 18, marginBottom: 8 } }, search ? `No trips match "${search}"` : homeFilter === "year" ? `No trips in ${currentYear}.` : "No trips yet."), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 14 } }, search ? "Try a different search term." : homeFilter === "year" ? "Switch to All Years or create a new trip." : "Create your first trip to get started.")), allWishItems.length > 0 && homeFilter !== "year" && /* @__PURE__ */ React.createElement(
       WishlistSection,
       {
-        title: "\u2728 Trip Wishlist",
+        title: "Tentative for Future",
         items: allWishItems,
         mobile,
         defaultCollapsed: true,
@@ -3377,7 +3466,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     })(), wishByYear[yr] && wishByYear[yr].length > 0 && /* @__PURE__ */ React.createElement(
       WishlistSection,
       {
-        title: yr + " Wishlist",
+        title: "Tentative for " + yr,
         items: wishByYear[yr],
         mobile,
         defaultCollapsed: true,
@@ -3389,7 +3478,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     )))), generalWishItems.length > 0 && homeFilter !== "year" && /* @__PURE__ */ React.createElement(
       WishlistSection,
       {
-        title: "\u2728 Trip Wishlist",
+        title: "Tentative for Future",
         items: generalWishItems,
         mobile,
         defaultCollapsed: true,
