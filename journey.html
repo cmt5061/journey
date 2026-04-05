@@ -1433,7 +1433,7 @@ const SAMPLE_TRIPS = [
     currency: "USD",
     ptoDays: 14,
     status: "active",
-    travelers: ["Alex", "Jamie"],
+    travelers: ["Bill", "Ted"],
     tripNotes: "Focus on food, architecture, and slow mornings.",
     multiCurrency: true,
     localCurrency: "EUR",
@@ -1654,7 +1654,7 @@ const SAMPLE_TRIPS = [
     currency: "USD",
     ptoDays: 8,
     status: "planning",
-    travelers: ["Alex", "Jamie"],
+    travelers: ["Bill", "Ted"],
     tripNotes: "Ring Road route. Rent a 4WD. Midnight sun \u2014 bring an eye mask.",
     cities: [
       {
@@ -1727,7 +1727,7 @@ const SAMPLE_TRIPS = [
     currency: "USD",
     ptoDays: 9,
     status: "complete",
-    travelers: ["Alex", "Jamie"],
+    travelers: ["Bill", "Ted"],
     tripNotes: "Best trip of our lives. Cherry blossoms peaked on Day 3 in Kyoto \u2014 absolutely perfect timing.",
     cities: [
       {
@@ -1847,7 +1847,7 @@ const SAMPLE_TRIPS = [
     currency: "USD",
     ptoDays: 10,
     status: "planning",
-    travelers: ["Alex", "Jamie"],
+    travelers: ["Bill", "Ted"],
     tripNotes: "Southern summer (Feb = austral summer). Wind is extreme in Torres del Paine \u2014 pack accordingly.",
     cities: [
       {
@@ -1956,12 +1956,12 @@ function Tag({ children, color = C.accent, bg }) {
 function Field({ label, hint, children }) {
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 5 } }, label && /* @__PURE__ */ React.createElement("label", { style: { fontSize: 12, color: C.mid, fontWeight: 500, letterSpacing: "0.02em" } }, label), children, hint && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, hint));
 }
-function Input({ label, hint, value, onChange, placeholder, type = "text", style: sx, onBlur }) {
+function Input({ label, hint, value, onChange, placeholder, type = "text", inputMode, style: sx, onBlur }) {
   return /* @__PURE__ */ React.createElement(Field, { label, hint }, /* @__PURE__ */ React.createElement(
     "input",
     {
       type,
-      inputMode: type === "number" ? "decimal" : void 0,
+      inputMode: inputMode || (type === "number" ? "decimal" : void 0),
       value,
       onChange: (e) => onChange(e.target.value),
       onBlur,
@@ -2205,8 +2205,8 @@ const EVENT_CATEGORIES = [
   { id: "other", label: "Other", icon: "\u{1F4CC}" }
 ];
 function EventForm({ d, setD, onSave, onCancel, onDelete, saveLabel }) {
-  const currentYear = (/* @__PURE__ */ new Date()).getFullYear();
-  return /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: "14px 16px", border: "1px solid " + C.accentBdr, display: "grid", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Event Title", value: d.title, onChange: (v) => setD((x) => ({ ...x, title: v })), placeholder: "e.g., Taylor Swift \u2013 Eras Tour" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 5 } }, "Category"), /* @__PURE__ */ React.createElement("select", { value: d.category, onChange: (e) => setD((x) => ({ ...x, category: e.target.value })), style: { width: "100%" } }, EVENT_CATEGORIES.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, c.icon, " ", c.label)))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 5 } }, "Status"), /* @__PURE__ */ React.createElement("select", { value: d.status, onChange: (e) => setD((x) => ({ ...x, status: e.target.value })), style: { width: "100%" } }, EVENT_STATUSES.map((s) => /* @__PURE__ */ React.createElement("option", { key: s.id, value: s.id }, s.icon, " ", s.label))))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Date", type: "date", value: d.date, onChange: (v) => setD((x) => ({ ...x, date: v, year: v ? v.slice(0, 4) : x.year })) }), /* @__PURE__ */ React.createElement(Input, { label: "Location / Venue", value: d.location, onChange: (v) => setD((x) => ({ ...x, location: v })), placeholder: "e.g., Madison Square Garden, NYC" })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Cost (optional)", value: d.cost, onChange: (v) => setD((x) => ({ ...x, cost: v })), placeholder: "e.g., $120", type: "text", inputMode: "decimal" }), /* @__PURE__ */ React.createElement(Input, { label: "Tickets / URL", value: d.url, onChange: (v) => setD((x) => ({ ...x, url: v })), placeholder: "https://..." })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 5 } }, "Notes"), /* @__PURE__ */ React.createElement(
+  const mobile = useMobile();
+  return /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: "14px 16px", border: "1px solid " + C.accentBdr, display: "grid", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Event Title", value: d.title, onChange: (v) => setD((x) => ({ ...x, title: v })), placeholder: "e.g., Taylor Swift \u2013 Eras Tour" }), /* @__PURE__ */ React.createElement(Field, { label: "Category" }, /* @__PURE__ */ React.createElement("select", { value: d.category, onChange: (e) => setD((x) => ({ ...x, category: e.target.value })), style: { width: "100%" } }, EVENT_CATEGORIES.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, c.icon, " ", c.label)))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Date", type: "date", value: d.date, onChange: (v) => setD((x) => ({ ...x, date: v, year: v ? v.slice(0, 4) : x.year })), style: { width: "100%", maxWidth: "100%", boxSizing: "border-box" } }), /* @__PURE__ */ React.createElement(Input, { label: "Location / Venue", value: d.location, onChange: (v) => setD((x) => ({ ...x, location: v })), placeholder: "e.g., Madison Square Garden, NYC" })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Cost (optional)", value: d.cost, onChange: (v) => setD((x) => ({ ...x, cost: v })), placeholder: "e.g., $120", type: "text", inputMode: "decimal" }), /* @__PURE__ */ React.createElement(Input, { label: "Tickets / URL", value: d.url, onChange: (v) => setD((x) => ({ ...x, url: v })), placeholder: "https://..." })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 5 } }, "Notes"), /* @__PURE__ */ React.createElement(
     "textarea",
     {
       value: d.notes,
@@ -2372,7 +2372,7 @@ function WishForm({ d, setD, onSave, onCancel, saveLabel, onDelete }) {
   const currentYear = (/* @__PURE__ */ new Date()).getFullYear();
   const yearOptions = [""];
   for (var yi = currentYear; yi <= currentYear + 10; yi++) yearOptions.push(String(yi));
-  return /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: "14px 16px", border: "1px solid " + C.accentBdr, display: "grid", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Location / Destination", value: d.location, onChange: (v) => setD((x) => ({ ...x, location: v })), placeholder: "e.g., Japan, Patagonia, Iceland" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Year"), /* @__PURE__ */ React.createElement("select", { value: d.year || "", onChange: (e) => setD((x) => ({ ...x, year: e.target.value })), style: { width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Any"), yearOptions.filter((y) => y !== "").map((y) => /* @__PURE__ */ React.createElement("option", { key: y, value: y }, y)))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Target Month"), /* @__PURE__ */ React.createElement("select", { value: d.targetMonth, onChange: (e) => setD((x) => ({ ...x, targetMonth: e.target.value })), style: { width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Any"), WISH_MONTHS.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m)))), /* @__PURE__ */ React.createElement(Input, { label: "Est. PTO Days", type: "number", value: d.ptoDays, onChange: (v) => setD((x) => ({ ...x, ptoDays: v })), placeholder: "e.g., 7" })), /* @__PURE__ */ React.createElement(Input, { label: "Notes", value: d.notes, onChange: (v) => setD((x) => ({ ...x, notes: v })), placeholder: "Ideas, must-dos, travel style\u2026" }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onSave, disabled: !(d.location || "").trim() }, saveLabel || "Add"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: onCancel }, "Cancel"), onDelete && /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: onDelete }, "Delete")));
+  return /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 12, padding: "14px 16px", border: "1px solid " + C.accentBdr, display: "grid", gap: 10 } }, /* @__PURE__ */ React.createElement(Input, { label: "Location / Destination", value: d.location, onChange: (v) => setD((x) => ({ ...x, location: v })), placeholder: "e.g., Japan, Patagonia, Iceland" }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Year"), /* @__PURE__ */ React.createElement("select", { value: d.year || "", onChange: (e) => setD((x) => ({ ...x, year: e.target.value })), style: { width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Any"), yearOptions.filter((y) => y !== "").map((y) => /* @__PURE__ */ React.createElement("option", { key: y, value: y }, y)))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 } }, "Month"), /* @__PURE__ */ React.createElement("select", { value: d.targetMonth, onChange: (e) => setD((x) => ({ ...x, targetMonth: e.target.value })), style: { width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Any"), WISH_MONTHS.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m)))), /* @__PURE__ */ React.createElement(Input, { label: "PTO", type: "number", value: d.ptoDays, onChange: (v) => setD((x) => ({ ...x, ptoDays: v })), placeholder: "e.g., 7" })), /* @__PURE__ */ React.createElement(Input, { label: "Notes", value: d.notes, onChange: (v) => setD((x) => ({ ...x, notes: v })), placeholder: "Ideas, must-dos, travel style\u2026" }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onSave, disabled: !(d.location || "").trim() }, saveLabel || "Add"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: onCancel }, "Cancel"), onDelete && /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: onDelete }, "Delete")));
 }
 function WishlistSection({ title, items, mobile, onAdd, onUpdate, onDelete, onConvert, defaultCollapsed }) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
@@ -2469,9 +2469,77 @@ function WishlistSection({ title, items, mobile, onAdd, onUpdate, onDelete, onCo
     "\u270F\uFE0F"
   )))))));
 }
+function YearStatsModal({ year, trips, events: events2, onClose }) {
+  const mobile = useMobile();
+  const todayStr = today();
+  const allActs = trips.flatMap((t) => getAllActivities(t));
+  const completedTrips = trips.filter((t) => t.status === "complete");
+  const planningTrips = trips.filter((t) => t.status === "planning");
+  const activeTrips = trips.filter((t) => t.status === "active");
+  const totalNights = trips.reduce((s, t) => s + t.cities.reduce((cs, c) => cs + Math.max(0, (c.nights || 1) - 1), 0), 0);
+  const totalPTO = trips.reduce((s, t) => s + (parseFloat(t.ptoDays) || 0), 0);
+  const currency = (trips.find((t) => t.currency) || {}).currency || "USD";
+  const totalSpent = completedTrips.reduce((s, t) => {
+    return s + getAllActivities(t).reduce((as, a) => as + parseFloat(a.cost && a.cost.amount || 0), 0) + (t.budgetItems || []).filter((b) => b.paidBy !== "comp").reduce((bs, b) => bs + parseFloat(b.amount || 0), 0);
+  }, 0);
+  const allCities = trips.flatMap((t) => t.cities.map((c) => c.name));
+  const uniqueCities = [...new Set(allCities)];
+  const cityNightMap = {};
+  trips.forEach((t) => t.cities.forEach((c) => {
+    cityNightMap[c.name] = (cityNightMap[c.name] || 0) + Math.max(0, (c.nights || 1) - 1);
+  }));
+  const topCities = Object.entries(cityNightMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const catSpend = {};
+  allActs.forEach((a) => {
+    const cat = a.cost && a.cost.category || "Other";
+    const amt = parseFloat(a.cost && a.cost.amount || 0);
+    if (!isNaN(amt) && amt > 0) catSpend[cat] = (catSpend[cat] || 0) + amt;
+  });
+  completedTrips.forEach((t) => (t.budgetItems || []).forEach((b) => {
+    if (b.paidBy === "comp") return;
+    const amt = parseFloat(b.amount || 0);
+    if (!isNaN(amt) && amt > 0) catSpend[b.category || "Other"] = (catSpend[b.category || "Other"] || 0) + amt;
+  }));
+  const catEntries = Object.entries(catSpend).sort((a, b) => b[1] - a[1]);
+  const maxCat = catEntries[0] ? catEntries[0][1] : 1;
+  const typeCount = {};
+  allActs.forEach((a) => {
+    typeCount[a.type] = (typeCount[a.type] || 0) + 1;
+  });
+  const topTypes = Object.entries(typeCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const evs = events2 || [];
+  const evCost = evs.reduce((s, ev) => {
+    const c = parseFloat((ev.cost || "").replace(/[^0-9.]/g, ""));
+    return s + (isNaN(c) ? 0 : c);
+  }, 0);
+  const pastEvs = evs.filter((ev) => ev.date && ev.date < todayStr);
+  const upcomingEvs = evs.filter((ev) => !ev.date || ev.date >= todayStr);
+  const fmtMoney = (n) => currency + " " + n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const CAT_COLORS_MAP = { Food: "#e07858", Transport: "#4e9478", Lodging: "#4e7fa6", Activities: "#d4a853", Shopping: "#a78bfa", Other: "#8c91ae" };
+  const Section = ({ title, children }) => /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 12 } }, title), children);
+  const StatRow = ({ icon, label, value, sub, color }) => /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid } }, label), sub && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim } }, sub)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 17 : 20, fontWeight: 400, color: color || C.text, fontFamily: "'Cormorant Garamond', serif" } }, value));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", maxHeight: mobile ? "93vh" : "88vh" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "20px 20px 16px" : "26px 28px 18px", borderBottom: "1px solid " + C.border, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 32 : 42, fontWeight: 300, color: C.text, lineHeight: 1 } }, year), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.mid, marginTop: 4 } }, trips.length, " trip", trips.length !== 1 ? "s" : "", " \xB7 ", totalNights, " nights \xB7 ", uniqueCities.length, " cit", uniqueCities.length !== 1 ? "ies" : "y")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", padding: "2px 0 0 12px" } }, "\xD7"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "18px 20px" : "22px 28px" } }, /* @__PURE__ */ React.createElement(Section, { title: "Overview" }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 4 } }, [
+    { icon: "\u{1F5FA}\uFE0F", label: "Trips", value: trips.length },
+    { icon: "\u{1F319}", label: "Nights", value: totalNights },
+    { icon: "\u{1F3D9}\uFE0F", label: "Cities", value: uniqueCities.length },
+    ...totalPTO > 0 ? [{ icon: "\u{1F4C5}", label: "PTO used", value: totalPTO }] : [],
+    ...completedTrips.length > 0 ? [{ icon: "\u2705", label: "Completed", value: completedTrips.length }] : [],
+    ...planningTrips.length > 0 ? [{ icon: "\u{1F5D3}", label: "Upcoming", value: planningTrips.length }] : []
+  ].map((s) => /* @__PURE__ */ React.createElement("div", { key: s.label, style: { background: C.surface2, borderRadius: 12, padding: "14px 12px", textAlign: "center", border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20 } }, s.icon), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 22 : 28, fontWeight: 300, color: C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1.1, marginTop: 4 } }, s.value), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 } }, s.label))))), totalSpent > 0 && /* @__PURE__ */ React.createElement(Section, { title: "Budget" }, /* @__PURE__ */ React.createElement(StatRow, { icon: "\u{1F4B0}", label: "Total travel spend", value: fmtMoney(totalSpent), color: C.accent }), completedTrips.length > 1 && /* @__PURE__ */ React.createElement(StatRow, { icon: "\u{1F4CA}", label: "Avg per trip", value: fmtMoney(totalSpent / completedTrips.length) }), totalNights > 0 && /* @__PURE__ */ React.createElement(StatRow, { icon: "\u{1F319}", label: "Avg per night", value: fmtMoney(totalSpent / totalNights) }), catEntries.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginBottom: 8 } }, "Spend by category"), catEntries.map(([cat, amt]) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { marginBottom: 7 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 3 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, cat), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: CAT_COLORS_MAP[cat] || C.mid, fontWeight: 600 } }, fmtMoney(amt))), /* @__PURE__ */ React.createElement("div", { style: { height: 4, background: C.surface3, borderRadius: 2 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: amt / maxCat * 100 + "%", background: CAT_COLORS_MAP[cat] || C.accent, borderRadius: 2, transition: "width 0.6s ease" } })))))), topCities.length > 0 && /* @__PURE__ */ React.createElement(Section, { title: "Destinations" }, topCities.map(([city, nights], i) => /* @__PURE__ */ React.createElement("div", { key: city, style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { width: 22, height: 22, borderRadius: "50%", background: CITY_PALETTE[i % CITY_PALETTE.length] + "33", border: "1.5px solid " + CITY_PALETTE[i % CITY_PALETTE.length], display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, fontWeight: 700, color: CITY_PALETTE[i % CITY_PALETTE.length] } }, i + 1)), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontSize: 14, color: C.text } }, city), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, nights, " night", nights !== 1 ? "s" : ""))), uniqueCities.length > 5 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim, marginTop: 8, fontStyle: "italic" } }, "+", uniqueCities.length - 5, " more cities")), topTypes.length > 0 && allActs.length > 0 && /* @__PURE__ */ React.createElement(Section, { title: "Activities \u2014 " + allActs.length + " total" }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, topTypes.map(([type, count]) => {
+    const meta = ACT_TYPES.find((a) => a.id === type) || { icon: "\u{1F4CC}", label: type };
+    return /* @__PURE__ */ React.createElement("div", { key: type, style: { display: "flex", alignItems: "center", gap: 6, background: C.surface2, border: "1px solid " + C.border, borderRadius: 20, padding: "5px 12px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, meta.icon), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, meta.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: C.text } }, count));
+  }))), evs.length > 0 && /* @__PURE__ */ React.createElement(Section, { title: "Events" }, /* @__PURE__ */ React.createElement(StatRow, { icon: "\u{1F39F}", label: "Total events", value: evs.length }), upcomingEvs.length > 0 && /* @__PURE__ */ React.createElement(StatRow, { icon: "\u{1F5D3}", label: "Upcoming", value: upcomingEvs.length, color: C.accent }), pastEvs.length > 0 && /* @__PURE__ */ React.createElement(StatRow, { icon: "\u2705", label: "Attended", value: pastEvs.length }), evCost > 0 && /* @__PURE__ */ React.createElement(StatRow, { icon: "\u{1F4B3}", label: "Event spend", value: "$" + evCost.toLocaleString("en-US", { maximumFractionDigits: 0 }) }), upcomingEvs.slice(0, 3).map((ev) => {
+    const cat = EVENT_CATEGORIES.find((c) => c.id === ev.category) || EVENT_CATEGORIES[EVENT_CATEGORIES.length - 1];
+    return /* @__PURE__ */ React.createElement("div", { key: ev.id, style: { display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, cat.icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, ev.title), ev.date && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.accent } }, fmtCardDate(ev.date))));
+  })), /* @__PURE__ */ React.createElement(Section, { title: "Trips this year" }, trips.map((t) => {
+    const sm = STATUS_META[t.status];
+    return /* @__PURE__ */ React.createElement("div", { key: t.id, style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, background: sm.color + "22", border: "1px solid " + sm.color + "55", borderRadius: 8, padding: "2px 7px", color: sm.color, fontWeight: 700, letterSpacing: "0.05em", flexShrink: 0 } }, sm.label.toUpperCase()), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontSize: 14, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, t.title), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent, fontWeight: 600, flexShrink: 0 } }, fmtCardDate(t.startDate)));
+  }))));
+}
 function YearSection({ year, trips, currentYear, mobile, onOpen, onDuplicate, forceOpen, wishItems, onAddWish, onUpdateWish, onDeleteWish, onConvertWish, yearEvents }) {
   const isCurrent = year === currentYear;
   const [collapsed, setCollapsed] = useState(!isCurrent);
+  const [showStats, setShowStats] = useState(false);
   const isOpen = forceOpen || !collapsed;
   const yearStats = (() => {
     const nonPlanning = trips.filter((t) => t.status !== "planning");
@@ -2540,7 +2608,33 @@ function YearSection({ year, trips, currentYear, mobile, onOpen, onDuplicate, fo
         ...evCost > 0 ? [{ label: "Event spend", value: "$" + evCost.toLocaleString("en-US", { maximumFractionDigits: 0 }), icon: "\u{1F3AB}" }] : []
       ] : []
     ];
-    return /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16, padding: "14px 18px", background: C.surface2, borderRadius: 12, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 } }, year, " at a glance"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: mobile ? 12 : 20 } }, statItems.map((s) => /* @__PURE__ */ React.createElement("div", { key: s.label, style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14 } }, s.icon), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 16 : 18, fontWeight: 400, color: C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 } }, s.value), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 1, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" } }, s.label))))));
+    return /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setShowStats(true),
+        style: {
+          marginTop: 16,
+          padding: "14px 18px",
+          background: C.surface2,
+          borderRadius: 12,
+          border: "1px solid " + C.border,
+          width: "100%",
+          textAlign: "left",
+          cursor: "pointer",
+          transition: "all 0.15s"
+        },
+        onMouseEnter: (e) => {
+          e.currentTarget.style.borderColor = C.accentBdr;
+          e.currentTarget.style.background = C.surface3;
+        },
+        onMouseLeave: (e) => {
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.background = C.surface2;
+        }
+      },
+      /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.08em" } }, year, " at a glance"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim } }, "See full stats \u2192")),
+      /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: mobile ? 12 : 20 } }, statItems.map((s) => /* @__PURE__ */ React.createElement("div", { key: s.label, style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14 } }, s.icon), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 16 : 18, fontWeight: 400, color: C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 } }, s.value), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 1, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" } }, s.label)))))
+    );
   })(), isOpen && (wishItems || []).length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16 } }, /* @__PURE__ */ React.createElement(
     WishlistSection,
     {
@@ -2552,6 +2646,14 @@ function YearSection({ year, trips, currentYear, mobile, onOpen, onDuplicate, fo
       onUpdate: onUpdateWish,
       onDelete: onDeleteWish,
       onConvert: onConvertWish
+    }
+  )), showStats && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setShowStats(false), maxWidth: 560 }, /* @__PURE__ */ React.createElement(
+    YearStatsModal,
+    {
+      year,
+      trips,
+      events: yearEvents || [],
+      onClose: () => setShowStats(false)
     }
   )));
 }
@@ -2570,6 +2672,14 @@ function TripCard({ trip, mobile, onOpen, onDuplicate }) {
     if (!trip.startDate) return null;
     const ms = /* @__PURE__ */ new Date(trip.startDate + "T12:00:00Z") - /* @__PURE__ */ new Date();
     return Math.ceil(ms / 864e5);
+  })();
+  const tripDayInfo = (() => {
+    if (!isActive || !trip.startDate) return null;
+    const start = /* @__PURE__ */ new Date(trip.startDate + "T12:00:00Z");
+    const now = /* @__PURE__ */ new Date();
+    const dayOfTrip = Math.max(1, Math.floor((now - start) / 864e5) + 1);
+    const totalDays = totalNights + 1;
+    return { dayOfTrip: Math.min(dayOfTrip, totalDays), totalDays };
   })();
   let totalCostConfirmed = 0;
   if (isComplete) {
@@ -2654,31 +2764,7 @@ function TripCard({ trip, mobile, onOpen, onDuplicate }) {
       textOverflow: "ellipsis",
       lineHeight: 1.3
     } }, c.name), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, color: C.mid, whiteSpace: "nowrap" } }, cityNights, "n"));
-  }))), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, padding: "10px " + (mobile ? "18px" : "22px"), display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, isPlanning && daysUntil !== null && daysUntil > 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 300, color: C.text, lineHeight: 1 } }, daysUntil), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "days until departure")), isPlanning && daysUntil === 1 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.accent, fontWeight: 600 } }, "\u2708 Tomorrow!"), isPlanning && daysUntil !== null && daysUntil <= 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.accent, fontWeight: 600 } }, "\u2708 Safe travels!"), isActive && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.ok, fontWeight: 600 } }, "\u{1F30D} Currently traveling"), isComplete && totalCostConfirmed > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 5, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "Total Spent"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15, fontWeight: 700, color: C.ok, fontFamily: "'Cormorant Garamond', serif" } }, trip.currency || "USD", " ", totalCostConfirmed.toLocaleString("en-US", { maximumFractionDigits: 0 }))), isComplete && totalCostConfirmed === 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, "Trip complete")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexShrink: 0 } }, isActive && /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: (e) => {
-        e.stopPropagation();
-        onOpen(trip.id);
-      },
-      style: {
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        background: C.ok,
-        border: "1px solid " + C.okBdr,
-        borderRadius: 20,
-        padding: mobile ? "7px 14px" : "8px 18px",
-        fontSize: 12,
-        fontWeight: 600,
-        color: "#0c0e16",
-        cursor: "pointer",
-        whiteSpace: "nowrap",
-        transition: "all 0.15s"
-      }
-    },
-    "\u{1F9ED} Travel Mode \u2192"
-  ))));
+  }))), /* @__PURE__ */ React.createElement("div", { style: { borderTop: "1px solid " + C.border, padding: "10px " + (mobile ? "18px" : "22px"), display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, isPlanning && daysUntil !== null && daysUntil > 1 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 300, color: C.text, lineHeight: 1 } }, daysUntil), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "days until departure")), isPlanning && daysUntil === 1 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.accent, fontWeight: 600 } }, "\u2708 Tomorrow!"), isPlanning && daysUntil !== null && daysUntil <= 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.accent, fontWeight: 600 } }, "\u2708 Safe travels!"), isActive && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.ok, fontWeight: 600 } }, "\u{1F30D} Currently Traveling"), tripDayInfo && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, "\xB7 Day ", tripDayInfo.dayOfTrip, " of ", tripDayInfo.totalDays)), isComplete && totalCostConfirmed > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 5, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid } }, "Total Spent"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15, fontWeight: 700, color: C.ok, fontFamily: "'Cormorant Garamond', serif" } }, trip.currency || "USD", " ", totalCostConfirmed.toLocaleString("en-US", { maximumFractionDigits: 0 }))), isComplete && totalCostConfirmed === 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, "Trip complete")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexShrink: 0 } })));
 }
 function DuplicateTripModal({ trip, onConfirm, onClose }) {
   const [form, setForm] = useState({
@@ -2883,7 +2969,7 @@ const TP_PRESETS = [
   { label: "Air Canada Aeroplan", category: "airline" }
 ];
 const migrateTravelProfile = (profile) => {
-  if (!profile) return { travelers: [{ name: "Cory", items: [] }, { name: "Natalie", items: [] }] };
+  if (!profile) return { travelers: [{ name: "Bill", items: [] }, { name: "Ted", items: [] }] };
   if (profile.travelers) return profile;
   const items = [];
   const push = (label, value, category) => {
@@ -2897,13 +2983,13 @@ const migrateTravelProfile = (profile) => {
     if (p.name || p.number) items.push({ id: uid(), label: p.name || "Program", value: p.number || "", category: "airline" });
   });
   if (profile.notes && profile.notes.trim()) items.push({ id: uid(), label: "Notes", value: profile.notes.trim(), category: "other" });
-  return { travelers: [{ name: "Cory", items }, { name: "Natalie", items: [] }] };
+  return { travelers: [{ name: "Bill", items }, { name: "Ted", items: [] }] };
 };
 function TravelProfileModal({ profile, onSave, onClose, travelers: tripTravelers }) {
   const mobile = useMobile();
   const normalized = migrateTravelProfile(profile);
   const initTravelers = (() => {
-    const names = tripTravelers && tripTravelers.length >= 2 ? tripTravelers : ["Cory", "Natalie"];
+    const names = tripTravelers && tripTravelers.length >= 2 ? tripTravelers : ["Bill", "Ted"];
     return names.map((name, i) => ({
       name,
       items: (normalized.travelers[i] ? normalized.travelers[i].items : []).map((it) => ({ ...it }))
@@ -2970,7 +3056,15 @@ function TravelProfileModal({ profile, onSave, onClose, travelers: tripTravelers
     color: activeTraveler === i ? C.accent : C.dim,
     cursor: "pointer",
     transition: "all 0.15s"
-  } }, t.name)))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "16px 18px" : "20px 28px" } }, TP_CATS.map((cat) => {
+  } }, t.name))), /* @__PURE__ */ React.createElement("div", { style: { paddingTop: 12, paddingBottom: 4 } }, /* @__PURE__ */ React.createElement(
+    Input,
+    {
+      label: "Traveler name",
+      value: travelers[activeTraveler].name,
+      onChange: (v) => setTravelers((ts) => ts.map((t, i) => i === activeTraveler ? { ...t, name: v } : t)),
+      placeholder: "e.g., Bill"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "16px 18px" : "20px 28px" } }, TP_CATS.map((cat) => {
     const catItems = itemsByCat(cat.id);
     const isAddingThis = addingCat === cat.id;
     return /* @__PURE__ */ React.createElement("div", { key: cat.id, style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14 } }, cat.icon), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.07em" } }, cat.label)), /* @__PURE__ */ React.createElement(
@@ -3204,7 +3298,26 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     color: C.text,
     lineHeight: 1,
     letterSpacing: "-0.01em"
-  } }, "Journey"), isVP && /* @__PURE__ */ React.createElement("div", { style: { display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, background: "rgba(212,168,83,0.12)", border: "1px solid rgba(212,168,83,0.3)", borderRadius: 20, padding: "3px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, "\u{1F97D}"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent, fontWeight: 600, letterSpacing: "0.04em" } }, "VISION PRO MODE"))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", ...mobile ? { width: "100%" } : {} } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew, style: mobile ? { flex: 1 } : {} }, "+ New"), /* @__PURE__ */ React.createElement("div", { ref: menuRef, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowMenu((m) => !m), style: {
+  } }, "Journey"), isVP && /* @__PURE__ */ React.createElement("div", { style: { display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, background: "rgba(212,168,83,0.12)", border: "1px solid rgba(212,168,83,0.3)", borderRadius: 20, padding: "3px 10px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, "\u{1F97D}"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent, fontWeight: 600, letterSpacing: "0.04em" } }, "VISION PRO MODE"))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", ...mobile ? { width: "100%" } : {} } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "lg", onClick: onNew, style: mobile ? {} : {} }, "+ New"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: search,
+      onChange: (e) => onSearch(e.target.value),
+      placeholder: "\u{1F50D} Search\u2026",
+      style: {
+        flex: mobile ? 1 : "0 0 220px",
+        padding: "0 14px",
+        height: 44,
+        fontSize: 14,
+        borderRadius: 10,
+        background: C.surface2,
+        border: `1px solid ${search ? C.accentBdr : C.border}`,
+        color: C.text,
+        outline: "none",
+        transition: "border-color 0.15s"
+      }
+    }
+  ), /* @__PURE__ */ React.createElement("div", { ref: menuRef, style: { position: "relative" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowMenu((m) => !m), style: {
     background: C.surface2,
     border: `1px solid ${showMenu ? C.accentBdr : C.border}`,
     borderRadius: 10,
@@ -3314,15 +3427,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     },
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, isDark ? "\u2600\uFE0F" : "\u{1F319}"),
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 500, color: C.text } }, isDark ? "Switch to Light Mode" : "Switch to Dark Mode")
-  )))))), ghReady && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.ok : C.dim } }, ghSyncStatus.state === "syncing" && "\u21C5 Syncing\u2026", ghSyncStatus.state === "ok" && ghSyncStatus.lastSync && "\u2713 Last synced " + new Date(ghSyncStatus.lastSync).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), ghSyncStatus.state === "error" && "\u2715 Sync error \u2014 " + ghSyncStatus.error, ghSyncStatus.state === "idle" && "\u21C5 Not yet synced"), /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 } }, "Configure")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: search,
-      onChange: (e) => onSearch(e.target.value),
-      placeholder: "\u{1F50D}  Search trips, destinations...",
-      style: { width: "100%", padding: "10px 16px", fontSize: 15, borderRadius: 10 }
-    }
-  )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 } }, [
+  )))))), ghReady && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.ok : C.dim } }, ghSyncStatus.state === "syncing" && "\u21C5 Syncing\u2026", ghSyncStatus.state === "ok" && ghSyncStatus.lastSync && "\u2713 Last synced " + new Date(ghSyncStatus.lastSync).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), ghSyncStatus.state === "error" && "\u2715 Sync error \u2014 " + ghSyncStatus.error, ghSyncStatus.state === "idle" && "\u21C5 Not yet synced"), /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 } }, "Configure")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 } }, [
     { id: "year", label: "\u{1F4C5} Current Year" },
     { id: "all", label: "\u{1F5FA}\uFE0F All" },
     { id: "planning", label: "\u{1F5D3} Planning" },
@@ -3395,7 +3500,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     const allSorted = visibleTrips.slice().sort((a, b) => {
       if (a.status === "active" && b.status !== "active") return -1;
       if (b.status === "active" && a.status !== "active") return 1;
-      return (b.startDate || "").localeCompare(a.startDate || "");
+      return (a.startDate || "").localeCompare(b.startDate || "");
     });
     if (homeFilter === "planning" || homeFilter === "complete") {
       const filtered = allSorted.filter((t) => t.status === homeFilter);
@@ -8116,7 +8221,7 @@ function App() {
         }
       },
       onClose: () => setModal(null),
-      travelers: ["Cory", "Natalie"]
+      travelers: ["Bill", "Ted"]
     }
   )), modal && modal.type === "templates" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null), maxWidth: 700 }, /* @__PURE__ */ React.createElement(
     TemplatesModal,
