@@ -3014,11 +3014,13 @@ function TravelProfileModal({ profile, onSave, onClose, travelers: tripTravelers
   const mobile = useMobile();
   const normalized = migrateTravelProfile(profile);
   const initTravelers = (() => {
-    const names = tripTravelers && tripTravelers.length >= 2 ? tripTravelers : ["Bill", "Ted"];
-    return names.map((name, i) => ({
-      name,
-      items: (normalized.travelers[i] ? normalized.travelers[i].items : []).map((it) => ({ ...it }))
-    }));
+    return normalized.travelers.map((t, i) => {
+      const fallbackName = tripTravelers && tripTravelers[i] || (i === 0 ? "Bill" : "Ted");
+      return {
+        name: t.name && t.name.trim() ? t.name : fallbackName,
+        items: (t.items || []).map((it) => ({ ...it }))
+      };
+    });
   })();
   const [travelers, setTravelers] = useState(initTravelers);
   const [activeTraveler, setActiveTraveler] = useState(0);
