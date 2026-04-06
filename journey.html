@@ -3623,7 +3623,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
         onDelete: onDeleteWish,
         onConvert: onConvertWish
       }
-    )))), generalWishItems.length > 0 && homeFilter !== "year" && /* @__PURE__ */ React.createElement(
+    )))), generalWishItems.length > 0 && homeFilter !== "year" && homeFilter !== "all" && /* @__PURE__ */ React.createElement(
       WishlistSection,
       {
         title: "Tentative for Future",
