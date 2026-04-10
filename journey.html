@@ -2246,7 +2246,7 @@ function EventForm({ d, setD, onSave, onCancel, onDelete, saveLabel }) {
 }
 function EventsByYear({ yearMap, events: events2, mobile }) {
   const [expandedYr, setExpandedYr] = useState(null);
-  return /* @__PURE__ */ React.createElement("div", { style: { marginTop: 16, background: C.surface2, borderRadius: 10, border: "1px solid " + C.border, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "12px 16px", fontSize: 10, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.08em" } }, "Events by Year"), Object.keys(yearMap).sort((a, b) => b.localeCompare(a)).map((yr) => {
+  return /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, border: "1px solid " + C.border, overflow: "hidden", marginBottom: 16 } }, Object.keys(yearMap).sort((a, b) => b.localeCompare(a)).map((yr, idx) => {
     const yrData = yearMap[yr];
     const isExp = expandedYr === yr;
     const yrEvents = events2.filter((ev) => (ev.date ? ev.date.slice(0, 4) : ev.year) === yr);
@@ -2259,7 +2259,7 @@ function EventsByYear({ yearMap, events: events2, mobile }) {
       if (!isNaN(c)) byCat[cat.id].cost += c;
     });
     const upcoming = yrEvents.filter((ev) => !ev.date || ev.date >= today()).length;
-    return /* @__PURE__ */ React.createElement("div", { key: yr, style: { borderTop: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { key: yr, style: { borderTop: idx === 0 ? "none" : "1px solid " + C.border } }, /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setExpandedYr(isExp ? null : yr),
@@ -2323,7 +2323,7 @@ function EventsSection({ events: events2, mobile, onAdd, onUpdate, onDelete, def
   return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 28 } }, addingNew && draft && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10 } }, /* @__PURE__ */ React.createElement(EventForm, { d: draft, setD: setDraft, onSave: saveAdd, onCancel: () => {
     setAddingNew(false);
     setDraft(null);
-  }, saveLabel: "Add Event" })), displayEvents.length === 0 && !addingNew && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid, fontStyle: "italic", paddingLeft: 2 } }, "No events yet \u2014 add concerts, shows, fairs and more."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, displayEvents.map((ev) => {
+  }, saveLabel: "Add Event" })), Object.keys(yearMap).length > 0 && /* @__PURE__ */ React.createElement(EventsByYear, { yearMap, events: events2, mobile }), displayEvents.length === 0 && !addingNew && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.mid, fontStyle: "italic", paddingLeft: 2 } }, "No events yet \u2014 add concerts, shows, fairs and more."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, displayEvents.map((ev) => {
     const cat = EVENT_CATEGORIES.find((c) => c.id === ev.category) || EVENT_CATEGORIES[8];
     const stKey = ev._autoStatus || ev.status;
     const st = EVENT_STATUSES.find((s) => s.id === stKey) || EVENT_STATUSES[0];
@@ -2379,7 +2379,7 @@ function EventsSection({ events: events2, mobile, onAdd, onUpdate, onDelete, def
       },
       "\u270F\uFE0F"
     )));
-  })), Object.keys(yearMap).length > 0 && /* @__PURE__ */ React.createElement(EventsByYear, { yearMap, events: events2, mobile }));
+  })));
 }
 const newWishItem = (o = {}) => ({
   id: uid(),
@@ -3315,11 +3315,24 @@ function FilterPills({ options, value, onChange }) {
     whiteSpace: "nowrap"
   } }, o.label)));
 }
-function TripsTab({ trips, mobile, onOpen, onDuplicate, events: events2, currentYear }) {
+function TripsTab({ trips, mobile, onOpen, onDuplicate, currentYear }) {
   const [filter, setFilter] = useState("year");
-  const todayStr = today();
+  const [sortBy, setSortBy] = useState("date-desc");
+  const priorYear = (parseInt(currentYear) - 1).toString();
+  const tripCost = (t) => getAllActivities(t).reduce((s, a) => s + parseFloat(a.cost && a.cost.amount || 0), 0) + (t.budgetItems || []).filter((b) => b.paidBy !== "comp").reduce((s, b) => s + parseFloat(b.amount || 0), 0);
   const filtered = (() => {
-    const base = filter === "year" ? trips.filter((t) => t.startDate && t.startDate.startsWith(currentYear)) : filter === "planning" ? trips.filter((t) => t.status === "planning") : filter === "complete" ? trips.filter((t) => t.status === "complete") : trips;
+    let base = filter === "year" ? trips.filter((t) => t.startDate && t.startDate.startsWith(currentYear)) : filter === "prior" ? trips.filter((t) => t.startDate && t.startDate.startsWith(priorYear)) : (
+      /* complete */
+      trips.filter((t) => t.status === "complete")
+    );
+    if (filter === "complete") {
+      return base.slice().sort((a, b) => {
+        if (sortBy === "date-desc") return (b.startDate || "").localeCompare(a.startDate || "");
+        if (sortBy === "date-asc") return (a.startDate || "").localeCompare(b.startDate || "");
+        if (sortBy === "cost-desc") return tripCost(b) - tripCost(a);
+        return 0;
+      });
+    }
     return base.slice().sort((a, b) => {
       if (a.status === "active" && b.status !== "active") return -1;
       if (b.status === "active" && a.status !== "active") return 1;
@@ -3333,18 +3346,32 @@ function TripsTab({ trips, mobile, onOpen, onDuplicate, events: events2, current
       onChange: setFilter,
       options: [
         { id: "year", label: "\u{1F4C5} " + currentYear },
-        { id: "planning", label: "\u{1F5D3} Planning" },
-        { id: "complete", label: "\u2705 Completed" },
-        { id: "all", label: "\u{1F5FA}\uFE0F All" }
+        { id: "prior", label: "\u{1F4C5} " + priorYear },
+        { id: "complete", label: "\u2705 Completed" }
       ]
     }
-  ), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.mid } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, filter === "year" ? "\u{1F5FA}\uFE0F" : filter === "planning" ? "\u{1F5D3}" : "\u2705"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 16 } }, "No ", filter === "year" ? currentYear : filter === "all" ? "" : filter, " trips yet.")) : /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(auto-fill, minmax(320px, 1fr))", gap: mobile ? 14 : 20 } }, filtered.map((t) => /* @__PURE__ */ React.createElement(TripCard, { key: t.id, trip: t, mobile, onOpen, onDuplicate }))));
+  ), filter === "complete" && filtered.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 14, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", flexShrink: 0 } }, "Sort"), [
+    { id: "date-desc", label: "Date \u2193" },
+    { id: "date-asc", label: "Date \u2191" },
+    { id: "cost-desc", label: "Cost \u2193" }
+  ].map((s) => /* @__PURE__ */ React.createElement("button", { key: s.id, onClick: () => setSortBy(s.id), style: {
+    background: sortBy === s.id ? C.accentBg : "none",
+    border: "1px solid " + (sortBy === s.id ? C.accentBdr : C.border),
+    borderRadius: 20,
+    padding: "4px 12px",
+    fontSize: 12,
+    fontWeight: sortBy === s.id ? 600 : 400,
+    color: sortBy === s.id ? C.accent : C.dim,
+    cursor: "pointer",
+    whiteSpace: "nowrap"
+  } }, s.label))), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.mid } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, filter === "complete" ? "\u2705" : "\u{1F5FA}\uFE0F"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 16 } }, "No ", filter === "complete" ? "completed" : filter === "prior" ? priorYear : currentYear, " trips yet.")) : /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(auto-fill, minmax(320px, 1fr))", gap: mobile ? 14 : 20 } }, filtered.map((t) => /* @__PURE__ */ React.createElement(TripCard, { key: t.id, trip: t, mobile, onOpen, onDuplicate }))));
 }
 function IdeasTab({ wishlist: wishlist2, wishByYear, generalWishItems, mobile, onAdd, onUpdate, onDelete, onConvert, currentYear }) {
   const [filter, setFilter] = useState("year");
+  const nextYear = (parseInt(currentYear) + 1).toString();
   const yearItems = wishByYear[currentYear] || [];
-  const showItems = filter === "year" ? yearItems : wishlist2;
-  const showYears = filter === "all" ? Object.keys(wishByYear).filter((y) => y !== "__general__").sort((a, b) => b.localeCompare(a)) : yearItems.length > 0 ? [currentYear] : [];
+  const nextItems = wishByYear[nextYear] || [];
+  const showYears = filter === "year" ? yearItems.length > 0 ? [currentYear] : [] : filter === "next" ? nextItems.length > 0 ? [nextYear] : [] : Object.keys(wishByYear).filter((y) => y !== "__general__").sort((a, b) => b.localeCompare(a));
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
     FilterPills,
     {
@@ -3352,6 +3379,7 @@ function IdeasTab({ wishlist: wishlist2, wishByYear, generalWishItems, mobile, o
       onChange: setFilter,
       options: [
         { id: "year", label: "\u{1F4C5} " + currentYear },
+        { id: "next", label: "\u{1F4C5} " + nextYear },
         { id: "all", label: "\u2728 All" }
       ]
     }
@@ -3380,7 +3408,7 @@ function IdeasTab({ wishlist: wishlist2, wishByYear, generalWishItems, mobile, o
       onDelete,
       onConvert
     }
-  ), showYears.length === 0 && filter === "year" && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.mid } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 15 } }, "No ideas tagged for ", currentYear, "."))));
+  ), showYears.length === 0 && filter !== "all" && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: C.mid } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 15 } }, "No ideas tagged for ", filter === "next" ? nextYear : currentYear, "."))));
 }
 function EventsTab({ events: events2, mobile, onAdd, onUpdate, onDelete }) {
   const [filter, setFilter] = useState("upcoming");
@@ -3413,17 +3441,11 @@ function InsightsTab({ trips, events: events2, wishlist: wishlist2, mobile, curr
   const totalNights = scopedTrips.reduce((s, t) => s + t.cities.reduce((cs, c) => cs + Math.max(0, (c.nights || 1) - 1), 0), 0);
   const completedNights = completedTrips.reduce((s, t) => s + t.cities.reduce((cs, c) => cs + Math.max(0, (c.nights || 1) - 1), 0), 0);
   const totalPTO = scopedTrips.reduce((s, t) => s + (parseFloat(t.ptoDays) || 0), 0);
+  const uniqueCities = [...new Set(scopedTrips.flatMap((t) => t.cities.map((c) => c.name)))];
   const currency = (scopedTrips.find((t) => t.currency) || {}).currency || "USD";
   const fmtM = (n) => currency + " " + n.toLocaleString("en-US", { maximumFractionDigits: 0 });
-  const totalSpend = completedTrips.reduce((s, t) => {
-    return s + getAllActivities(t).reduce((as, a) => as + parseFloat(a.cost && a.cost.amount || 0), 0) + (t.budgetItems || []).filter((b) => b.paidBy !== "comp").reduce((bs, b) => bs + parseFloat(b.amount || 0), 0);
-  }, 0);
-  const uniqueCities = [...new Set(scopedTrips.flatMap((t) => t.cities.map((c) => c.name)))];
-  const upcomingEvents = scopedEvents.filter((ev) => !ev.date || ev.date >= today()).length;
-  const eventSpend = scopedEvents.reduce((s, ev) => {
-    const c = parseFloat((ev.cost || "").replace(/[^0-9.]/g, ""));
-    return s + (isNaN(c) ? 0 : c);
-  }, 0);
+  const tripCost = (t) => getAllActivities(t).reduce((s, a) => s + parseFloat(a.cost && a.cost.amount || 0), 0) + (t.budgetItems || []).filter((b) => b.paidBy !== "comp").reduce((s, b) => s + parseFloat(b.amount || 0), 0);
+  const totalSpend = completedTrips.reduce((s, t) => s + tripCost(t), 0);
   const catSpend = {};
   allActs.forEach((a) => {
     const cat = a.cost && a.cost.category || "Other";
@@ -3432,34 +3454,67 @@ function InsightsTab({ trips, events: events2, wishlist: wishlist2, mobile, curr
   });
   const catEntries = Object.entries(catSpend).sort((a, b) => b[1] - a[1]);
   const maxCat = catEntries[0] ? catEntries[0][1] : 1;
-  const CAT_COLORS_MAP = { Food: "#e07858", Transport: "#4e9478", Lodging: "#4e7fa6", Activities: "#d4a853", Shopping: "#a78bfa", Other: "#8c91ae" };
   const cityNights = {};
   scopedTrips.forEach((t) => t.cities.forEach((c) => {
     cityNights[c.name] = (cityNights[c.name] || 0) + Math.max(0, (c.nights || 1) - 1);
   }));
   const topCities = Object.entries(cityNights).sort((a, b) => b[1] - a[1]).slice(0, 6);
-  const STitle = ({ children }) => /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 12, marginTop: 4 } }, children);
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
-    FilterPills,
-    {
-      value: scope,
-      onChange: setScope,
-      options: [
-        { id: "year", label: "\u{1F4C5} " + currentYear },
-        { id: "last", label: "\u23EE " + lastYear },
-        { id: "all", label: "\u{1F4CA} All Time" }
-      ]
-    }
-  ), scopedTrips.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Trips"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 } }, [
+  const upcomingEvs = scopedEvents.filter((ev) => !ev.date || ev.date >= today()).length;
+  const eventSpend = scopedEvents.reduce((s, ev) => {
+    const c = parseFloat((ev.cost || "").replace(/[^0-9.]/g, ""));
+    return s + (isNaN(c) ? 0 : c);
+  }, 0);
+  const yearData = {};
+  trips.forEach((t) => {
+    const yr = (t.startDate || "").slice(0, 4) || "Unknown";
+    if (!yearData[yr]) yearData[yr] = { trips: [], nights: 0, spend: 0 };
+    const tn = t.cities.reduce((s, c) => s + Math.max(0, (c.nights || 1) - 1), 0);
+    yearData[yr].trips.push(t);
+    yearData[yr].nights += tn;
+    if (t.status === "complete") yearData[yr].spend += tripCost(t);
+  });
+  const yearEntries = Object.entries(yearData).sort((a, b) => b[0].localeCompare(a[0]));
+  const maxYearNights = Math.max(...yearEntries.map(([, d]) => d.nights), 1);
+  const maxYearSpend = Math.max(...yearEntries.map(([, d]) => d.spend), 1);
+  const CAT_COLORS_MAP = { Food: "#e07858", Transport: "#4e9478", Lodging: "#4e7fa6", Activities: "#d4a853", Shopping: "#a78bfa", Other: "#8c91ae" };
+  const STitle = ({ children }) => /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 10, marginTop: 4 } }, children);
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(FilterPills, { value: scope, onChange: setScope, options: [
+    { id: "year", label: "\u{1F4C5} " + currentYear },
+    { id: "last", label: "\u23EE " + lastYear },
+    { id: "all", label: "\u{1F4CA} All Time" }
+  ] }), scopedTrips.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 } }, [
     { icon: "\u{1F5FA}\uFE0F", v: scopedTrips.length, l: "Trips" },
     { icon: "\u{1F319}", v: totalNights, l: "Nights" },
     { icon: "\u{1F3D9}\uFE0F", v: uniqueCities.length, l: "Cities" },
     ...totalPTO > 0 ? [{ icon: "\u{1F4C5}", v: totalPTO, l: "PTO Days" }] : [],
     ...completedTrips.length > 0 ? [{ icon: "\u2705", v: completedTrips.length, l: "Completed" }] : [],
-    ...scopedTrips.filter((t) => t.status === "planning").length > 0 ? [{ icon: "\u{1F5D3}", v: scopedTrips.filter((t) => t.status === "planning").length, l: "Planning" }] : []
-  ].map((s) => /* @__PURE__ */ React.createElement("div", { key: s.l, style: { background: C.surface2, borderRadius: 10, padding: "12px 10px", textAlign: "center", border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18 } }, s.icon), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 20 : 24, fontWeight: 300, color: C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1.1, marginTop: 4 } }, s.v), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 3 } }, s.l))))), totalSpend > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Budget"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.accentBg, border: "1px solid " + C.accentBdr, borderRadius: 10, padding: "14px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Total Spend"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 22 : 26, fontWeight: 300, color: C.accent, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1.1, marginTop: 6 } }, fmtM(totalSpend))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, completedTrips.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 14px", flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Per Trip"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18, fontWeight: 300, color: C.text, fontFamily: "'Cormorant Garamond', serif", marginTop: 4 } }, fmtM(totalSpend / completedTrips.length))), completedNights > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 14px", flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Per Night"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18, fontWeight: 300, color: C.text, fontFamily: "'Cormorant Garamond', serif", marginTop: 4 } }, fmtM(totalSpend / completedNights))))), catEntries.length > 0 && catEntries.map(([cat, amt]) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 3 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, cat), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: CAT_COLORS_MAP[cat] || C.mid, fontWeight: 600 } }, fmtM(amt), " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, fontWeight: 400 } }, "(", Math.round(amt / totalSpend * 100), "%)"))), /* @__PURE__ */ React.createElement("div", { style: { height: 4, background: C.surface3, borderRadius: 2 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: amt / maxCat * 100 + "%", background: CAT_COLORS_MAP[cat] || C.accent, borderRadius: 2, transition: "width 0.5s ease" } }))))), topCities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Top Cities"), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, border: "1px solid " + C.border, overflow: "hidden" } }, topCities.map(([city, nights], i) => /* @__PURE__ */ React.createElement("div", { key: city, style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", borderBottom: i < topCities.length - 1 ? "1px solid " + C.border : "none" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 20, height: 20, borderRadius: "50%", background: CITY_PALETTE[i % CITY_PALETTE.length] + "33", border: "1.5px solid " + CITY_PALETTE[i % CITY_PALETTE.length], display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, fontWeight: 700, color: CITY_PALETTE[i % CITY_PALETTE.length] } }, i + 1)), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontSize: 13, color: C.text } }, city), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, nights, " night", nights !== 1 ? "s" : ""))))), scopedEvents.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Events"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 } }, [
+    ...totalSpend > 0 ? [{ icon: "\u{1F4B0}", v: fmtM(totalSpend), l: "Total Spend" }] : []
+  ].map((s) => /* @__PURE__ */ React.createElement("div", { key: s.l, style: { background: C.surface2, borderRadius: 10, padding: "12px 10px", textAlign: "center", border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18 } }, s.icon), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 18 : 22, fontWeight: 300, color: C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1.1, marginTop: 4 } }, s.v), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 3 } }, s.l))))), scope === "all" && yearEntries.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Year by Year"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } }, yearEntries.map(([yr, data]) => {
+    const nightsPct = data.nights / maxYearNights * 100;
+    const spendPct = data.spend / maxYearSpend * 100;
+    const completedInYr = data.trips.filter((t) => t.status === "complete").length;
+    return /* @__PURE__ */ React.createElement("div", { key: yr, style: { background: C.surface2, borderRadius: 12, padding: "12px 14px", border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 300, color: C.text, minWidth: 44 } }, yr), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 3, flexWrap: "wrap", flex: 1 } }, data.trips.map((t) => /* @__PURE__ */ React.createElement("div", { key: t.id, title: t.title, style: {
+      width: 9,
+      height: 9,
+      borderRadius: "50%",
+      flexShrink: 0,
+      background: t.status === "complete" ? C.ok : t.status === "active" ? C.accent : C.dim
+    } }))), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim, flexShrink: 0 } }, data.trips.length, " trip", data.trips.length !== 1 ? "s" : "")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 5 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 3 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Nights"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.mid } }, data.nights, "n")), /* @__PURE__ */ React.createElement("div", { style: { height: 5, background: C.surface3, borderRadius: 3 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: nightsPct + "%", background: C.accent, borderRadius: 3, transition: "width 0.5s ease" } }))), data.spend > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 3 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Spend"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.ok, fontWeight: 600 } }, fmtM(data.spend))), /* @__PURE__ */ React.createElement("div", { style: { height: 5, background: C.surface3, borderRadius: 3 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: spendPct + "%", background: C.ok, borderRadius: 3, transition: "width 0.5s ease" } })))));
+  }))), scopedTrips.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Trip Comparison", scope === "all" ? " \u2014 All Time" : ""), (() => {
+    const withStats = scopedTrips.map((t) => ({
+      ...t,
+      _cost: tripCost(t),
+      _nights: t.cities.reduce((s, c) => s + Math.max(0, (c.nights || 1) - 1), 0)
+    }));
+    const maxN = Math.max(...withStats.map((t) => t._nights), 1);
+    const maxC = Math.max(...withStats.map((t) => t._cost), 1);
+    return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, withStats.slice().sort((a, b) => (b.startDate || "").localeCompare(a.startDate || "")).map((t, i) => {
+      const sm = STATUS_META[t.status];
+      return /* @__PURE__ */ React.createElement("div", { key: t.id, style: { background: C.surface2, borderRadius: 10, padding: "10px 14px", border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: t._nights > 0 ? 7 : 0 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: sm.color, background: sm.color + "22", borderRadius: 6, padding: "1px 6px", flexShrink: 0 } }, sm.label.toUpperCase()), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 500, color: C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, t.title), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, flexShrink: 0 } }, fmtCardDate(t.startDate))), t._nights > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: t._cost > 0 ? 4 : 0 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, height: 5, background: C.surface3, borderRadius: 3 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: t._nights / maxN * 100 + "%", background: CITY_PALETTE[i % CITY_PALETTE.length], borderRadius: 3 } })), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.mid, flexShrink: 0, minWidth: 28, textAlign: "right" } }, t._nights, "n")), t._cost > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, height: 5, background: C.surface3, borderRadius: 3 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: t._cost / maxC * 100 + "%", background: C.ok, borderRadius: 3 } })), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.ok, fontWeight: 600, flexShrink: 0, minWidth: 60, textAlign: "right" } }, fmtM(t._cost))));
+    }));
+  })()), totalSpend > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Budget"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.accentBg, border: "1px solid " + C.accentBdr, borderRadius: 10, padding: "14px 14px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Total Spend"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 22 : 26, fontWeight: 300, color: C.accent, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1.1, marginTop: 6 } }, fmtM(totalSpend))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, completedTrips.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 14px", flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Per Trip"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18, fontWeight: 300, color: C.text, fontFamily: "'Cormorant Garamond', serif", marginTop: 4 } }, fmtM(totalSpend / completedTrips.length))), completedNights > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 14px", flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Per Night"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18, fontWeight: 300, color: C.text, fontFamily: "'Cormorant Garamond', serif", marginTop: 4 } }, fmtM(totalSpend / completedNights))))), catEntries.map(([cat, amt]) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 3 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, cat), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: CAT_COLORS_MAP[cat] || C.mid, fontWeight: 600 } }, fmtM(amt), " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.dim, fontWeight: 400 } }, "(", Math.round(amt / totalSpend * 100), "%)"))), /* @__PURE__ */ React.createElement("div", { style: { height: 4, background: C.surface3, borderRadius: 2 } }, /* @__PURE__ */ React.createElement("div", { style: { height: "100%", width: amt / maxCat * 100 + "%", background: CAT_COLORS_MAP[cat] || C.accent, borderRadius: 2, transition: "width 0.5s ease" } }))))), topCities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Top Cities"), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, border: "1px solid " + C.border, overflow: "hidden" } }, topCities.map(([city, nights], i) => /* @__PURE__ */ React.createElement("div", { key: city, style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", borderBottom: i < topCities.length - 1 ? "1px solid " + C.border : "none" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 20, height: 20, borderRadius: "50%", background: CITY_PALETTE[i % CITY_PALETTE.length] + "33", border: "1.5px solid " + CITY_PALETTE[i % CITY_PALETTE.length], display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, fontWeight: 700, color: CITY_PALETTE[i % CITY_PALETTE.length] } }, i + 1)), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontSize: 13, color: C.text } }, city), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, nights, " night", nights !== 1 ? "s" : ""))))), scopedEvents.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Events"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 } }, [
     { icon: "\u{1F39F}", v: scopedEvents.length, l: "Total" },
-    { icon: "\u{1F5D3}", v: upcomingEvents, l: "Upcoming" },
+    { icon: "\u{1F5D3}", v: upcomingEvs, l: "Upcoming" },
     ...eventSpend > 0 ? [{ icon: "\u{1F4B0}", v: "$" + eventSpend.toLocaleString("en-US", { maximumFractionDigits: 0 }), l: "Spent" }] : []
   ].map((s) => /* @__PURE__ */ React.createElement("div", { key: s.l, style: { background: C.surface2, borderRadius: 10, padding: "12px 10px", textAlign: "center", border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18 } }, s.icon), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 18 : 22, fontWeight: 300, color: C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1.1, marginTop: 4 } }, s.v), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 3 } }, s.l)))), (() => {
     const byCat = {};
@@ -3469,7 +3524,7 @@ function InsightsTab({ trips, events: events2, wishlist: wishlist2, mobile, curr
       byCat[cat.id].count++;
     });
     return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, Object.values(byCat).sort((a, b) => b.count - a.count).map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat.label, style: { display: "flex", alignItems: "center", gap: 6, background: C.surface2, border: "1px solid " + C.border, borderRadius: 20, padding: "5px 12px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, cat.icon), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, cat.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: C.text } }, cat.count))));
-  })()), wishlist2.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Ideas"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(StatChip, { icon: "\u2728", value: wishlist2.length, label: "Total ideas" }), wishlist2.filter((w) => w.year === currentYear).length > 0 && /* @__PURE__ */ React.createElement(StatChip, { icon: "\u{1F4C5}", value: wishlist2.filter((w) => w.year === currentYear).length, label: "For " + currentYear, color: C.accent }))), scopedTrips.length === 0 && scopedEvents.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.mid } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, "\u{1F4CA}"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 16 } }, "No data for ", scope === "year" ? currentYear : scope === "last" ? lastYear : "any year", " yet.")));
+  })()), wishlist2.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Ideas"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "10px 14px", border: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u2728"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18, fontWeight: 300, color: C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 } }, wishlist2.length), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" } }, "Total Ideas"))), wishlist2.filter((w) => w.year === currentYear).length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.accentBg, borderRadius: 10, padding: "10px 14px", border: "1px solid " + C.accentBdr, display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u{1F4C5}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18, fontWeight: 300, color: C.accent, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 } }, wishlist2.filter((w) => w.year === currentYear).length), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" } }, "For ", currentYear))))), scopedTrips.length === 0 && scopedEvents.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.mid } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, "\u{1F4CA}"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 16 } }, "No data for ", scope === "year" ? currentYear : scope === "last" ? lastYear : "any year", " yet.")));
 }
 function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, ghReady, ghSyncStatus, onGhPull, onGhPush, onOpenSync, isVP, hasUnseenChangelog, onOpenChangelog, flightApiKey, onSaveFlightApiKey, onOpenTravelProfile, wishlist: wishlist2, onAddWish, onUpdateWish, onDeleteWish, onConvertWish, onOpenAddWish, appSettings, onSetAppSetting, events: events2, onAddEvent, onUpdateEvent, onDeleteEvent }) {
   const mobile = useMobile();
@@ -3691,7 +3746,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
       }).map((trip) => /* @__PURE__ */ React.createElement(TripCard, { key: trip.id, trip, mobile, onOpen, onDuplicate })))));
     }
     if (homeFilter === "trips") {
-      return /* @__PURE__ */ React.createElement(TripsTab, { trips, mobile, onOpen, onDuplicate, events: events2 || [], wishlist: wishlist2 || [], currentYear, wishByYear, onAddWish, onUpdateWish, onDeleteWish, onConvertWish });
+      return /* @__PURE__ */ React.createElement(TripsTab, { trips, mobile, onOpen, onDuplicate, currentYear });
     }
     if (homeFilter === "ideas") {
       return /* @__PURE__ */ React.createElement(IdeasTab, { wishlist: wishlist2 || [], wishByYear, generalWishItems, mobile, onAdd: onAddWish, onUpdate: onUpdateWish, onDelete: onDeleteWish, onConvert: onConvertWish, currentYear });
@@ -4759,6 +4814,7 @@ function HeroImagePicker({ trip, mutateTrip }) {
     const seeds = Array.from({ length: 6 }, (_, i) => Math.floor(Math.random() * 9e3) + 1e3 + i * 137);
     setPreviews(seeds.map((seed) => ({ seed, url: buildUrl(keywords, seed), loaded: false, errored: false })));
     setLoading(false);
+    mutateTrip((t) => ({ ...t, heroKeywords: keywords }));
   };
   React.useEffect(() => {
     fetchPreviews();
