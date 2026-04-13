@@ -17,10 +17,6 @@
     body { background: #0c0e16; color: #e8e4dc; -webkit-font-smoothing: antialiased; }
     #root { min-height: 100%; }
   </style>
-  <!-- Firebase v9 compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <div id="root"></div>
@@ -986,10 +982,11 @@ const exportTripJSON = (trip) => {
   const payload = { _journey: JOURNEY_VERSION, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), trips: [trip] };
   downloadFile(`journey-${slugify(trip.title)}.json`, JSON.stringify(payload, null, 2));
 };
-const exportAllJSON = (trips, wishlist2, travelProfile, flightApiKey, events2) => {
+const exportAllJSON = (trips, wishlist2, ghConfig, travelProfile, flightApiKey, events2) => {
   const payload = { _journey: JOURNEY_VERSION, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), trips };
   if (wishlist2 && wishlist2.length > 0) payload.wishlist = wishlist2;
   if (events2 && events2.length > 0) payload.events = events2;
+  if (ghConfig && (ghConfig.token || ghConfig.owner || ghConfig.repo)) payload.ghConfig = ghConfig;
   if (travelProfile && Object.keys(travelProfile).length > 0) payload.travelProfile = travelProfile;
   if (flightApiKey) payload.flightApiKey = flightApiKey;
   downloadFile(`journey-all-trips-${today()}.json`, JSON.stringify(payload, null, 2));
@@ -3540,7 +3537,7 @@ function InsightsTab({ trips, events: events2, wishlist: wishlist2, mobile, curr
     return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, Object.values(byCat).sort((a, b) => b.count - a.count).map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat.label, style: { display: "flex", alignItems: "center", gap: 6, background: C.surface2, border: "1px solid " + C.border, borderRadius: 20, padding: "5px 12px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, cat.icon), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.mid } }, cat.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: C.text } }, cat.count))));
   })()), wishlist2.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 24 } }, /* @__PURE__ */ React.createElement(STitle, null, "Ideas"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "10px 14px", border: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u2728"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18, fontWeight: 300, color: C.text, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 } }, wishlist2.length), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" } }, "Total Ideas"))), wishlist2.filter((w) => w.year === currentYear).length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.accentBg, borderRadius: 10, padding: "10px 14px", border: "1px solid " + C.accentBdr, display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u{1F4C5}"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 18, fontWeight: 300, color: C.accent, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 } }, wishlist2.filter((w) => w.year === currentYear).length), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" } }, "For ", currentYear))))), scopedTrips.length === 0 && scopedEvents.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.mid } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, "\u{1F4CA}"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 16 } }, "No data for ", scope === "year" ? currentYear : scope === "last" ? lastYear : "any year", " yet.")));
 }
-function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, fbUser, fbReady, fbSyncStatus, onFbSignIn, onFbSignOut, onOpenFbSetup, isVP, hasUnseenChangelog, onOpenChangelog, flightApiKey, onSaveFlightApiKey, onOpenTravelProfile, wishlist: wishlist2, onAddWish, onUpdateWish, onDeleteWish, onConvertWish, onOpenAddWish, appSettings, onSetAppSetting, events: events2, onAddEvent, onUpdateEvent, onDeleteEvent }) {
+function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, ghReady, ghSyncStatus, onGhPull, onGhPush, onOpenSync, isVP, hasUnseenChangelog, onOpenChangelog, flightApiKey, onSaveFlightApiKey, onOpenTravelProfile, wishlist: wishlist2, onAddWish, onUpdateWish, onDeleteWish, onConvertWish, onOpenAddWish, appSettings, onSetAppSetting, events: events2, onAddEvent, onUpdateEvent, onDeleteEvent }) {
   const mobile = useMobile();
   const [showMenu, setShowMenu] = React.useState(false);
   const [homeFilter, setHomeFilter] = React.useState("trips");
@@ -3636,33 +3633,15 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     {
       onClick: () => {
         setShowMenu(false);
-        if (!fbReady) {
-          onOpenFbSetup();
-        } else if (!fbUser) {
-          onFbSignIn();
-        } else {
-          onOpenFbSetup();
-        }
+        onOpenSync();
       },
       style: { width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" },
       onMouseEnter: (e) => e.currentTarget.style.background = C.surface2,
       onMouseLeave: (e) => e.currentTarget.style.background = "none"
     },
-    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u2601\uFE0F"),
-    /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: C.text } }, "Cloud Sync"), !fbReady && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Not configured \u2014 tap to set up"), fbReady && !fbUser && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.accent } }, "Sign in with Google to sync"), fbReady && fbUser && fbSyncStatus.state === "ok" && fbSyncStatus.lastSync && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.ok } }, "\u2713 ", fbUser.email, " \xB7 ", new Date(fbSyncStatus.lastSync).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })), fbReady && fbUser && fbSyncStatus.state === "syncing" && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.accent } }, "Syncing\u2026"), fbReady && fbUser && fbSyncStatus.state === "error" && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.warn } }, "\u2715 ", fbSyncStatus.error), fbReady && fbUser && fbSyncStatus.state === "idle" && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim } }, fbUser.email, " \xB7 not yet synced"))
-  ), fbUser && /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => {
-        setShowMenu(false);
-        onFbSignOut();
-      },
-      style: { width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" },
-      onMouseEnter: (e) => e.currentTarget.style.background = C.surface2,
-      onMouseLeave: (e) => e.currentTarget.style.background = "none"
-    },
-    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u{1F6AA}"),
-    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 500, color: C.dim } }, "Sign out of Sync")
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u21C5"),
+    /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: C.text } }, "GitHub Sync"), ghSyncStatus.state === "ok" && ghSyncStatus.lastSync && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.ok } }, "\u2713 ", new Date(ghSyncStatus.lastSync).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })), ghSyncStatus.state === "error" && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.warn } }, "\u2715 Error"), (ghSyncStatus.state === "idle" || !ghReady) && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim } }, "Not configured")),
+    ghSyncStatus.state === "syncing" && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.accent } }, "Syncing\u2026")
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -3723,7 +3702,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     },
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, isDark ? "\u2600\uFE0F" : "\u{1F319}"),
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 500, color: C.text } }, isDark ? "Switch to Light Mode" : "Switch to Dark Mode")
-  )))))), fbReady && fbUser && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: fbSyncStatus.state === "error" ? C.warn : fbSyncStatus.state === "ok" ? C.ok : C.dim } }, fbSyncStatus.state === "syncing" && "\u2601\uFE0F Saving\u2026", fbSyncStatus.state === "ok" && fbSyncStatus.lastSync && "\u2713 Saved " + new Date(fbSyncStatus.lastSync).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), fbSyncStatus.state === "error" && "\u2715 Sync error \u2014 " + fbSyncStatus.error, fbSyncStatus.state === "idle" && "\u2601\uFE0F " + fbUser.email), /* @__PURE__ */ React.createElement("button", { onClick: onOpenFbSetup, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 } }, "Settings")), fbReady && !fbUser && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim } }, "\u2601\uFE0F Sign in to sync across devices"), /* @__PURE__ */ React.createElement("button", { onClick: onFbSignIn, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0, fontWeight: 600 } }, "Sign in with Google \u2192")), pwaPrompt && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4F2}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Install Journey"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Add to your home screen for offline access and a native app feel.")), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onInstall }, "Install"), /* @__PURE__ */ React.createElement("button", { onClick: () => onInstall(null), style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 18, padding: "0 4px" } }, "\xD7"))), /* @__PURE__ */ React.createElement("div", { style: {
+  )))))), ghReady && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: ghSyncStatus.state === "error" ? C.warn : ghSyncStatus.state === "ok" ? C.ok : C.dim } }, ghSyncStatus.state === "syncing" && "\u21C5 Syncing\u2026", ghSyncStatus.state === "ok" && ghSyncStatus.lastSync && "\u2713 Last synced " + new Date(ghSyncStatus.lastSync).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), ghSyncStatus.state === "error" && "\u2715 Sync error \u2014 " + ghSyncStatus.error, ghSyncStatus.state === "idle" && "\u21C5 Not yet synced"), /* @__PURE__ */ React.createElement("button", { onClick: onOpenSync, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 } }, "Configure")), pwaPrompt && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4F2}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Install Journey"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Add to your home screen for offline access and a native app feel.")), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onInstall }, "Install"), /* @__PURE__ */ React.createElement("button", { onClick: () => onInstall(null), style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 18, padding: "0 4px" } }, "\xD7"))), /* @__PURE__ */ React.createElement("div", { style: {
     position: "sticky",
     top: "env(safe-area-inset-top, 0px)",
     zIndex: 50,
@@ -7334,50 +7313,14 @@ function NewCityModal({ existingCities, onSave, onClose }) {
   const valid = form.name.trim() && form.nights > 0 && form.startDate;
   return /* @__PURE__ */ React.createElement("div", { style: { padding: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 30, color: C.text } }, "Add City / Segment"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 4 } }, "Days are auto-generated from the start date.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22 } }, "\xD7")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ React.createElement(Input, { label: "City name", value: form.name, onChange: (v) => upd("name", v), placeholder: "e.g., Kyoto, Paris, Lisbon..." }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, minWidth: 0 } }, /* @__PURE__ */ React.createElement(Input, { label: "Nights", type: "number", value: form.nights, onChange: (v) => upd("nights", Math.max(1, parseInt(v) || 1)) }), /* @__PURE__ */ React.createElement(Input, { label: "Arrival", type: "date", value: form.startDate, onChange: (v) => upd("startDate", v) })), existingCities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.mid } }, "Will follow ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.text } }, existingCities[existingCities.length - 1].name), " in the city ribbon.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 24 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid, onClick: () => onSave(newCity(form.name.trim(), parseInt(form.nights), form.startDate)) }, "Add City")));
 }
-function FirebaseSetupModal({ onSave, onClose }) {
+function GhSyncModal({ ghConfig, onSaveGhConfig, ghSyncStatus, onGhPull, onGhPush, onClose }) {
   const mobile = useMobile();
-  const EMPTY = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
-  const [cfg, setCfg] = useState(EMPTY);
-  const upd = (k, v) => setCfg((c) => ({ ...c, [k]: v }));
-  const valid = cfg.apiKey.trim() && cfg.projectId.trim() && cfg.authDomain.trim();
-  const RULES = `rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null
-        && request.auth.uid == userId;
-    }
-  }
-}`;
-  const STEPS = [
-    { icon: "\u{1F310}", text: "Go to console.firebase.google.com and sign in with your Google account." },
-    { icon: "\u2795", text: 'Click "Add project", name it (e.g. journey-sync), disable Google Analytics, create.' },
-    { icon: "</>", text: 'In Project Overview, click the web icon (</>). Register an app name, click "Register app", then copy the firebaseConfig object shown.' },
-    { icon: "\u{1F510}", text: "Enable Google sign-in: left sidebar \u2192 Build \u2192 Authentication \u2192 Sign-in method \u2192 Google \u2192 Enable \u2192 Save." },
-    { icon: "\u{1F5C4}\uFE0F", text: "Create database: left sidebar \u2192 Build \u2192 Firestore Database \u2192 Create database \u2192 Start in production mode \u2192 pick any region \u2192 Done." },
-    { icon: "\u{1F4CB}", text: "Set security rules: Firestore \u2192 Rules tab \u2192 replace all existing rules with the rules shown below \u2192 Publish." },
-    { icon: "\u2B07\uFE0F", text: "Paste your firebaseConfig values into the fields below and click Save & Connect." }
-  ];
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", maxHeight: mobile ? "93vh" : "88vh" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "18px 18px 0" : "24px 28px 0", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 24 : 30, fontWeight: 400, color: C.text } }, "Firebase Sync Setup"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.mid, marginTop: 4 } }, "One-time setup \xB7 your data stays in your own Firebase project")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", lineHeight: 1, padding: "2px 0 0 12px" } }, "\u2715"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "16px 18px" : "18px 28px" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 } }, "Setup Steps"), STEPS.map((s, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { display: "flex", gap: 12, marginBottom: 10, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 28, height: 28, borderRadius: "50%", background: C.accentBg, border: "1px solid " + C.accentBdr, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, fontWeight: 700, color: C.accent, marginTop: 1 } }, i + 1), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.mid, lineHeight: 1.6, margin: 0, flex: 1 } }, s.text)))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 } }, "Firestore Security Rules (step 6)"), /* @__PURE__ */ React.createElement("div", { style: { background: "#0c0e16", borderRadius: 10, padding: "14px 16px", fontFamily: "monospace", fontSize: 12, color: "#7ecf8e", lineHeight: 1.7, whiteSpace: "pre", overflowX: "auto", border: "1px solid rgba(92,184,122,0.2)" } }, RULES), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: C.dim, marginTop: 6 } }, "These rules ensure only you can read/write your own data. No other user can ever access your trips.")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 } }, "Your Firebase Config (from step 3)"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 10 } }, [
-    { k: "apiKey", label: "API Key", ph: "AIzaSy\u2026" },
-    { k: "authDomain", label: "Auth Domain", ph: "your-project.firebaseapp.com" },
-    { k: "projectId", label: "Project ID", ph: "your-project-id" },
-    { k: "storageBucket", label: "Storage Bucket", ph: "your-project.appspot.com" },
-    { k: "messagingSenderId", label: "Messaging Sender ID", ph: "1234567890" },
-    { k: "appId", label: "App ID", ph: "1:123:web:abc\u2026" }
-  ].map(({ k, label, ph }) => /* @__PURE__ */ React.createElement("div", { key: k }, /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, fontWeight: 700, color: C.mid, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 } }, label), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: cfg[k],
-      onChange: (e) => upd(k, e.target.value.trim()),
-      placeholder: ph,
-      style: { width: "100%", fontFamily: "monospace", fontSize: 13 },
-      autoComplete: "off"
-    }
-  ))))), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "10px 14px", marginTop: 14, fontSize: 12, color: C.dim, lineHeight: 1.6 } }, "\u{1F512} ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "Your data never touches our servers."), " It goes directly to your own Firebase project. Firebase client config values (like apiKey) are safe to embed \u2014 they identify your project but are protected by the security rules you set above.")), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "12px 18px" : "14px 28px", borderTop: "1px solid " + C.border, flexShrink: 0, display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid, onClick: () => {
-    onSave(cfg);
-    onClose();
-  } }, "Save & Connect \u2192")));
+  const ready = !!(ghConfig.token && ghConfig.owner && ghConfig.repo && ghConfig.path);
+  return /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "20px 16px" : "28px 28px", maxWidth: 480, width: "100%" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 400, color: C.text } }, "\u21C5 GitHub Sync"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", lineHeight: 1 } }, "\u2715")), ghSyncStatus.state === "ok" && /* @__PURE__ */ React.createElement("div", { style: { background: C.okBg, border: "1px solid " + C.okBdr, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: C.ok } }, "\u2713 All trips synced \xB7 ", ghSyncStatus.lastSync ? new Date(ghSyncStatus.lastSync).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""), ghSyncStatus.state === "error" && /* @__PURE__ */ React.createElement("div", { style: { background: "rgba(220,80,80,0.1)", border: "1px solid rgba(220,80,80,0.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: C.warn } }, "\u2715 Sync error: ", ghSyncStatus.error), ghSyncStatus.state === "syncing" && /* @__PURE__ */ React.createElement("div", { style: { background: C.accentBg, border: "1px solid " + C.accentBdr, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: C.accent } }, "\u21C5 Syncing all trips\u2026"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } }, /* @__PURE__ */ React.createElement(Input, { label: "GitHub Username", value: ghConfig.owner, onChange: (v) => onSaveGhConfig((c) => ({ ...c, owner: v.trim() })), placeholder: "yourusername" }), /* @__PURE__ */ React.createElement(Input, { label: "Repository", value: ghConfig.repo, onChange: (v) => onSaveGhConfig((c) => ({ ...c, repo: v.trim() })), placeholder: "journey-data" })), /* @__PURE__ */ React.createElement(Input, { label: "File Path", value: ghConfig.path, onChange: (v) => onSaveGhConfig((c) => ({ ...c, path: v.trim() })), placeholder: "journey-trips.json" }), /* @__PURE__ */ React.createElement(Input, { label: "Personal Access Token", value: ghConfig.token, onChange: (v) => onSaveGhConfig((c) => ({ ...c, token: v.trim() })), placeholder: "ghp_\u2026" }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, lineHeight: 1.6 } }, "Create a ", /* @__PURE__ */ React.createElement("a", { href: "https://github.com/settings/tokens/new?scopes=repo&description=Journey+Sync", target: "_blank", rel: "noreferrer", style: { color: C.accent } }, "Personal Access Token"), " with ", /* @__PURE__ */ React.createElement("code", { style: { background: C.surface3, padding: "1px 4px", borderRadius: 3 } }, "repo"), " scope. Share the same token with travel companions. All trips are synced together.")), ready ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "secondary", onClick: () => {
+    onGhPull();
+  }, style: { flex: 1 }, disabled: ghSyncStatus.state === "syncing" }, "\u2B07 Pull \u2014 Get latest"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: () => {
+    onGhPush();
+  }, style: { flex: 1 }, disabled: ghSyncStatus.state === "syncing" }, "\u2B06 Push \u2014 Save all trips")) : /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "12px 14px", fontSize: 13, color: C.dim, textAlign: "center" } }, "Fill in all fields above to enable sync"));
 }
 function ChangelogModal({ onClose, lastSeenDate, onMarkSeen }) {
   const mobile = useMobile();
@@ -7392,7 +7335,7 @@ function ChangelogModal({ onClose, lastSeenDate, onMarkSeen }) {
     onClose();
   } }, "Got it")));
 }
-function ImportExportModal({ trips, currentTrip, onImport, onClose, travelProfile, onImportTravelProfile, onImportFlightApiKey, flightApiKey, onImportEvents }) {
+function ImportExportModal({ trips, currentTrip, onImport, onClose, ghConfig, onImportGhConfig, travelProfile, onImportTravelProfile, onImportFlightApiKey, flightApiKey, onImportEvents }) {
   const [tab, setTab] = useState(currentTrip ? "export" : "import");
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -7407,6 +7350,9 @@ function ImportExportModal({ trips, currentTrip, onImport, onClose, travelProfil
     try {
       const parsed = await readJSONFile(file);
       const imported = validateImport(parsed);
+      if (parsed.ghConfig && onImportGhConfig) {
+        onImportGhConfig(parsed.ghConfig);
+      }
       if (parsed.travelProfile && onImportTravelProfile) {
         onImportTravelProfile(parsed.travelProfile);
       }
@@ -7500,9 +7446,9 @@ function ImportExportModal({ trips, currentTrip, onImport, onClose, travelProfil
     () => exportItineraryMD(currentTrip)
   ), /* @__PURE__ */ React.createElement("div", { style: { height: 1, background: C.border, margin: "8px 0" } })), exportRow(
     `Export All Trips as JSON (${trips.length})`,
-    "Complete backup of every trip in Journey. Restore everything in one import." + (travelProfile && Object.keys(travelProfile).length > 0 ? " Travel profile included." : ""),
+    "Complete backup of every trip in Journey. Restore everything in one import." + (ghConfig && ghConfig.token ? " GitHub sync settings included." : "") + (travelProfile && Object.keys(travelProfile).length > 0 ? " Travel profile included." : ""),
     "\u{1F5C2}\uFE0F",
-    () => exportAllJSON(trips, wishlist, travelProfile, flightApiKey, events)
+    () => exportAllJSON(trips, wishlist, ghConfig, travelProfile, flightApiKey, events)
   ), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "12px 16px", fontSize: 12, color: C.dim, lineHeight: 1.7, marginTop: 4 } }, /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "JSON"), " files are fully re-importable and preserve all data.", " ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "CSV"), " is for spreadsheet analysis only \u2014 it cannot be re-imported.", " ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "Markdown"), " is a portable text format \u2014 great for sharing or printing.")), summaryOpen && currentTrip && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setSummaryOpen(false), maxWidth: 560 }, /* @__PURE__ */ React.createElement(TripExportModal, { trip: currentTrip, onClose: () => setSummaryOpen(false) })), tab === "import" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } }, !preview && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
     "div",
     {
@@ -8108,106 +8054,115 @@ function App() {
     }
   };
   const hasUnseenChangelog = lastSeenChangelog < LATEST_CHANGELOG_DATE;
-  const [fbConfig, setFbConfig] = useState(() => {
+  const [ghConfig, setGhConfig] = useState(() => {
     try {
-      const s = localStorage.getItem("journey_fb_config");
-      return s ? JSON.parse(s) : null;
+      const s = localStorage.getItem("journey_gh_config");
+      return s ? JSON.parse(s) : { token: "", owner: "", repo: "", path: "journey-trips.json" };
     } catch (e) {
-      return null;
+      return { token: "", owner: "", repo: "", path: "journey-trips.json" };
     }
   });
-  const [fbUser, setFbUser] = useState(null);
-  const [fbReady, setFbReady] = useState(false);
-  const [fbSyncStatus, setFbSyncStatus] = useState({ state: "idle", lastSync: null, error: null });
-  const fbApp = React.useRef(null);
-  const fbDb = React.useRef(null);
-  const fbSaveTimer = React.useRef(null);
+  const [ghSyncStatus, setGhSyncStatus] = useState({ state: "idle", lastSync: null, error: null });
+  const ghSha = useRef(null);
   useEffect(() => {
     try {
-      localStorage.setItem("journey_fb_config", JSON.stringify(fbConfig));
+      localStorage.setItem("journey_gh_config", JSON.stringify(ghConfig));
     } catch (e) {
     }
-  }, [fbConfig]);
-  useEffect(() => {
-    if (!fbConfig || !fbConfig.apiKey || typeof firebase === "undefined") return;
+  }, [ghConfig]);
+  const ghReady = !!(ghConfig.token && ghConfig.owner && ghConfig.repo && ghConfig.path);
+  const ghApiUrl = () => `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${ghConfig.path}`;
+  const ghHeaders = () => ({
+    "Authorization": "token " + ghConfig.token,
+    "Accept": "application/vnd.github.v3+json",
+    "Content-Type": "application/json"
+  });
+  const ghPull = async () => {
+    if (!ghReady) return;
+    setGhSyncStatus((s) => ({ ...s, state: "syncing", error: null }));
     try {
-      if (!fbApp.current) {
+      const res = await fetch(ghApiUrl(), { headers: ghHeaders() });
+      if (!res.ok) throw new Error("GitHub fetch failed: " + res.status);
+      const data = await res.json();
+      ghSha.current = data.sha;
+      const rawBinary = atob(data.content.replace(/\n/g, ""));
+      const bytes = new Uint8Array(rawBinary.length);
+      for (let i = 0; i < rawBinary.length; i++) bytes[i] = rawBinary.charCodeAt(i);
+      const jsonStr = new TextDecoder("utf-8").decode(bytes);
+      const content = JSON.parse(jsonStr);
+      if (content && content._journey && Array.isArray(content.trips)) {
+        const pulled = migrateCostCategories(fixCorruptedEmoji(migrateCostFields(content.trips)));
+        setTrips(pulled);
         try {
-          fbApp.current = firebase.app("journey");
+          localStorage.setItem("journey_trips_v1", JSON.stringify(pulled));
         } catch (e) {
-          fbApp.current = firebase.initializeApp(fbConfig, "journey");
         }
-        fbDb.current = firebase.firestore(fbApp.current);
       }
-      setFbReady(true);
-      const unsubscribe = firebase.auth(fbApp.current).onAuthStateChanged((user) => {
-        setFbUser(user);
-        if (user) fbLoad(user.uid);
-      });
-      return () => unsubscribe();
-    } catch (e) {
-      console.error("Firebase init:", e);
-      setFbSyncStatus({ state: "error", lastSync: null, error: e.message });
-    }
-  }, [fbConfig]);
-  const fbSignIn = () => {
-    if (!fbApp.current) return;
-    const provider = new firebase.auth.GoogleAuthProvider();
-    firebase.auth(fbApp.current).signInWithPopup(provider).catch((e) => setFbSyncStatus({ state: "error", lastSync: null, error: e.message }));
-  };
-  const fbSignOut = () => {
-    if (!fbApp.current) return;
-    firebase.auth(fbApp.current).signOut();
-    setFbUser(null);
-    setFbSyncStatus({ state: "idle", lastSync: null, error: null });
-  };
-  const fbDoc = (uid2) => fbDb.current.collection("users").doc(uid2).collection("journey").doc("main");
-  const fbLoad = async (uid2) => {
-    setFbSyncStatus((s) => ({ ...s, state: "syncing", error: null }));
-    try {
-      const snap = await fbDoc(uid2).get();
-      if (snap.exists) {
-        const d = snap.data();
-        if (Array.isArray(d.trips)) {
-          const loaded = migrateCostCategories(fixCorruptedEmoji(migrateCostFields(d.trips)));
-          setTrips(loaded);
+      if (content && content.travelProfile) {
+        setTravelProfile(content.travelProfile);
+        try {
+          localStorage.setItem("journey_travel_profile", JSON.stringify(content.travelProfile));
+        } catch (e) {
         }
-        if (Array.isArray(d.wishlist)) setWishlist(d.wishlist);
-        if (Array.isArray(d.events)) setEvents(d.events);
-        if (d.appSettings) setAppSettings(d.appSettings);
-        if (d.flightApiKey) setFlightApiKey(d.flightApiKey);
       }
-      setFbSyncStatus({ state: "ok", lastSync: (/* @__PURE__ */ new Date()).toISOString(), error: null });
+      if (content && content.flightApiKey) {
+        setFlightApiKey(content.flightApiKey);
+        try {
+          localStorage.setItem("journey_flight_api_key", content.flightApiKey);
+        } catch (e) {
+        }
+      }
+      if (content && Array.isArray(content.wishlist)) {
+        setWishlist(content.wishlist);
+        try {
+          localStorage.setItem("journey_wishlist_v1", JSON.stringify(content.wishlist));
+        } catch (e) {
+        }
+      }
+      if (content && Array.isArray(content.events)) {
+        setEvents(content.events);
+        try {
+          localStorage.setItem("journey_events_v1", JSON.stringify(content.events));
+        } catch (e) {
+        }
+      }
+      setGhSyncStatus({ state: "ok", lastSync: (/* @__PURE__ */ new Date()).toISOString(), error: null });
     } catch (e) {
-      setFbSyncStatus({ state: "error", lastSync: null, error: e.message });
+      setGhSyncStatus({ state: "error", lastSync: null, error: e.message });
     }
   };
-  const fbSave = async (t, w, ev, s, ak) => {
-    if (!fbUser || !fbDb.current) return;
-    setFbSyncStatus((prev) => ({ ...prev, state: "syncing" }));
+  const ghPush = async (tripsToSave, wishlistToSave, eventsToSave, profile, apiKey) => {
+    if (!ghReady) return;
+    setGhSyncStatus((s) => ({ ...s, state: "syncing", error: null }));
     try {
-      await fbDoc(fbUser.uid).set({
-        trips: t,
-        wishlist: w,
-        events: ev,
-        appSettings: s,
-        flightApiKey: ak || "",
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      setFbSyncStatus({ state: "ok", lastSync: (/* @__PURE__ */ new Date()).toISOString(), error: null });
+      if (!ghSha.current) {
+        const res2 = await fetch(ghApiUrl(), { headers: ghHeaders() });
+        if (res2.ok) {
+          const d = await res2.json();
+          ghSha.current = d.sha;
+        }
+      }
+      const payload = { _journey: true, trips: tripsToSave };
+      if (wishlistToSave && wishlistToSave.length > 0) payload.wishlist = wishlistToSave;
+      if (eventsToSave && eventsToSave.length > 0) payload.events = eventsToSave;
+      if (profile && Object.keys(profile).length > 0) payload.travelProfile = profile;
+      if (apiKey) payload.flightApiKey = apiKey;
+      const body = { message: "Journey sync " + (/* @__PURE__ */ new Date()).toISOString(), content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))) };
+      if (ghSha.current) body.sha = ghSha.current;
+      const res = await fetch(ghApiUrl(), { method: "PUT", headers: ghHeaders(), body: JSON.stringify(body) });
+      if (!res.ok) throw new Error("GitHub push failed: " + res.status);
+      const data = await res.json();
+      ghSha.current = data.content && data.content.sha;
+      setGhSyncStatus({ state: "ok", lastSync: (/* @__PURE__ */ new Date()).toISOString(), error: null });
     } catch (e) {
-      setFbSyncStatus({ state: "error", lastSync: null, error: e.message });
+      setGhSyncStatus({ state: "error", lastSync: null, error: e.message });
     }
   };
   useEffect(() => {
-    if (!fbUser || !fbReady) return;
-    if (fbSaveTimer.current) clearTimeout(fbSaveTimer.current);
-    fbSaveTimer.current = setTimeout(
-      () => fbSave(trips, wishlist2, events2, appSettings, flightApiKey),
-      2e3
-    );
-    return () => clearTimeout(fbSaveTimer.current);
-  }, [trips, wishlist2, events2, appSettings, flightApiKey]);
+    if (ghReady) {
+      ghPull();
+    }
+  }, []);
   const isVP = useIsVisionPro();
   useEffect(() => {
     if (!isVP) return;
@@ -8426,12 +8381,11 @@ function App() {
       pwaPrompt,
       travelProfile,
       onSaveTravelProfile: setTravelProfile,
-      fbUser,
-      fbReady,
-      fbSyncStatus,
-      onFbSignIn: fbSignIn,
-      onFbSignOut: fbSignOut,
-      onOpenFbSetup: () => setModal({ type: "fbSetup" }),
+      ghReady,
+      ghSyncStatus,
+      onGhPull: ghPull,
+      onGhPush: () => ghPush(trips, wishlist2, events2, travelProfile, flightApiKey),
+      onOpenSync: () => setModal({ type: "syncSettings" }),
       hasUnseenChangelog,
       onOpenChangelog: () => setModal({ type: "changelog" }),
       onOpenTravelProfile: () => setModal({ type: "travelProfile" }),
@@ -8442,7 +8396,9 @@ function App() {
       onAddWish: (item) => setWishlist((ws) => [...ws, item]),
       onUpdateWish: (item) => setWishlist((ws) => ws.map((w) => w.id === item.id ? item : w)),
       onDeleteWish: (id) => setWishlist((ws) => ws.filter((w) => w.id !== id)),
-      onConvertWish: (item) => setModal({ type: "newTrip", wishItem: item }),
+      onConvertWish: (item) => {
+        setModal({ type: "newTrip", wishItem: item });
+      },
       appSettings,
       onSetAppSetting: setAppSetting,
       events: events2,
@@ -8530,10 +8486,14 @@ function App() {
         setView("day");
       }
     }
-  ), modal && modal.type === "fbSetup" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null), maxWidth: 560 }, /* @__PURE__ */ React.createElement(
-    FirebaseSetupModal,
+  ), modal && modal.type === "syncSettings" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null), maxWidth: 480 }, /* @__PURE__ */ React.createElement(
+    GhSyncModal,
     {
-      onSave: (cfg) => setFbConfig(cfg),
+      ghConfig,
+      onSaveGhConfig: setGhConfig,
+      ghSyncStatus,
+      onGhPull: ghPull,
+      onGhPush: () => ghPush(trips, wishlist2, events2, travelProfile, flightApiKey),
       onClose: () => setModal(null)
     }
   )), modal && modal.type === "changelog" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => {
@@ -8587,6 +8547,8 @@ function App() {
         if (mode === "replace") setTrips(imported);
         else setTrips((ts) => [...ts, ...imported]);
       },
+      ghConfig,
+      onImportGhConfig: setGhConfig,
       travelProfile,
       onImportTravelProfile: setTravelProfile,
       onImportFlightApiKey: setFlightApiKey,
@@ -8715,7 +8677,6 @@ class ErrorBoundary extends React.Component {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
-  
   </script>
 </body>
 </html>
