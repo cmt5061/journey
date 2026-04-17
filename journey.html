@@ -8173,6 +8173,7 @@ function App() {
   const fbApp = React.useRef(null);
   const fbDb = React.useRef(null);
   const fbSaveTimer = React.useRef(null);
+  const fbReadyToSave = React.useRef(false);
   useEffect(() => {
     try {
       localStorage.setItem("journey_fb_config", JSON.stringify(fbConfig));
@@ -8212,6 +8213,7 @@ function App() {
     setFbSyncStatus((s) => ({ ...s, state: "syncing", error: null }));
     try {
       const snap = await fbDoc().get();
+      fbReadyToSave.current = true;
       if (snap.exists) {
         const d = snap.data();
         if (Array.isArray(d.trips)) {
@@ -8246,14 +8248,14 @@ function App() {
     }
   };
   useEffect(() => {
-    if (!fbReady) return;
+    if (!fbReadyToSave.current) return;
     if (fbSaveTimer.current) clearTimeout(fbSaveTimer.current);
     fbSaveTimer.current = setTimeout(
       () => fbSave(trips, wishlist, events, appSettings, flightApiKey),
       2e3
     );
     return () => clearTimeout(fbSaveTimer.current);
-  }, [trips, wishlist, events, appSettings, flightApiKey, fbReady]);
+  }, [trips, wishlist, events, appSettings, flightApiKey]);
   const isVP = useIsVisionPro();
   useEffect(() => {
     if (!isVP) return;
