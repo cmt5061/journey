@@ -4206,7 +4206,17 @@ function CalendarView({ trip, onOpenDay, onSelectCity, mobile }) {
       cityType: c.cityType
     };
   }).filter((s) => s.firstDate);
-  const PAGE_SIZE_OPTIONS = mobile ? [{ v: 1, l: "1 Week" }, { v: 2, l: "2 Weeks" }, { v: 999, l: "Full Trip" }] : [{ v: 2, l: "2 Weeks" }, { v: 4, l: "4 Weeks" }, { v: 999, l: "Full Trip" }];
+  const isDayMode = pageSize === "days";
+  const PAGE_SIZE_OPTIONS = mobile ? [{ v: "days", l: "2 Days" }, { v: 1, l: "1 Week" }, { v: 2, l: "2 Weeks" }, { v: 999, l: "Full Trip" }] : [{ v: "days", l: "2 Days" }, { v: 2, l: "2 Weeks" }, { v: 4, l: "4 Weeks" }, { v: 999, l: "Full Trip" }];
+  const [dayScrollIdx, setDayScrollIdx] = React.useState(() => {
+    const todayStr2 = today();
+    const idx = allDays.findIndex((d) => d.date >= (todayStr2 >= tripStart && todayStr2 <= tripEnd ? todayStr2 : tripStart));
+    return Math.max(0, idx);
+  });
+  const safeDayIdx = Math.min(dayScrollIdx, Math.max(0, allDays.length - 1));
+  const daysPerPane = mobile ? 2 : 3;
+  const canScrollBack = safeDayIdx > 0;
+  const canScrollFwd = safeDayIdx + daysPerPane < allDays.length;
   const detailLevel = effectivePageSize <= 1 ? "high" : effectivePageSize <= 2 ? "med" : "low";
   const maxActsPerCell = detailLevel === "high" ? 5 : detailLevel === "med" ? 4 : 2;
   const showTime = detailLevel !== "low";
@@ -4327,20 +4337,29 @@ function CalendarView({ trip, onOpenDay, onSelectCity, mobile }) {
   return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 900, margin: "0 auto", padding: mobile ? "14px 10px" : "24px 28px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12 } }, /* @__PURE__ */ React.createElement(
     "button",
     {
-      onClick: () => setPageStart((p) => Math.max(0, p - effectivePageSize)),
-      disabled: pageStart === 0,
-      style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, width: 32, height: 32, cursor: pageStart === 0 ? "default" : "pointer", color: pageStart === 0 ? C.dim : C.text, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", opacity: pageStart === 0 ? 0.35 : 1 }
+      onClick: () => isDayMode ? setDayScrollIdx((i) => Math.max(0, i - 1)) : setPageStart((p) => Math.max(0, p - effectivePageSize)),
+      disabled: isDayMode ? !canScrollBack : pageStart === 0,
+      style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, width: 32, height: 32, cursor: (isDayMode ? !canScrollBack : pageStart === 0) ? "default" : "pointer", color: (isDayMode ? !canScrollBack : pageStart === 0) ? C.dim : C.text, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", opacity: (isDayMode ? !canScrollBack : pageStart === 0) ? 0.35 : 1 }
     },
     "\u2039"
   ), /* @__PURE__ */ React.createElement(
     "button",
     {
-      onClick: () => setPageStart((p) => Math.min((totalPages - 1) * effectivePageSize, p + effectivePageSize)),
-      disabled: pageStart + effectivePageSize >= weeks.length,
-      style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, width: 32, height: 32, cursor: pageStart + effectivePageSize >= weeks.length ? "default" : "pointer", color: pageStart + effectivePageSize >= weeks.length ? C.dim : C.text, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", opacity: pageStart + effectivePageSize >= weeks.length ? 0.35 : 1 }
+      onClick: () => isDayMode ? setDayScrollIdx((i) => Math.min(allDays.length - daysPerPane, i + 1)) : setPageStart((p) => Math.min((totalPages - 1) * effectivePageSize, p + effectivePageSize)),
+      disabled: isDayMode ? !canScrollFwd : pageStart + effectivePageSize >= weeks.length,
+      style: { background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, width: 32, height: 32, cursor: (isDayMode ? !canScrollFwd : pageStart + effectivePageSize >= weeks.length) ? "default" : "pointer", color: (isDayMode ? !canScrollFwd : pageStart + effectivePageSize >= weeks.length) ? C.dim : C.text, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", opacity: (isDayMode ? !canScrollFwd : pageStart + effectivePageSize >= weeks.length) ? 0.35 : 1 }
     },
     "\u203A"
-  ), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontSize: mobile ? 17 : 20, fontWeight: 600, color: C.text, fontFamily: "'Cormorant Garamond', serif" } }, visibleWeeks.length > 0 && (() => {
+  ), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontSize: mobile ? 17 : 20, fontWeight: 600, color: C.text, fontFamily: "'Cormorant Garamond', serif" } }, isDayMode ? (() => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const fd = allDays[safeDayIdx];
+    const ld = allDays[Math.min(safeDayIdx + daysPerPane - 1, allDays.length - 1)];
+    if (!fd) return "";
+    const fdt = /* @__PURE__ */ new Date(fd.date + "T12:00:00Z");
+    if (!ld || fd.date === ld.date) return months[fdt.getUTCMonth()] + " " + fdt.getUTCDate() + ", " + fdt.getUTCFullYear();
+    const ldt = /* @__PURE__ */ new Date(ld.date + "T12:00:00Z");
+    return months[fdt.getUTCMonth()] + " " + fdt.getUTCDate() + " \u2013 " + (fdt.getUTCMonth() !== ldt.getUTCMonth() ? months[ldt.getUTCMonth()] + " " : "") + ldt.getUTCDate();
+  })() : visibleWeeks.length > 0 && (() => {
     const firstDate = visibleWeeks[0][0];
     const lastDate = visibleWeeks[visibleWeeks.length - 1][6];
     const fd = /* @__PURE__ */ new Date(firstDate + "T12:00:00Z");
@@ -4350,7 +4369,7 @@ function CalendarView({ trip, onOpenDay, onSelectCity, mobile }) {
       return months[fd.getUTCMonth()] + " " + fd.getUTCFullYear();
     if (fd.getUTCFullYear() === ld.getUTCFullYear())
       return months[fd.getUTCMonth()] + " \u2013 " + months[ld.getUTCMonth()] + " " + fd.getUTCFullYear();
-    return months[fd.getUTCMonth()] + " '" + String(fd.getUTCFullYear()).slice(2) + " \u2013 " + months[ld.getUTCMonth()] + " '" + String(ld.getUTCFullYear()).slice(2);
+    return months[fd.getUTCMonth()] + "'" + String(fd.getUTCFullYear()).slice(2) + " \u2013 " + months[ld.getUTCMonth()] + "'" + String(ld.getUTCFullYear()).slice(2);
   })()), /* @__PURE__ */ React.createElement("div", { style: { position: "relative", display: "flex", alignItems: "center", background: C.surface2, border: "1px solid " + C.border, borderRadius: 8, overflow: "hidden" } }, /* @__PURE__ */ React.createElement(
     "select",
     {
@@ -4363,7 +4382,58 @@ function CalendarView({ trip, onOpenDay, onSelectCity, mobile }) {
       style: { background: "none", border: "none", color: C.text, fontSize: 12, fontWeight: 600, padding: "6px 24px 6px 10px", cursor: "pointer", width: "auto", minWidth: 80 }
     },
     PAGE_SIZE_OPTIONS.map((o) => /* @__PURE__ */ React.createElement("option", { key: o.v, value: o.v }, o.l))
-  ))), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, DOW_SHORT.map((d) => /* @__PURE__ */ React.createElement("th", { key: d, style: {
+  ))), isDayMode && /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: 400, alignItems: "stretch" } }, Array.from({ length: daysPerPane }).map((_, paneIdx) => {
+    const dayIdx = safeDayIdx + paneIdx;
+    if (dayIdx >= allDays.length) return /* @__PURE__ */ React.createElement("div", { key: paneIdx, style: { flex: 1, background: C.surface, borderRight: paneIdx < daysPerPane - 1 ? "1px solid " + C.border : "none" } });
+    const d = allDays[dayIdx];
+    const isToday = d.date === today();
+    const dow = (/* @__PURE__ */ new Date(d.date + "T12:00:00Z")).getUTCDay();
+    const DOW_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const MONTHS_S = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const dt = /* @__PURE__ */ new Date(d.date + "T12:00:00Z");
+    const BLOCK_META_D = {
+      morning: { label: "Morning", icon: "\u{1F305}", color: "#d4a853" },
+      afternoon: { label: "Afternoon", icon: "\u2600\uFE0F", color: "#e08a4a" },
+      evening: { label: "Evening", icon: "\u{1F319}", color: "#8e7dcf" }
+    };
+    return /* @__PURE__ */ React.createElement("div", { key: d.id, style: {
+      flex: 1,
+      borderRight: paneIdx < daysPerPane - 1 ? "1px solid " + C.border : "none",
+      display: "flex",
+      flexDirection: "column",
+      background: isToday ? "rgba(92,184,122,0.06)" : C.surface,
+      overflow: "hidden"
+    } }, /* @__PURE__ */ React.createElement("div", { style: {
+      background: isToday ? "rgba(92,184,122,0.15)" : C.surface2,
+      borderBottom: "1px solid " + C.border,
+      padding: mobile ? "10px 10px 8px" : "14px 16px 10px",
+      position: "relative",
+      cursor: "pointer"
+    }, onClick: () => {
+      onSelectCity(d.cityId);
+      onOpenDay(d.id);
+    } }, /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: 0, left: 0, right: 0, height: 4, background: d.cityColor } }), /* @__PURE__ */ React.createElement("div", { style: { paddingTop: 4 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 3 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: mobile ? 10 : 11, fontWeight: 700, color: isToday ? C.ok : C.dim, textTransform: "uppercase", letterSpacing: "0.07em" } }, DOW_FULL[dow]), isToday && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: C.ok, background: C.okBg, border: "1px solid " + C.okBdr, borderRadius: 6, padding: "1px 6px" } }, "Today")), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 26 : 32, fontWeight: 300, color: isToday ? C.ok : C.text, lineHeight: 1 } }, MONTHS_S[dt.getUTCMonth()], " ", dt.getUTCDate()), /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 12 : 13, fontWeight: 600, color: C.text, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, d.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: d.cityColor, textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, d.cityName)), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "50%", right: 10, transform: "translateY(-50%)", fontSize: 14, color: C.dim, marginTop: 4 } }, "\u203A")), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "8px 8px" : "10px 12px" } }, ["morning", "afternoon", "evening"].map((bl) => {
+      const acts = d.blocks[bl] || [];
+      const bm = BLOCK_META_D[bl];
+      return /* @__PURE__ */ React.createElement("div", { key: bl, style: { marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5, marginBottom: 5 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12 } }, bm.icon), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: bm.color, textTransform: "uppercase", letterSpacing: "0.07em" } }, bm.label), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, height: 1, background: bm.color + "33" } })), acts.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontStyle: "italic", paddingLeft: 4 } }, "\u2014") : acts.map((a) => {
+        const ti = ACT_TYPES.find((x) => x.id === a.type) || ACT_TYPES[7];
+        return /* @__PURE__ */ React.createElement("div", { key: a.id, style: {
+          background: C.surface2,
+          border: "1px solid " + (a.isConfirmed ? C.okBdr : C.border),
+          borderRadius: 8,
+          padding: mobile ? "7px 8px" : "8px 10px",
+          marginBottom: 5
+        } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, flexShrink: 0, marginTop: 1 } }, ti.icon), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: mobile ? 12 : 13, fontWeight: 600, color: C.text, lineHeight: 1.3 } }, a.title || "Untitled"), (a.time || a.duration) && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: bm.color, fontWeight: 600, marginTop: 2 } }, a.time, a.duration ? " \xB7 " + a.duration : ""), a.location && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, marginTop: 2 } }, "\u{1F4CD} ", a.location), a.confirmation && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.ok, fontWeight: 600, marginTop: 2 } }, "\u2713 ", a.confirmation), a.notes && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.dim, fontStyle: "italic", marginTop: 3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" } }, a.notes), a.cost && a.cost.amount && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.mid, marginTop: 2 } }, a.cost.amount, " ", a.cost.paidBy !== "split" ? "\xB7 " + a.cost.paidBy : ""))));
+      }));
+    }), d.reflection && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 6, padding: "8px 10px", background: d.cityColor + "12", borderLeft: "3px solid " + d.cityColor + "66", borderRadius: "0 6px 6px 0", fontSize: 11, color: C.mid, fontStyle: "italic", lineHeight: 1.55 } }, '"', d.reflection, '"')));
+  })), /* @__PURE__ */ React.createElement("div", { style: { padding: "8px 12px", background: C.surface2, borderTop: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 } }, allDays.map((_, i) => /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      key: i,
+      onClick: () => setDayScrollIdx(Math.min(i, allDays.length - daysPerPane)),
+      style: { width: i >= safeDayIdx && i < safeDayIdx + daysPerPane ? 16 : 5, height: 5, borderRadius: 3, background: i >= safeDayIdx && i < safeDayIdx + daysPerPane ? C.accent : C.surface3, transition: "all 0.2s", cursor: "pointer" }
+    }
+  )))), !isDayMode && /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, DOW_SHORT.map((d) => /* @__PURE__ */ React.createElement("th", { key: d, style: {
     fontSize: mobile ? 9 : 10,
     fontWeight: 700,
     color: C.dim,
