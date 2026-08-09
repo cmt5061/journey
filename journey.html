@@ -911,26 +911,34 @@ const CHANGELOG = [
 ];
 const LATEST_CHANGELOG_DATE = CHANGELOG[0].date;
 const downloadFile = (filename, content, mime = "application/json") => {
+  const blob = new Blob([content], { type: mime });
   try {
-    const b64 = btoa(unescape(encodeURIComponent(content)));
-    const dataUrl = "data:" + mime + ";base64," + b64;
+    const file = new File([blob], filename, { type: mime });
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+      navigator.share({ files: [file] }).catch(() => {
+        downloadFileViaAnchor(blob, filename);
+      });
+      return;
+    }
+  } catch (e) {
+  }
+  downloadFileViaAnchor(blob, filename);
+};
+const downloadFileViaAnchor = (blob, filename) => {
+  try {
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = dataUrl;
+    a.href = url;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1e3);
   } catch (e) {
     try {
-      const blob = new Blob([content], { type: mime });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1e3);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 1e4);
     } catch (e2) {
       console.error("Download failed:", e2);
     }
