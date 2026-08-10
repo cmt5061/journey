@@ -666,6 +666,20 @@ const getCurrentActivity = (allToday) => {
 const JOURNEY_VERSION = "1.0";
 const CHANGELOG = [
   {
+    version: "1.18",
+    date: "2026-04-18",
+    title: "Trips Now Save Reliably, With or Without Cloud Sync",
+    emoji: "\u{1F4BE}",
+    changes: [
+      "Critical fix: trips now save to this device's local storage on every change \u2014 previously, without Cloud Sync configured, trip edits didn't survive closing and reopening the app at all",
+      "Cloud Sync rebuilt from the ground up \u2014 each trip is now its own document in Firestore instead of your whole account being one giant JSON blob, so editing different trips on different devices can never overwrite each other",
+      "Wishlist, events, and settings now sync as their own small documents too, so e.g. editing your flight tracking API key can't accidentally clobber trip data",
+      "First-time connection to a Sync Key now merges with existing local data instead of overwriting it \u2014 connecting a device that already has trips no longer risks losing them",
+      "Cloud Sync Setup now tests a real write + read to Firestore before saving, and shows a clear error immediately if security rules or config are wrong, instead of failing silently later",
+      "Custom checklist templates now also persist locally"
+    ]
+  },
+  {
     version: "1.17",
     date: "2026-04-17",
     title: "Cloud Sync Is Now Actually Live",
@@ -8135,8 +8149,48 @@ function FirebaseSetupModal({ onSave, onClose, syncKey, onChangeSyncKey, current
   const [copiedKey, setCopiedKey] = useState(false);
   const [editingKey, setEditingKey] = useState(false);
   const [keyDraft, setKeyDraft] = useState(syncKey || "");
-  const upd = (k, v) => setCfg((c) => ({ ...c, [k]: v }));
+  const [testState, setTestState] = useState("idle");
+  const [testError, setTestError] = useState("");
+  const upd = (k, v) => {
+    setCfg((c) => ({ ...c, [k]: v }));
+    setTestState("idle");
+  };
   const valid = cfg.apiKey.trim() && cfg.projectId.trim() && cfg.authDomain.trim();
+  const testConnection = async () => {
+    setTestState("testing");
+    setTestError("");
+    try {
+      if (typeof firebase === "undefined") throw new Error("Firebase SDK didn't load \u2014 check your connection and try again.");
+      try {
+        const existing = firebase.app("journey-test");
+        await existing.delete();
+      } catch (e) {
+      }
+      const testApp = firebase.initializeApp(cfg, "journey-test");
+      const db = firebase.firestore(testApp);
+      const ref = db.collection("journey").doc(syncKey).collection("meta").doc("_healthcheck");
+      await ref.set({ ts: Date.now() });
+      const snap = await ref.get();
+      if (!snap.exists) throw new Error("Wrote successfully but couldn't read it back \u2014 check your security rules.");
+      await testApp.delete();
+      setTestState("ok");
+      return true;
+    } catch (e) {
+      let msg = e.message || String(e);
+      if (msg.includes("permission")) msg = "Permission denied \u2014 your Firestore security rules aren't allowing reads/writes. See the rules below.";
+      if (msg.includes("not-found") || msg.includes("NOT_FOUND")) msg = "Project not found \u2014 double check your Project ID.";
+      setTestError(msg);
+      setTestState("error");
+      return false;
+    }
+  };
+  const handleSaveConnect = async () => {
+    const ok = await testConnection();
+    if (ok) {
+      onSave(cfg);
+      setTimeout(onClose, 700);
+    }
+  };
   const RULES = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -8202,10 +8256,7 @@ service cloud.firestore {
       style: { width: "100%", fontFamily: "monospace", fontSize: 13 },
       autoComplete: "off"
     }
-  ))))), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "10px 14px", marginTop: 14, fontSize: 12, color: C.dim, lineHeight: 1.6 } }, "\u{1F512} ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "No Google sign-in, no account needed."), " Your data is stored at a path that includes your 36-character Sync Key \u2014 effectively a private URL. The Firestore rules allow reads/writes, but nobody can access your data without knowing the exact key. Firebase config values are safe to share \u2014 they're just project identifiers, not secrets.")), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "12px 18px" : "14px 28px", borderTop: "1px solid " + C.border, flexShrink: 0, display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid, onClick: () => {
-    onSave(cfg);
-    onClose();
-  } }, "Save & Connect \u2192")));
+  ))))), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "10px 14px", marginTop: 14, fontSize: 12, color: C.dim, lineHeight: 1.6 } }, "\u{1F512} ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "No Google sign-in, no account needed."), " Your data is stored at a path that includes your 36-character Sync Key \u2014 effectively a private URL. The Firestore rules allow reads/writes, but nobody can access your data without knowing the exact key. Firebase config values are safe to share \u2014 they're just project identifiers, not secrets."), testState === "error" && /* @__PURE__ */ React.createElement("div", { style: { background: C.warnBg, border: "1px solid " + C.warnBdr, borderRadius: 10, padding: "12px 14px", marginTop: 14, fontSize: 13, color: C.warn, lineHeight: 1.6 } }, "\u2715 ", /* @__PURE__ */ React.createElement("strong", null, "Connection test failed:"), " ", testError), testState === "ok" && /* @__PURE__ */ React.createElement("div", { style: { background: C.okBg, border: "1px solid " + C.okBdr, borderRadius: 10, padding: "12px 14px", marginTop: 14, fontSize: 13, color: C.ok } }, "\u2713 Connection verified \u2014 read and write both work.")), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "12px 18px" : "14px 28px", borderTop: "1px solid " + C.border, flexShrink: 0, display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid || testState === "testing", onClick: handleSaveConnect }, testState === "testing" ? "Testing connection\u2026" : "Test & Connect \u2192")));
 }
 function ChangelogModal({ onClose, lastSeenDate, onMarkSeen }) {
   const mobile = useMobile();
@@ -8813,8 +8864,38 @@ function TemplatesModal({ trip, templates, onSave, onDelete, onImport, onClose }
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", maxHeight: "90vh" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "18px 18px 0" : "22px 24px 0", borderBottom: "1px solid " + C.border, flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: C.text } }, "Checklist Templates"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 2 } }, "Reusable packing lists and checklists for any trip.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", flexShrink: 0 } }, "x")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 0, marginTop: 8 } }, trip && onImport && tabBtn("browse", "Browse & Import"), tabBtn("edit", "My Templates"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "16px 18px" : "20px 24px" } }, tab === "browse" && renderBrowse(), tab === "edit" && renderEdit()), tab === "browse" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, borderTop: "1px solid " + C.border, padding: mobile ? "12px 18px" : "14px 24px", display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" } }, tpl && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.mid, flex: 1 } }, tpl.items.length, " items selected"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !canImport, onClick: doImport }, canImport ? "Import to Trip" : "Select a template")), tab === "edit" && editView === "list" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, borderTop: "1px solid " + C.border, padding: mobile ? "12px 18px" : "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, color: C.dim } }, templates.length, " custom template", templates.length !== 1 ? "s" : ""), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Close"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: startNew }, "+ New Template"))), tab === "edit" && editView === "form" && /* @__PURE__ */ React.createElement("div", { style: { flexShrink: 0, height: 1, background: C.border } }));
 }
 function App() {
-  const [trips, setTrips] = useState(SAMPLE_TRIPS);
-  const [templates, setTemplates] = useState([]);
+  const [trips, setTrips] = useState(() => {
+    try {
+      const saved = localStorage.getItem("journey_trips_v1");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return migrateCostCategories(fixCorruptedEmoji(migrateCostFields(parsed)));
+      }
+    } catch (e) {
+    }
+    return SAMPLE_TRIPS;
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("journey_trips_v1", JSON.stringify(trips));
+    } catch (e) {
+      showToast("\u26A0\uFE0F Couldn't save locally \u2014 device storage may be full. Export a backup soon.", null, 8e3);
+    }
+  }, [trips]);
+  const [templates, setTemplates] = useState(() => {
+    try {
+      const s = localStorage.getItem("journey_templates_v1");
+      return s ? JSON.parse(s) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("journey_templates_v1", JSON.stringify(templates));
+    } catch (e) {
+    }
+  }, [templates]);
   const [view, setView] = useState("home");
   const [tripId, setTripId] = useState(null);
   const [cityId, setCityId] = useState(null);
@@ -8973,37 +9054,16 @@ function App() {
   const [fbSyncStatus, setFbSyncStatus] = useState({ state: "idle", lastSync: null, error: null });
   const fbApp = React.useRef(null);
   const fbDb = React.useRef(null);
-  const fbSaveTimer = React.useRef(null);
-  const fbReadyToSave = React.useRef(false);
-  const fbUnsub = React.useRef(null);
-  const CACHE_KEY = "journey_fb_cache_v1";
-  const CACHE_TS_KEY = "journey_fb_cache_ts";
-  const writeCache = (data) => {
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-      localStorage.setItem(CACHE_TS_KEY, (/* @__PURE__ */ new Date()).toISOString());
-    } catch (e) {
-    }
-  };
-  const readCache = () => {
-    try {
-      const raw = localStorage.getItem(CACHE_KEY);
-      const ts = localStorage.getItem(CACHE_TS_KEY);
-      return raw ? { data: JSON.parse(raw), ts } : null;
-    } catch (e) {
-      return null;
-    }
-  };
-  const applyPayload = (d) => {
-    if (Array.isArray(d.trips)) {
-      const loaded = migrateCostCategories(fixCorruptedEmoji(migrateCostFields(d.trips)));
-      setTrips(loaded);
-    }
-    if (Array.isArray(d.wishlist)) setWishlist(d.wishlist);
-    if (Array.isArray(d.events)) setEvents(d.events);
-    if (d.appSettings) setAppSettings(d.appSettings);
-    if (d.flightApiKey) setFlightApiKey(d.flightApiKey);
-  };
+  const fbTripsUnsub = React.useRef(null);
+  const fbWishlistUnsub = React.useRef(null);
+  const fbEventsUnsub = React.useRef(null);
+  const fbSettingsUnsub = React.useRef(null);
+  const fbReadyFlags = React.useRef({ trips: false, wishlist: false, events: false, settings: false });
+  const fbLastSyncedTrips = React.useRef(null);
+  const fbTripsSaveTimer = React.useRef(null);
+  const fbWishlistSaveTimer = React.useRef(null);
+  const fbEventsSaveTimer = React.useRef(null);
+  const fbSettingsSaveTimer = React.useRef(null);
   useEffect(() => {
     try {
       localStorage.setItem("journey_fb_config", JSON.stringify(fbConfig));
@@ -9016,6 +9076,191 @@ function App() {
     } catch (e) {
     }
   }, [syncKey]);
+  const fbTripsCol = () => fbDb.current.collection("journey").doc(syncKey).collection("trips");
+  const fbMetaDoc = (name) => fbDb.current.collection("journey").doc(syncKey).collection("meta").doc(name);
+  const fbNoteStatus = (patch) => setFbSyncStatus((s) => ({ ...s, ...patch }));
+  const fbNoteError = (context, err) => {
+    console.error("Firestore " + context + ":", err);
+    fbNoteStatus({ state: "error", error: err.message });
+  };
+  const fbNoteOk = () => fbNoteStatus({ state: "ok", lastSync: (/* @__PURE__ */ new Date()).toISOString(), error: null });
+  const fbLoadTrips = () => {
+    if (fbTripsUnsub.current) {
+      fbTripsUnsub.current();
+      fbTripsUnsub.current = null;
+    }
+    fbLastSyncedTrips.current = null;
+    fbTripsUnsub.current = fbTripsCol().onSnapshot(
+      (snap) => {
+        const isFirstSync = fbLastSyncedTrips.current === null;
+        if (isFirstSync) {
+          const serverMap = /* @__PURE__ */ new Map();
+          snap.forEach((doc) => serverMap.set(doc.id, doc.data()));
+          setTrips((prevLocal) => {
+            const merged = /* @__PURE__ */ new Map();
+            serverMap.forEach((t, id) => merged.set(id, t));
+            prevLocal.forEach((t) => {
+              const server = serverMap.get(t.id);
+              if (!server || JSON.stringify(server) !== JSON.stringify(t)) merged.set(t.id, t);
+            });
+            const synced = /* @__PURE__ */ new Map();
+            serverMap.forEach((t, id) => {
+              const local = merged.get(id);
+              if (local && JSON.stringify(local) === JSON.stringify(t)) synced.set(id, t);
+            });
+            fbLastSyncedTrips.current = synced;
+            return migrateCostCategories(fixCorruptedEmoji(migrateCostFields(Array.from(merged.values()))));
+          });
+        } else {
+          let appliedRemoteChange = false;
+          snap.docChanges().forEach((change) => {
+            const id = change.doc.id;
+            if (change.doc.metadata.hasPendingWrites) {
+              if (change.type === "removed") fbLastSyncedTrips.current.delete(id);
+              else fbLastSyncedTrips.current.set(id, change.doc.data());
+              return;
+            }
+            appliedRemoteChange = true;
+            if (change.type === "removed") fbLastSyncedTrips.current.delete(id);
+            else fbLastSyncedTrips.current.set(id, change.doc.data());
+          });
+          if (appliedRemoteChange) {
+            setTrips(migrateCostCategories(fixCorruptedEmoji(migrateCostFields(Array.from(fbLastSyncedTrips.current.values())))));
+          }
+        }
+        fbReadyFlags.current.trips = true;
+        fbNoteOk();
+      },
+      (err) => fbNoteError("trips listener", err)
+    );
+  };
+  const fbSaveTrips = async (currentTrips) => {
+    if (!fbDb.current || !fbReadyFlags.current.trips) return;
+    const priorMap = fbLastSyncedTrips.current || /* @__PURE__ */ new Map();
+    const currentIds = new Set(currentTrips.map((t) => t.id));
+    const toWrite = currentTrips.filter((t) => {
+      const prior = priorMap.get(t.id);
+      return !prior || JSON.stringify(prior) !== JSON.stringify(t);
+    });
+    const toDelete = Array.from(priorMap.keys()).filter((id) => !currentIds.has(id));
+    if (toWrite.length === 0 && toDelete.length === 0) return;
+    fbNoteStatus({ state: "syncing" });
+    try {
+      const ops = [
+        ...toWrite.map((t) => ({ type: "set", t })),
+        ...toDelete.map((id) => ({ type: "delete", id }))
+      ];
+      for (let i = 0; i < ops.length; i += 450) {
+        const batch = fbDb.current.batch();
+        ops.slice(i, i + 450).forEach((op) => {
+          if (op.type === "set") {
+            batch.set(fbTripsCol().doc(op.t.id), { ...op.t, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+          } else {
+            batch.delete(fbTripsCol().doc(op.id));
+          }
+        });
+        await batch.commit();
+      }
+      toWrite.forEach((t) => priorMap.set(t.id, t));
+      toDelete.forEach((id) => priorMap.delete(id));
+      fbLastSyncedTrips.current = priorMap;
+      fbNoteOk();
+    } catch (e) {
+      fbNoteError("trips save", e);
+    }
+  };
+  const fbLoadList = (name, setLocal) => {
+    let firstSync = true;
+    return fbMetaDoc(name).onSnapshot(
+      (snap) => {
+        if (snap.metadata.hasPendingWrites) return;
+        const serverItems = snap.exists && Array.isArray(snap.data().items) ? snap.data().items : [];
+        if (firstSync) {
+          firstSync = false;
+          setLocal((prevLocal) => {
+            const byId = new Map(serverItems.map((i) => [i.id, i]));
+            prevLocal.forEach((i) => {
+              if (!byId.has(i.id)) byId.set(i.id, i);
+            });
+            return Array.from(byId.values());
+          });
+        } else {
+          setLocal(serverItems);
+        }
+        fbReadyFlags.current[name] = true;
+        fbNoteOk();
+      },
+      (err) => fbNoteError(name + " listener", err)
+    );
+  };
+  const fbSaveList = async (name, items) => {
+    if (!fbDb.current || !fbReadyFlags.current[name]) return;
+    fbNoteStatus({ state: "syncing" });
+    try {
+      await fbMetaDoc(name).set({ items, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      fbNoteOk();
+    } catch (e) {
+      fbNoteError(name + " save", e);
+    }
+  };
+  const fbLoadSettings = () => {
+    let firstSync = true;
+    return fbMetaDoc("settings").onSnapshot(
+      (snap) => {
+        if (snap.metadata.hasPendingWrites) return;
+        if (snap.exists) {
+          const d = snap.data();
+          if (d.appSettings) setAppSettings(d.appSettings);
+          if (d.flightApiKey !== void 0) setFlightApiKey(d.flightApiKey || "");
+          if (d.travelProfile) setTravelProfile(d.travelProfile);
+        }
+        fbReadyFlags.current.settings = true;
+        if (firstSync && !snap.exists) {
+          fbSaveSettings(appSettings, flightApiKey, travelProfile);
+        }
+        firstSync = false;
+        fbNoteOk();
+      },
+      (err) => fbNoteError("settings listener", err)
+    );
+  };
+  const fbSaveSettings = async (s, ak, tp) => {
+    if (!fbDb.current || !fbReadyFlags.current.settings) return;
+    fbNoteStatus({ state: "syncing" });
+    try {
+      await fbMetaDoc("settings").set({
+        appSettings: s,
+        flightApiKey: ak || "",
+        travelProfile: tp,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      fbNoteOk();
+    } catch (e) {
+      fbNoteError("settings save", e);
+    }
+  };
+  const fbConnectAll = () => {
+    if (fbTripsUnsub.current) {
+      fbTripsUnsub.current();
+      fbTripsUnsub.current = null;
+    }
+    if (fbWishlistUnsub.current) {
+      fbWishlistUnsub.current();
+      fbWishlistUnsub.current = null;
+    }
+    if (fbEventsUnsub.current) {
+      fbEventsUnsub.current();
+      fbEventsUnsub.current = null;
+    }
+    if (fbSettingsUnsub.current) {
+      fbSettingsUnsub.current();
+      fbSettingsUnsub.current = null;
+    }
+    fbLoadTrips();
+    fbWishlistUnsub.current = fbLoadList("wishlist", setWishlist);
+    fbEventsUnsub.current = fbLoadList("events", setEvents);
+    fbSettingsUnsub.current = fbLoadSettings();
+  };
   useEffect(() => {
     if (!fbConfig || !fbConfig.apiKey || typeof firebase === "undefined") return;
     try {
@@ -9031,85 +9276,58 @@ function App() {
         });
       }
       setFbReady(true);
-      fbLoad();
+      fbConnectAll();
     } catch (e) {
       console.error("Firebase init:", e);
       setFbSyncStatus({ state: "error", lastSync: null, error: e.message });
     }
     return () => {
-      if (fbUnsub.current) {
-        fbUnsub.current();
-        fbUnsub.current = null;
-      }
+      if (fbTripsUnsub.current) fbTripsUnsub.current();
+      if (fbWishlistUnsub.current) fbWishlistUnsub.current();
+      if (fbEventsUnsub.current) fbEventsUnsub.current();
+      if (fbSettingsUnsub.current) fbSettingsUnsub.current();
     };
   }, [fbConfig]);
   useEffect(() => {
-    if (fbReady && fbDb.current) fbLoad();
+    if (fbReady && fbDb.current) {
+      fbReadyFlags.current = { trips: false, wishlist: false, events: false, settings: false };
+      fbConnectAll();
+    }
   }, [syncKey]);
-  const fbDoc = () => fbDb.current.collection("journey").doc(syncKey).collection("data").doc("main");
-  const fbLoad = () => {
-    if (!fbDb.current) return;
-    const cached = readCache();
-    if (cached && cached.data) {
-      applyPayload(cached.data);
-      setFbSyncStatus({ state: "ok", lastSync: cached.ts, error: null });
-    } else {
-      setFbSyncStatus((s) => ({ ...s, state: "syncing", error: null }));
-    }
-    if (fbUnsub.current) {
-      fbUnsub.current();
-      fbUnsub.current = null;
-    }
-    fbUnsub.current = fbDoc().onSnapshot(
-      (snap) => {
-        if (snap.metadata.hasPendingWrites) return;
-        fbReadyToSave.current = true;
-        if (snap.exists) {
-          const d = snap.data();
-          applyPayload(d);
-          writeCache({ trips: d.trips, wishlist: d.wishlist, events: d.events, appSettings: d.appSettings, flightApiKey: d.flightApiKey });
-        }
-        setFbSyncStatus({ state: "ok", lastSync: (/* @__PURE__ */ new Date()).toISOString(), error: null });
-      },
-      (err) => {
-        console.error("Firestore listener error:", err);
-        setFbSyncStatus({ state: "error", lastSync: cached ? cached.ts : null, error: err.message });
-      }
-    );
-  };
-  const fbSave = async (t, w, ev, s, ak) => {
-    if (!fbDb.current) return;
-    setFbSyncStatus((prev) => ({ ...prev, state: "syncing" }));
-    const payload = {
-      trips: t,
-      wishlist: w,
-      events: ev,
-      appSettings: s,
-      flightApiKey: ak || "",
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    writeCache({ trips: t, wishlist: w, events: ev, appSettings: s, flightApiKey: ak || "" });
-    try {
-      await fbDoc().set(payload);
-      setFbSyncStatus({ state: "ok", lastSync: (/* @__PURE__ */ new Date()).toISOString(), error: null });
-    } catch (e) {
-      setFbSyncStatus({ state: "error", lastSync: null, error: e.message });
-    }
-  };
   const fbSyncNow = () => {
-    if (fbSaveTimer.current) clearTimeout(fbSaveTimer.current);
-    if (fbReadyToSave.current) fbSave(trips, wishlist, events, appSettings, flightApiKey);
-    fbLoad();
+    [fbTripsSaveTimer, fbWishlistSaveTimer, fbEventsSaveTimer, fbSettingsSaveTimer].forEach((t) => {
+      if (t.current) clearTimeout(t.current);
+    });
+    fbSaveTrips(trips);
+    fbSaveList("wishlist", wishlist);
+    fbSaveList("events", events);
+    fbSaveSettings(appSettings, flightApiKey, travelProfile);
+    fbConnectAll();
   };
   useEffect(() => {
-    if (!fbReadyToSave.current) return;
-    if (fbSaveTimer.current) clearTimeout(fbSaveTimer.current);
-    fbSaveTimer.current = setTimeout(
-      () => fbSave(trips, wishlist, events, appSettings, flightApiKey),
-      2e3
-    );
-    return () => clearTimeout(fbSaveTimer.current);
-  }, [trips, wishlist, events, appSettings, flightApiKey]);
+    if (!fbReadyFlags.current.trips) return;
+    if (fbTripsSaveTimer.current) clearTimeout(fbTripsSaveTimer.current);
+    fbTripsSaveTimer.current = setTimeout(() => fbSaveTrips(trips), 1500);
+    return () => clearTimeout(fbTripsSaveTimer.current);
+  }, [trips]);
+  useEffect(() => {
+    if (!fbReadyFlags.current.wishlist) return;
+    if (fbWishlistSaveTimer.current) clearTimeout(fbWishlistSaveTimer.current);
+    fbWishlistSaveTimer.current = setTimeout(() => fbSaveList("wishlist", wishlist), 1500);
+    return () => clearTimeout(fbWishlistSaveTimer.current);
+  }, [wishlist]);
+  useEffect(() => {
+    if (!fbReadyFlags.current.events) return;
+    if (fbEventsSaveTimer.current) clearTimeout(fbEventsSaveTimer.current);
+    fbEventsSaveTimer.current = setTimeout(() => fbSaveList("events", events), 1500);
+    return () => clearTimeout(fbEventsSaveTimer.current);
+  }, [events]);
+  useEffect(() => {
+    if (!fbReadyFlags.current.settings) return;
+    if (fbSettingsSaveTimer.current) clearTimeout(fbSettingsSaveTimer.current);
+    fbSettingsSaveTimer.current = setTimeout(() => fbSaveSettings(appSettings, flightApiKey, travelProfile), 1500);
+    return () => clearTimeout(fbSettingsSaveTimer.current);
+  }, [appSettings, flightApiKey, travelProfile]);
   const isVP = useIsVisionPro();
   useEffect(() => {
     if (!isVP) return;
