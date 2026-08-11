@@ -666,6 +666,18 @@ const getCurrentActivity = (allToday) => {
 const JOURNEY_VERSION = "1.0";
 const CHANGELOG = [
   {
+    version: "1.19",
+    date: "2026-04-19",
+    title: "Fixed Duplicate Trips After Connecting a Second Device",
+    emoji: "\u{1F50D}",
+    changes: [
+      "Fixed the root cause of trips appearing twice after setting up Cloud Sync on a new device \u2014 importing a sync-linked backup no longer reassigns trip IDs, which was breaking sync's ability to recognize matching trips",
+      "Added a duplicate-trip detector \u2014 a banner and a dedicated cleanup tool (gear menu \u2192 Find Duplicate Trips) let you review and remove any duplicates already created by this bug, defaulting to keeping whichever copy has more content",
+      "Connecting to a Sync Key that already has trips on it now shows you exactly what's there before anything merges \u2014 no more silent surprises",
+      "Added a matching safety check inside Cloud Sync itself, so trips with the same title and dates never get duplicated even in edge cases outside the normal import flow"
+    ]
+  },
+  {
     version: "1.18",
     date: "2026-04-18",
     title: "Trips Now Save Reliably, With or Without Cloud Sync",
@@ -1693,6 +1705,15 @@ const validateImport = (parsed) => {
     if (!t.id || !t.title) throw new Error("Trip data is malformed (missing id or title).");
   });
   return migrateCostCategories(fixCorruptedEmoji(migrateCostFields(parsed.trips)));
+};
+const findDuplicateTripGroups = (trips) => {
+  const groups = /* @__PURE__ */ new Map();
+  trips.forEach((t) => {
+    const fp = (t.title || "").trim().toLowerCase() + "|" + t.startDate + "|" + t.endDate;
+    if (!groups.has(fp)) groups.set(fp, []);
+    groups.get(fp).push(t);
+  });
+  return Array.from(groups.values()).filter((g) => g.length > 1);
 };
 const restampIds = (trip) => {
   const idMap = {};
@@ -3915,7 +3936,7 @@ function InsightsTab({ trips, events, wishlist, mobile, currentYear }) {
     )))));
   })(), scopedTrips.length === 0 && scopedEvents.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "60px 0", color: C.mid } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 52, marginBottom: 16 } }, "\u{1F4CA}"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 16 } }, "No data for ", scope === "year" ? currentYear : scope === "last" ? lastYear : "any year", " yet.")));
 }
-function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, fbReady, fbSyncStatus, fbSyncKey, onOpenFbSetup, onSyncNow, isVP, hasUnseenChangelog, onOpenChangelog, flightApiKey, onSaveFlightApiKey, onOpenTravelProfile, wishlist, onAddWish, onUpdateWish, onDeleteWish, onConvertWish, onOpenAddWish, appSettings, onSetAppSetting, events, onAddEvent, onUpdateEvent, onDeleteEvent }) {
+function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplicate, isDark, onToggleTheme, search, onSearch, pwaPrompt, onInstall, travelProfile, onSaveTravelProfile, fbReady, fbSyncStatus, fbSyncKey, onOpenFbSetup, onSyncNow, isVP, hasUnseenChangelog, onOpenChangelog, flightApiKey, onSaveFlightApiKey, onOpenTravelProfile, wishlist, onAddWish, onUpdateWish, onDeleteWish, onConvertWish, onOpenAddWish, appSettings, onSetAppSetting, events, onAddEvent, onUpdateEvent, onDeleteEvent, duplicateTripCount, onOpenDuplicateCleanup }) {
   const mobile = useMobile();
   const [showMenu, setShowMenu] = React.useState(false);
   const [homeFilter, setHomeFilter] = React.useState("trips");
@@ -4037,6 +4058,19 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
     {
       onClick: () => {
         setShowMenu(false);
+        onOpenDuplicateCleanup();
+      },
+      style: { width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" },
+      onMouseEnter: (e) => e.currentTarget.style.background = C.surface2,
+      onMouseLeave: (e) => e.currentTarget.style.background = "none"
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u{1F50D}"),
+    /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 500, color: C.text } }, "Find Duplicate Trips"), duplicateTripCount > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: "#0c0e16", background: C.warn, borderRadius: 8, padding: "1px 6px", marginLeft: 8 } }, duplicateTripCount))
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => {
+        setShowMenu(false);
         onOpenChangelog();
       },
       style: { width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", background: "none", border: "none", borderBottom: `1px solid ${C.border}`, cursor: "pointer", textAlign: "left" },
@@ -4087,7 +4121,7 @@ function HomeView({ trips, onOpen, onNew, onImportExport, onTemplates, onDuplica
       style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 }
     },
     "\u{1F504} Sync Now"
-  ), /* @__PURE__ */ React.createElement("button", { onClick: onOpenFbSetup, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 } }, "Settings"))), pwaPrompt && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4F2}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Install Journey"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Add to your home screen for offline access and a native app feel.")), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onInstall }, "Install"), /* @__PURE__ */ React.createElement("button", { onClick: () => onInstall(null), style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 18, padding: "0 4px" } }, "\xD7"))), /* @__PURE__ */ React.createElement("div", { style: {
+  ), /* @__PURE__ */ React.createElement("button", { onClick: onOpenFbSetup, style: { background: "none", border: "none", fontSize: 12, color: C.accent, cursor: "pointer", padding: 0 } }, "Settings"))), pwaPrompt && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4F2}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Install Journey"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Add to your home screen for offline access and a native app feel.")), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: onInstall }, "Install"), /* @__PURE__ */ React.createElement("button", { onClick: () => onInstall(null), style: { background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 18, padding: "0 4px" } }, "\xD7")), duplicateTripCount > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, background: C.warnBg, border: `1px solid ${C.warnBdr}`, borderRadius: 10, padding: "10px 16px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F50D}"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, "Found ", duplicateTripCount, " possible duplicate trip", duplicateTripCount > 1 ? "s" : ""), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, "Same title and dates \u2014 often from connecting Cloud Sync on a new device.")), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", size: "sm", onClick: onOpenDuplicateCleanup }, "Review"))), /* @__PURE__ */ React.createElement("div", { style: {
     position: "sticky",
     top: "env(safe-area-inset-top, 0px)",
     zIndex: 50,
@@ -8142,7 +8176,7 @@ function NewCityModal({ existingCities, onSave, onClose }) {
   const valid = form.name.trim() && form.nights > 0 && form.startDate;
   return /* @__PURE__ */ React.createElement("div", { style: { padding: 28 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 30, color: C.text } }, "Add City / Segment"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 4 } }, "Days are auto-generated from the start date.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22 } }, "\xD7")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gap: 16 } }, /* @__PURE__ */ React.createElement(Input, { label: "City name", value: form.name, onChange: (v) => upd("name", v), placeholder: "e.g., Kyoto, Paris, Lisbon..." }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, minWidth: 0 } }, /* @__PURE__ */ React.createElement(Input, { label: "Nights", type: "number", value: form.nights, onChange: (v) => upd("nights", Math.max(1, parseInt(v) || 1)) }), /* @__PURE__ */ React.createElement(Input, { label: "Arrival", type: "date", value: form.startDate, onChange: (v) => upd("startDate", v) })), existingCities.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.mid } }, "Will follow ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.text } }, existingCities[existingCities.length - 1].name), " in the city ribbon.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 24 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid, onClick: () => onSave(newCity(form.name.trim(), parseInt(form.nights), form.startDate)) }, "Add City")));
 }
-function FirebaseSetupModal({ onSave, onClose, syncKey, onChangeSyncKey, currentConfig }) {
+function FirebaseSetupModal({ onSave, onClose, syncKey, onChangeSyncKey, currentConfig, localTripCount }) {
   const mobile = useMobile();
   const EMPTY = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
   const [cfg, setCfg] = useState(currentConfig || EMPTY);
@@ -8151,6 +8185,7 @@ function FirebaseSetupModal({ onSave, onClose, syncKey, onChangeSyncKey, current
   const [keyDraft, setKeyDraft] = useState(syncKey || "");
   const [testState, setTestState] = useState("idle");
   const [testError, setTestError] = useState("");
+  const [remoteInfo, setRemoteInfo] = useState(null);
   const upd = (k, v) => {
     setCfg((c) => ({ ...c, [k]: v }));
     setTestState("idle");
@@ -8159,6 +8194,7 @@ function FirebaseSetupModal({ onSave, onClose, syncKey, onChangeSyncKey, current
   const testConnection = async () => {
     setTestState("testing");
     setTestError("");
+    setRemoteInfo(null);
     try {
       if (typeof firebase === "undefined") throw new Error("Firebase SDK didn't load \u2014 check your connection and try again.");
       try {
@@ -8172,6 +8208,8 @@ function FirebaseSetupModal({ onSave, onClose, syncKey, onChangeSyncKey, current
       await ref.set({ ts: Date.now() });
       const snap = await ref.get();
       if (!snap.exists) throw new Error("Wrote successfully but couldn't read it back \u2014 check your security rules.");
+      const tripsSnap = await db.collection("journey").doc(syncKey).collection("trips").get();
+      setRemoteInfo({ count: tripsSnap.size, titles: tripsSnap.docs.slice(0, 5).map((d) => d.data().title || "Untitled") });
       await testApp.delete();
       setTestState("ok");
       return true;
@@ -8186,10 +8224,15 @@ function FirebaseSetupModal({ onSave, onClose, syncKey, onChangeSyncKey, current
   };
   const handleSaveConnect = async () => {
     const ok = await testConnection();
-    if (ok) {
+    if (!ok) return;
+    if (!remoteInfo || remoteInfo.count === 0) {
       onSave(cfg);
       setTimeout(onClose, 700);
     }
+  };
+  const confirmConnect = () => {
+    onSave(cfg);
+    onClose();
   };
   const RULES = `rules_version = '2';
 service cloud.firestore {
@@ -8256,7 +8299,7 @@ service cloud.firestore {
       style: { width: "100%", fontFamily: "monospace", fontSize: 13 },
       autoComplete: "off"
     }
-  ))))), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "10px 14px", marginTop: 14, fontSize: 12, color: C.dim, lineHeight: 1.6 } }, "\u{1F512} ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "No Google sign-in, no account needed."), " Your data is stored at a path that includes your 36-character Sync Key \u2014 effectively a private URL. The Firestore rules allow reads/writes, but nobody can access your data without knowing the exact key. Firebase config values are safe to share \u2014 they're just project identifiers, not secrets."), testState === "error" && /* @__PURE__ */ React.createElement("div", { style: { background: C.warnBg, border: "1px solid " + C.warnBdr, borderRadius: 10, padding: "12px 14px", marginTop: 14, fontSize: 13, color: C.warn, lineHeight: 1.6 } }, "\u2715 ", /* @__PURE__ */ React.createElement("strong", null, "Connection test failed:"), " ", testError), testState === "ok" && /* @__PURE__ */ React.createElement("div", { style: { background: C.okBg, border: "1px solid " + C.okBdr, borderRadius: 10, padding: "12px 14px", marginTop: 14, fontSize: 13, color: C.ok } }, "\u2713 Connection verified \u2014 read and write both work.")), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "12px 18px" : "14px 28px", borderTop: "1px solid " + C.border, flexShrink: 0, display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid || testState === "testing", onClick: handleSaveConnect }, testState === "testing" ? "Testing connection\u2026" : "Test & Connect \u2192")));
+  ))))), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface2, borderRadius: 10, padding: "10px 14px", marginTop: 14, fontSize: 12, color: C.dim, lineHeight: 1.6 } }, "\u{1F512} ", /* @__PURE__ */ React.createElement("strong", { style: { color: C.mid } }, "No Google sign-in, no account needed."), " Your data is stored at a path that includes your 36-character Sync Key \u2014 effectively a private URL. The Firestore rules allow reads/writes, but nobody can access your data without knowing the exact key. Firebase config values are safe to share \u2014 they're just project identifiers, not secrets."), testState === "error" && /* @__PURE__ */ React.createElement("div", { style: { background: C.warnBg, border: "1px solid " + C.warnBdr, borderRadius: 10, padding: "12px 14px", marginTop: 14, fontSize: 13, color: C.warn, lineHeight: 1.6 } }, "\u2715 ", /* @__PURE__ */ React.createElement("strong", null, "Connection test failed:"), " ", testError), testState === "ok" && remoteInfo && remoteInfo.count === 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.okBg, border: "1px solid " + C.okBdr, borderRadius: 10, padding: "12px 14px", marginTop: 14, fontSize: 13, color: C.ok } }, "\u2713 Connection verified \u2014 this key has no synced trips yet, so your ", localTripCount, " local trip", localTripCount === 1 ? "" : "s", " will be published to it."), testState === "ok" && remoteInfo && remoteInfo.count > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: C.accentBg, border: "1px solid " + C.accentBdr, borderRadius: 10, padding: "14px 16px", marginTop: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.text, fontWeight: 600, marginBottom: 6 } }, "\u2713 Connection verified \u2014 found ", remoteInfo.count, " trip", remoteInfo.count > 1 ? "s" : "", " already synced to this key"), /* @__PURE__ */ React.createElement("ul", { style: { margin: "6px 0 10px 18px", padding: 0, fontSize: 12, color: C.mid, lineHeight: 1.7 } }, remoteInfo.titles.map((t, i) => /* @__PURE__ */ React.createElement("li", { key: i }, t)), remoteInfo.count > remoteInfo.titles.length && /* @__PURE__ */ React.createElement("li", null, "+ ", remoteInfo.count - remoteInfo.titles.length, " more")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid, lineHeight: 1.6, marginBottom: 12 } }, "This device currently has ", localTripCount, " trip", localTripCount === 1 ? "" : "s", " locally. Connecting will merge both sets \u2014 matching trips stay matched, anything unique on either side is kept, nothing gets silently deleted."), /* @__PURE__ */ React.createElement(Btn, { variant: "accent", size: "sm", onClick: confirmConnect }, "Continue & Connect \u2192"))), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "12px 18px" : "14px 28px", borderTop: "1px solid " + C.border, flexShrink: 0, display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), !(testState === "ok" && remoteInfo && remoteInfo.count > 0) && /* @__PURE__ */ React.createElement(Btn, { variant: "accent", disabled: !valid || testState === "testing", onClick: handleSaveConnect }, testState === "testing" ? "Testing connection\u2026" : "Test & Connect \u2192")));
 }
 function ChangelogModal({ onClose, lastSeenDate, onMarkSeen }) {
   const mobile = useMobile();
@@ -8271,12 +8314,97 @@ function ChangelogModal({ onClose, lastSeenDate, onMarkSeen }) {
     onClose();
   } }, "Got it")));
 }
+function DuplicateTripsModal({ trips, onResolve, onClose }) {
+  const mobile = useMobile();
+  const groups = React.useMemo(() => findDuplicateTripGroups(trips), [trips]);
+  const [selections, setSelections] = useState(() => {
+    const sel = {};
+    groups.forEach((g, gi) => {
+      let best = g[0], bestScore = -1;
+      g.forEach((t) => {
+        const score = getAllActivities(t).length;
+        if (score > bestScore) {
+          bestScore = score;
+          best = t;
+        }
+      });
+      sel[gi] = best.id;
+    });
+    return sel;
+  });
+  const [dismissed, setDismissed] = useState(() => /* @__PURE__ */ new Set());
+  if (groups.length === 0) {
+    return /* @__PURE__ */ React.createElement("div", { style: { padding: 32, textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 40, marginBottom: 14 } }, "\u2728"), /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: C.text, marginBottom: 8 } }, "No duplicates found"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.mid, marginBottom: 20 } }, "Every trip has a unique title + date range."), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Close"));
+  }
+  const applyAll = () => {
+    const idsToDelete = [];
+    groups.forEach((g, gi) => {
+      if (dismissed.has(gi)) return;
+      const keepId = selections[gi];
+      g.forEach((t) => {
+        if (t.id !== keepId) idsToDelete.push(t.id);
+      });
+    });
+    onResolve(idsToDelete);
+    onClose();
+  };
+  const totalToDelete = groups.reduce((s, g, gi) => dismissed.has(gi) ? s : s + (g.length - 1), 0);
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", maxHeight: mobile ? "93vh" : "88vh" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "18px 18px 0" : "24px 28px 0", flexShrink: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { style: { fontFamily: "'Cormorant Garamond', serif", fontSize: mobile ? 24 : 28, color: C.text } }, "\u{1F50D} Duplicate Trips"), /* @__PURE__ */ React.createElement("p", { style: { color: C.mid, fontSize: 13, marginTop: 4 } }, "Found ", groups.length, " set", groups.length > 1 ? "s" : "", " of trips with the same title and dates. Pick which copy to keep in each.")), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer" } }, "\xD7"))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", padding: mobile ? "16px 18px" : "20px 28px", display: "flex", flexDirection: "column", gap: 20 } }, groups.map((g, gi) => {
+    const isDismissed = dismissed.has(gi);
+    return /* @__PURE__ */ React.createElement("div", { key: gi, style: { border: `1px solid ${isDismissed ? C.border : C.accentBdr}`, borderRadius: 14, padding: "14px 16px", opacity: isDismissed ? 0.5 : 1, transition: "opacity 0.15s" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: C.text } }, g[0].title), !isDismissed ? /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setDismissed((d) => new Set(d).add(gi)),
+        style: { background: "none", border: `1px solid ${C.border}`, borderRadius: 8, color: C.dim, cursor: "pointer", fontSize: 11, padding: "4px 10px" }
+      },
+      "Not duplicates \u2014 keep all"
+    ) : /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setDismissed((d) => {
+          const n = new Set(d);
+          n.delete(gi);
+          return n;
+        }),
+        style: { background: "none", border: `1px solid ${C.border}`, borderRadius: 8, color: C.accent, cursor: "pointer", fontSize: 11, padding: "4px 10px" }
+      },
+      "Undo"
+    )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, g.map((t) => {
+      const acts = getAllActivities(t).length;
+      const nights = (t.cities || []).reduce((s, c) => s + Math.max(0, (c.nights || 1) - 1), 0);
+      const selected = selections[gi] === t.id;
+      return /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: t.id,
+          disabled: isDismissed,
+          onClick: () => setSelections((s) => ({ ...s, [gi]: t.id })),
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            textAlign: "left",
+            background: selected ? C.accentBg : C.surface2,
+            border: `1px solid ${selected ? C.accent : C.border}`,
+            borderRadius: 10,
+            padding: "10px 14px",
+            cursor: isDismissed ? "default" : "pointer"
+          }
+        },
+        /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16, flexShrink: 0 } }, selected ? "\u2713" : "\u25CB"),
+        /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.dim } }, t.startDate, " \u2192 ", t.endDate, " \xB7 ", (t.cities || []).length, " cities \xB7 ", nights, " nights \xB7 ", acts, " activities"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 2, fontFamily: "monospace" } }, "id: ", t.id)),
+        selected && /* @__PURE__ */ React.createElement(Tag, { color: C.accent }, "Keep this one")
+      );
+    })));
+  })), /* @__PURE__ */ React.createElement("div", { style: { padding: mobile ? "12px 18px" : "14px 28px", borderTop: `1px solid ${C.border}`, flexShrink: 0, display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.dim, flex: 1 } }, totalToDelete > 0 ? `Will delete ${totalToDelete} duplicate trip${totalToDelete > 1 ? "s" : ""}` : "Nothing selected for deletion"), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", onClick: onClose }, "Cancel"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", disabled: totalToDelete === 0, onClick: applyAll }, "\u{1F5D1} Remove Duplicates")));
+}
 function ImportExportModal({ trips, wishlist, events, currentTrip, onImport, onClose, travelProfile, onImportTravelProfile, onImportFlightApiKey, flightApiKey, onImportEvents, onImportWishlist, onImportSyncKey, onImportFbConfig, fbConfig, syncKey }) {
   const [tab, setTab] = useState(currentTrip ? "export" : "import");
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [importCarriesSyncCreds, setImportCarriesSyncCreds] = useState(false);
   const fileRef = useRef(null);
   const handleFileChange = async (e) => {
     const file = e.target.files ? e.target.files[0] : null;
@@ -8298,6 +8426,8 @@ function ImportExportModal({ trips, wishlist, events, currentTrip, onImport, onC
       if (parsed.wishlist && Array.isArray(parsed.wishlist) && onImportWishlist) {
         onImportWishlist(parsed.wishlist);
       }
+      const hasSyncCreds = !!(parsed.syncKey && typeof parsed.syncKey === "string" && parsed.syncKey.length >= 32 && parsed.fbConfig && parsed.fbConfig.apiKey);
+      setImportCarriesSyncCreds(hasSyncCreds);
       if (parsed.syncKey && typeof parsed.syncKey === "string" && parsed.syncKey.length >= 32 && onImportSyncKey) {
         onImportSyncKey(parsed.syncKey);
       }
@@ -8313,7 +8443,7 @@ function ImportExportModal({ trips, wishlist, events, currentTrip, onImport, onC
     }
   };
   const confirmImport = (mode) => {
-    const stamped = preview.map(restampIds);
+    const stamped = importCarriesSyncCreds ? preview : preview.map(restampIds);
     onImport(stamped, mode);
     setPreview(null);
     setResult({ ok: true, message: `${stamped.length} trip${stamped.length > 1 ? "s" : ""} imported successfully!` });
@@ -8445,7 +8575,7 @@ function ImportExportModal({ trips, wishlist, events, currentTrip, onImport, onC
       onChange: handleFileChange,
       style: { display: "none" }
     }
-  )), preview && !result && /* @__PURE__ */ React.createElement("div", { style: { animation: "fadeSlideIn 0.2s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4CB}"), /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, fontSize: 16 } }, "Found ", preview.length, " trip", preview.length > 1 ? "s" : "", " \u2014 confirm import")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 } }, preview.map((t, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { background: C.surface2, borderRadius: 10, padding: "12px 16px", border: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 4 } }, t.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, t.startDate, " \u2192 ", t.endDate, " \xB7 ", t.cities ? t.cities.length : 0, " cities \xB7 ", getAllActivities(t).length, " activities"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 } }, (t.cities || []).map((c, ci) => /* @__PURE__ */ React.createElement("span", { key: ci, style: { fontSize: 11, padding: "2px 8px", borderRadius: 8, background: `${CITY_PALETTE[ci % CITY_PALETTE.length]}22`, color: CITY_PALETTE[ci % CITY_PALETTE.length] } }, c.name, " \xB7 ", c.nights - 1, "n")))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: () => confirmImport("add"), style: { flex: 1 } }, "\u2795 Add alongside existing trips"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", onClick: () => confirmImport("replace"), style: { flex: 1 } }, "\u26A0\uFE0F Replace all trips")), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginTop: 10, textAlign: "center" } }, '"Replace" will permanently overwrite your current trips. "Add" is always safe.'), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setPreview(null), style: { marginTop: 8 } }, "\u2190 Choose a different file")), result && /* @__PURE__ */ React.createElement("div", { style: {
+  )), preview && !result && /* @__PURE__ */ React.createElement("div", { style: { animation: "fadeSlideIn 0.2s ease" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 20 } }, "\u{1F4CB}"), /* @__PURE__ */ React.createElement("h3", { style: { color: C.text, fontSize: 16 } }, "Found ", preview.length, " trip", preview.length > 1 ? "s" : "", " \u2014 confirm import")), importCarriesSyncCreds && /* @__PURE__ */ React.createElement("div", { style: { background: C.accentBg, border: `1px solid ${C.accentBdr}`, borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: C.text, lineHeight: 1.6 } }, "\u2601\uFE0F ", /* @__PURE__ */ React.createElement("strong", null, "This file is linked to Cloud Sync"), " \u2014 its trips are already connecting live in the background under their original IDs, so they won't be duplicated. Pick ", /* @__PURE__ */ React.createElement("strong", null, "Add alongside"), " to also keep anything else already on this device, or ", /* @__PURE__ */ React.createElement("strong", null, "Replace"), " to start clean with just what's synced."), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 } }, preview.map((t, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { background: C.surface2, borderRadius: 10, padding: "12px 16px", border: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 4 } }, t.title), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.mid } }, t.startDate, " \u2192 ", t.endDate, " \xB7 ", t.cities ? t.cities.length : 0, " cities \xB7 ", getAllActivities(t).length, " activities"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 } }, (t.cities || []).map((c, ci) => /* @__PURE__ */ React.createElement("span", { key: ci, style: { fontSize: 11, padding: "2px 8px", borderRadius: 8, background: `${CITY_PALETTE[ci % CITY_PALETTE.length]}22`, color: CITY_PALETTE[ci % CITY_PALETTE.length] } }, c.name, " \xB7 ", c.nights - 1, "n")))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement(Btn, { variant: "accent", onClick: () => confirmImport("add"), style: { flex: 1 } }, "\u2795 Add alongside existing trips"), /* @__PURE__ */ React.createElement(Btn, { variant: "danger", onClick: () => confirmImport("replace"), style: { flex: 1 } }, "\u26A0\uFE0F Replace all trips")), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.dim, marginTop: 10, textAlign: "center" } }, '"Replace" will permanently overwrite your current trips. "Add" is always safe.'), /* @__PURE__ */ React.createElement(Btn, { variant: "ghost", size: "sm", onClick: () => setPreview(null), style: { marginTop: 8 } }, "\u2190 Choose a different file")), result && /* @__PURE__ */ React.createElement("div", { style: {
     padding: "20px 22px",
     borderRadius: 12,
     textAlign: "center",
@@ -8882,6 +9012,7 @@ function App() {
       showToast("\u26A0\uFE0F Couldn't save locally \u2014 device storage may be full. Export a backup soon.", null, 8e3);
     }
   }, [trips]);
+  const duplicateTripGroups = React.useMemo(() => findDuplicateTripGroups(trips), [trips]);
   const [templates, setTemplates] = useState(() => {
     try {
       const s = localStorage.getItem("journey_templates_v1");
@@ -9099,9 +9230,15 @@ function App() {
           setTrips((prevLocal) => {
             const merged = /* @__PURE__ */ new Map();
             serverMap.forEach((t, id) => merged.set(id, t));
+            const serverIdByFingerprint = /* @__PURE__ */ new Map();
+            serverMap.forEach((t, id) => serverIdByFingerprint.set(t.title + "|" + t.startDate + "|" + t.endDate, id));
             prevLocal.forEach((t) => {
               const server = serverMap.get(t.id);
-              if (!server || JSON.stringify(server) !== JSON.stringify(t)) merged.set(t.id, t);
+              if (server && JSON.stringify(server) === JSON.stringify(t)) return;
+              const fingerprint = t.title + "|" + t.startDate + "|" + t.endDate;
+              const matchId = serverIdByFingerprint.get(fingerprint);
+              if (matchId && matchId !== t.id) return;
+              merged.set(t.id, t);
             });
             const synced = /* @__PURE__ */ new Map();
             serverMap.forEach((t, id) => {
@@ -9522,7 +9659,7 @@ function App() {
         setShowOnboarding(false);
       },
       onImport: (trips2) => {
-        setTrips(trips2.map(restampIds));
+        setTrips(trips2);
         try {
           localStorage.setItem("journey_onboarded", "1");
         } catch (e) {
@@ -9544,6 +9681,8 @@ function App() {
       search: homeSearch,
       onSearch: setHomeSearch,
       pwaPrompt,
+      duplicateTripCount: duplicateTripGroups.reduce((s, g) => s + (g.length - 1), 0),
+      onOpenDuplicateCleanup: () => setModal({ type: "duplicateTrips" }),
       travelProfile,
       onSaveTravelProfile: setTravelProfile,
       fbReady,
@@ -9662,7 +9801,8 @@ function App() {
         } catch (e) {
         }
       },
-      currentConfig: fbConfig
+      currentConfig: fbConfig,
+      localTripCount: trips.length
     }
   )), modal && modal.type === "changelog" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => {
     markChangelogSeen();
@@ -9715,7 +9855,11 @@ function App() {
       currentTrip: modal.trip || null,
       onImport: (imported, mode) => {
         if (mode === "replace") setTrips(imported);
-        else setTrips((ts) => [...ts, ...imported]);
+        else setTrips((ts) => {
+          const existingIds = new Set(ts.map((t) => t.id));
+          const newOnes = imported.filter((t) => !existingIds.has(t.id));
+          return [...ts, ...newOnes];
+        });
       },
       travelProfile,
       onImportTravelProfile: setTravelProfile,
@@ -9747,6 +9891,17 @@ function App() {
         const newOnes = imported.filter((w) => !existingIds.has(w.id));
         return [...ws, ...newOnes];
       }),
+      onClose: () => setModal(null)
+    }
+  )), modal && modal.type === "duplicateTrips" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null), maxWidth: 620 }, /* @__PURE__ */ React.createElement(
+    DuplicateTripsModal,
+    {
+      trips,
+      onResolve: (idsToDelete) => {
+        const idSet = new Set(idsToDelete);
+        setTrips((ts) => ts.filter((t) => !idSet.has(t.id)));
+        showToast(`Removed ${idsToDelete.length} duplicate trip${idsToDelete.length > 1 ? "s" : ""}`, null, 5e3);
+      },
       onClose: () => setModal(null)
     }
   )), modal && modal.type === "cityMgmt" && /* @__PURE__ */ React.createElement(Modal, { onClose: () => setModal(null), maxWidth: 640 }, /* @__PURE__ */ React.createElement(CityMgmtModal, { trip: trips.find((t) => t.id === modal.tripId), mutateTrip: (fn) => {
